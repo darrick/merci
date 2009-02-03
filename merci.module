@@ -103,7 +103,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
             '#type' => 'fieldset',
             '#title' => t('MERCI settings'),
             '#collapsible' => TRUE,
-            '#collapsed' => FALSE,
+            '#collapsed' => TRUE,
           );
           $form['merci']['merci_default_availability'] = array(
             '#title' => t('Default booking availability'),
@@ -208,7 +208,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'fieldset',
         '#title' => t('MERCI settings'),
         '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
+        '#collapsed' => TRUE,
       );
 
       // If any nodes have already been created, lock the type setting.
@@ -1327,7 +1327,7 @@ function merci_add_reservation_items($node) {
     $reservation->uid = $node->uid;
     $reservation->title = "$title ". t('(Reservation)');
     $reservation->body = '';
-    $reservation->status = 1;
+    $reservation->status = 0;
     $reservation->promote = 0;
     $reservation->sticky = 0;
 
