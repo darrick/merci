@@ -721,65 +721,67 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
  *   An array of warning messages for any restrictions found.
  */
 function merci_check_content_type_restrictions($type_settings, $start, $end) {
-  $hours_of_operation = merci_load_hours_of_operation();
-  $return = array();
-
-  // Convert start/end dates to local time.
-  $start_object = merci_create_local_date_object($start);
-  $end_object = merci_create_local_date_object($end);
-
-  // We want these timestamps generated in UTC.
-  $old_timezone = date_default_timezone_get();
-  date_default_timezone_set('UTC');
-  $start_timestamp = strtotime($start);
-  $end_timestamp = strtotime($end);
-  date_default_timezone_set($old_timezone);
-
-  $reserved_hours = ($end_timestamp - $start_timestamp) / (60 * 60);
-  $start_day_of_week = date_format($start_object, 'w');
-  $end_day_of_week = date_format($end_object, 'w');
-
-  // Make sure max hours aren't exceeded.
-  if ($type_settings->max_hours_per_reservation && $reserved_hours > $type_settings->max_hours_per_reservation) {
-    $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
+  //Users in role with Administer MERCI permssion are exempt from content type restrictions
+  if (!user_access('administer MERCI')) {
+	$hours_of_operation = merci_load_hours_of_operation();
+	$return = array();
+  
+	// Convert start/end dates to local time.
+	$start_object = merci_create_local_date_object($start);
+	$end_object = merci_create_local_date_object($end);
+  
+	// We want these timestamps generated in UTC.
+	$old_timezone = date_default_timezone_get();
+	date_default_timezone_set('UTC');
+	$start_timestamp = strtotime($start);
+	$end_timestamp = strtotime($end);
+	date_default_timezone_set($old_timezone);
+  
+	$reserved_hours = ($end_timestamp - $start_timestamp) / (60 * 60);
+	$start_day_of_week = date_format($start_object, 'w');
+	$end_day_of_week = date_format($end_object, 'w');
+  
+	// Make sure max hours aren't exceeded.
+	if ($type_settings->max_hours_per_reservation && $reserved_hours > $type_settings->max_hours_per_reservation) {
+	  $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
+	}
+  
+	// Validate allow_overnight.
+	if (!$type_settings->allow_overnight) {
+	  // Need the 48 hour check in case somebody starts and ends their
+	  // reservation on the same day.
+	  if ($start_day_of_week != $end_day_of_week || $reserved_hours > 48) {
+		$return[] = t('%name cannot be reserved overnight.');
+	  }
+	}
+  
+	// Validate allow_weekend.
+	if (!$type_settings->allow_weekends) {
+	  $on_weekend = FALSE;
+	  // Check the start and end dates for the reservation first.
+	  if (in_array($start_day_of_week, array('6', '0')) || in_array($end_day_of_week, array('6', '0'))) {
+		$on_weekend = TRUE;
+	  }
+	  // Check all dates between the start and end dates for the reservation next.
+	  if (!$on_weekend) {
+		$day = 60 * 60 * 24;
+		$counter = $start_timestamp + $day;
+		while ($counter <= $end_timestamp) {
+		  $utc_datetime = gmdate('Y-m-d H:i:s', $counter);
+		  $local_date = merci_create_local_date_object($utc_datetime);
+		  $day_of_week = date_format($local_date, 'w');
+		  if (in_array($day_of_week, array('6', '0'))) {
+			$on_weekend = TRUE;
+			break;
+		  }
+		  $counter += $day;
+		}
+	  }
+	  if ($on_weekend) {
+		$return[] = t('%name cannot be reserved on weekends.');
+	  }
+	}
   }
-
-  // Validate allow_overnight.
-  if (!$type_settings->allow_overnight) {
-    // Need the 48 hour check in case somebody starts and ends their
-    // reservation on the same day.
-    if ($start_day_of_week != $end_day_of_week || $reserved_hours > 48) {
-      $return[] = t('%name cannot be reserved overnight.');
-    }
-  }
-
-  // Validate allow_weekend.
-  if (!$type_settings->allow_weekends) {
-    $on_weekend = FALSE;
-    // Check the start and end dates for the reservation first.
-    if (in_array($start_day_of_week, array('6', '0')) || in_array($end_day_of_week, array('6', '0'))) {
-      $on_weekend = TRUE;
-    }
-    // Check all dates between the start and end dates for the reservation next.
-    if (!$on_weekend) {
-      $day = 60 * 60 * 24;
-      $counter = $start_timestamp + $day;
-      while ($counter <= $end_timestamp) {
-      	$utc_datetime = gmdate('Y-m-d H:i:s', $counter);
-      	$local_date = merci_create_local_date_object($utc_datetime);
-      	$day_of_week = date_format($local_date, 'w');
-      	if (in_array($day_of_week, array('6', '0'))) {
-          $on_weekend = TRUE;
-          break;
-        }
-        $counter += $day;
-      }
-    }
-    if ($on_weekend) {
-      $return[] = t('%name cannot be reserved on weekends.');
-    }
-  }
-
   return $return;
 }
 
@@ -1752,32 +1754,36 @@ function merci_node_validate($form, &$form_state) {
 
     // Can't start or end a reservation on a day the facility
     // has no hours of operation, or outside hours of operation.
-    $start_name = date_format($start_object, 'l');
-    if (!$hours_of_operation[$start_day_of_week]) {
-      form_set_error('field_merci_date][0][value][date', t('Reservations cannot start on a %day.', array('%day' => $start_name)));
-    }
-    else {
-      $start_time = date_format($start_object, 'H:s');
-      if ($start_time < $start_hours['open']) {
-        form_set_error('field_merci_date][0][value][time', t('Reservations cannot start on a %day before %start.', array('%day' => $start_name, '%start' => $start_hours['open'])));
-      }
-      elseif ($start_time > $start_hours['close']) {
-        form_set_error('field_merci_date][0][value][time', t('Reservations cannot start on a %day after %end.', array('%day' => $start_name, '%end' => $start_hours['close'])));
-      }
-    }
-
-    $end_name = date_format($end_object, 'l');
-    if (!$hours_of_operation[$end_day_of_week]) {
-      form_set_error('field_merci_date][0][value2][date', t('Reservations cannot end on a %day.', array('%day' => $end_name)));
-    }
-    else {
-      $end_time = date_format($end_object, 'H:s');
-      if ($end_time < $end_hours['open']) {
-        form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end on a %day before %start.', array('%day' => $end_name, '%start' => $end_hours['open'])));
-      }
-      elseif ($end_time > $end_hours['close']) {
-        form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end on a %day after %end.', array('%day' => $end_name, '%end' => $end_hours['close'])));
-      }
+    
+    //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restrictions
+    if (!user_access('administer MERCI')) {
+	  $start_name = date_format($start_object, 'l');
+	  if (!$hours_of_operation[$start_day_of_week]) {
+		form_set_error('field_merci_date][0][value][date', t('Reservations cannot start on a %day.', array('%day' => $start_name)));
+	  }
+	  else {
+		$start_time = date_format($start_object, 'H:s');
+		if ($start_time < $start_hours['open']) {
+		  form_set_error('field_merci_date][0][value][time', t('Reservations cannot start on a %day before %start.', array('%day' => $start_name, '%start' => date("g:i a", strtotime($start_hours['open'])))));
+		}
+		elseif ($start_time > $start_hours['close']) {
+		  form_set_error('field_merci_date][0][value][time', t('Reservations cannot start on a %day after %end.', array('%day' => $start_name, '%end' => date("g:i a", strtotime($start_hours['close'])))));
+		}
+	  }
+  
+	  $end_name = date_format($end_object, 'l');
+	  if (!$hours_of_operation[$end_day_of_week]) {
+		form_set_error('field_merci_date][0][value2][date', t('Reservations cannot end on a %day.', array('%day' => $end_name)));
+	  }
+	  else {
+		$end_time = date_format($end_object, 'H:s');
+		if ($end_time < $end_hours['open']) {
+		  form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end on a %day before %start.', array('%day' => $end_name, '%start' => $end_hours['open'])));
+		}
+		elseif ($end_time > $end_hours['close']) {
+		  form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end on a %day after %end.', array('%day' => $end_name, '%end' => $end_hours['close'])));
+		}
+	  }
     }
 
     // Tests for existing items.

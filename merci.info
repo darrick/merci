@@ -11,3 +11,10 @@ dependencies[] = date_popup
 dependencies[] = date_timezone
 dependencies[] = views
 dependencies[] = taxonomy
+
+; Information added by drupal.org packaging script on 2009-01-25
+version = "6.x-1.x-dev"
+core = "6.x"
+project = "merci"
+datestamp = "1232842291"
+
