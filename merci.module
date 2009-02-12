@@ -55,7 +55,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
   // Node add/edit forms.
   if (isset($form['type']) && isset($form['#node'])) {
     $type = $form['type']['#value'];
-    if ("{$type}_node_form" == $form_id && $form_id != 'merci_reservation_node_form') {
+    if ("{{$type}}_node_form" == $form_id && $form_id != 'merci_reservation_node_form') {
       $merci_settings = merci_load_content_type_settings($type);
       // Only active MERCI node types get processed.
       if ($merci_settings->type_setting != 'disabled') {
@@ -685,7 +685,7 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
       // No filtering for new reservations.
       if (isset($is_new)) {
         // Filter out any placeholder nodes for this resource.
-      	$items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.sub_type = %d ORDER BY n.title", $resource->type, MERCI_SUB_TYPE_ITEM);
+      	$items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.sub_type = %d ORDER BY n.title", $resource->type, 1, MERCI_SUB_TYPE_ITEM);
       	while ($item = db_fetch_object($items)) {
           $item_options[$item->nid] = $item->title;
         }
@@ -1021,7 +1021,7 @@ function merci_validate_default_availability($node) {
     $time = gmdate('Y-m-d H:i:s');
 
     // Pull any incomplete reservations that use the item in question
-    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {$table} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.vid = ctn.vid WHERE md.item_nid = %d AND $column_end_date >= '%s' AND NOT (md.item_status <= %d)", $node->nid, $time, MERCI_ITEM_STATUS_AVAILABLE);
+    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {{$table}} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.vid = ctn.vid WHERE md.item_nid = %d AND $column_end_date >= '%s' AND NOT (md.item_status <= %d)", $node->nid, $time, MERCI_ITEM_STATUS_AVAILABLE);
 
     $bad_reservations = array();
     while ($reservation = db_fetch_object($reservations)) {
@@ -1054,7 +1054,7 @@ function merci_delete_item_validate($node, $single = TRUE) {
 
     // Join on nid here so that any version of the reservation that contains
     // the item is caught.
-    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {$table} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.nid = ctn.nid WHERE md.item_nid = %d ORDER BY ct.nid, ct.vid", $node->nid);
+    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {{$table}} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.nid = ctn.nid WHERE md.item_nid = %d ORDER BY ct.nid, ct.vid", $node->nid);
 
     $bad_reservations = array();
     while ($reservation = db_fetch_object($reservations)) {
@@ -1095,7 +1095,7 @@ function merci_node_type_save_validate($form, &$form_state) {
     $type_setting = $values['merci_type_setting'];
 
     // Pull all active reservations that use the node type.
-    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {$table} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.vid = ctn.vid INNER JOIN {merci_{$type_setting}_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = '%s' AND m.sub_type = %d AND $column_end_date >= '%s' AND NOT (md.item_status <= %d)", $values['old_type'], MERCI_SUB_TYPE_RESERVATION, $time, MERCI_ITEM_STATUS_CHECKED_IN);
+    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {{$table}} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.vid = ctn.vid INNER JOIN {merci_{{$type_setting}}_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = '%s' AND m.sub_type = %d AND $column_end_date >= '%s' AND NOT (md.item_status <= %d)", $values['old_type'], MERCI_SUB_TYPE_RESERVATION, $time, MERCI_ITEM_STATUS_CHECKED_IN);
 
     $bad_reservations = array();
     while ($reservation = db_fetch_object($reservations)) {
@@ -1127,7 +1127,7 @@ function merci_delete_node_type_validate($type) {
 
     // Join on nid here so that any version of the reservation that contains
     // the bucket/resource is caught.
-    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {$table} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.nid = ctn.nid INNER JOIN {merci_{$settings->type_setting}_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = '%s' AND m.sub_type = %d ORDER BY ct.nid, ct.vid", $settings->type, MERCI_SUB_TYPE_RESERVATION);
+    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {{$table}} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.nid = ctn.nid INNER JOIN {merci_{{$settings->type_setting}}_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = '%s' AND m.sub_type = %d ORDER BY ct.nid, ct.vid", $settings->type, MERCI_SUB_TYPE_RESERVATION);
 
     $bad_reservations = array();
     while ($reservation = db_fetch_object($reservations)) {
@@ -1568,7 +1568,7 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
   //      of the this reservation where the item is in an already reserved state.
   //   3. Allows a reservation to be excluded from the exclusions if necessary (this
   //      is usually used to allow an already assigned item to not conflict with itself.
-  $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_{$merci_type}_node} m ON n.vid = m.vid WHERE (m.default_availability IN (%d, %d) AND n.type = '%s' AND m.sub_type = %d AND n.nid NOT IN (SELECT md2.item_nid FROM {$table} ct INNER JOIN {merci_reservation_detail} md2 ON ct.vid = md2.vid INNER JOIN {merci_{$merci_type}_node} m2 ON md2.item_nid = m2.nid INNER JOIN {node} ctn ON ctn.vid = ct.vid INNER JOIN {node} m2n ON m2.vid = m2n.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s')) AND NOT (md2.item_status <= %d)$inner_where)) ORDER BY n.title", $args);
+  $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_{{$merci_type}}_node} m ON n.vid = m.vid WHERE (m.default_availability IN (%d, %d) AND n.type = '%s' AND m.sub_type = %d AND n.nid NOT IN (SELECT md2.item_nid FROM {{$table}} ct INNER JOIN {merci_reservation_detail} md2 ON ct.vid = md2.vid INNER JOIN {merci_{{$merci_type}}_node} m2 ON md2.item_nid = m2.nid INNER JOIN {node} ctn ON ctn.vid = ct.vid INNER JOIN {node} m2n ON m2.vid = m2n.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s')) AND NOT (md2.item_status <= %d)$inner_where)) ORDER BY n.title", $args);
 
   $options = array();
   while ($item = db_fetch_object($items)) {
@@ -1616,7 +1616,7 @@ function merci_get_available_bucket_count($content_type, $start, $end, $reservat
   }
 
   // Pull reserved bucket items for the period of the reservation.
-  $reserved_items = (int) db_result(db_query("SELECT COUNT(md.nid) FROM {$table} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {merci_bucket_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} ctn ON ct.vid = ctn.vid INNER JOIN {node} mn ON m.vid = mn.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s')) AND mn.type = '%s' AND NOT (md.item_status <= %d)$where", $args));
+  $reserved_items = (int) db_result(db_query("SELECT COUNT(md.nid) FROM {{$table}} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {merci_bucket_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} ctn ON ct.vid = ctn.vid INNER JOIN {node} mn ON m.vid = mn.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s')) AND mn.type = '%s' AND NOT (md.item_status <= %d)$where", $args));
 
   return $total_items - $reserved_items;
 }
