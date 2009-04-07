@@ -1744,20 +1744,19 @@ function merci_node_validate($form, &$form_state) {
     //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restrictions
     if (!user_access('administer MERCI')) {
 
-    // Can't start or end a reservation on days that are
-    // closed dates.
-    if (in_array($start_month_day, $hours_of_operation['closed_days'])) {
-      $name = date_format($start_object, 'F jS');
-      form_set_error('field_merci_date][0][value][date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
-    } 
-    if (in_array($end_month_day, $hours_of_operation['closed_days'])) {
-      $name = date_format($end_object, 'F jS');
-      form_set_error('field_merci_date][0][value2][date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
-    }
-
-    // Can't start or end a reservation on a day the facility
-    // has no hours of operation, or outside hours of operation.
-    
+	  // Can't start or end a reservation on days that are
+	  // closed dates.
+	  if (in_array($start_month_day, $hours_of_operation['closed_days'])) {
+	    $name = date_format($start_object, 'F jS');
+	    form_set_error('field_merci_date][0][value][date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
+	  } 
+	  if (in_array($end_month_day, $hours_of_operation['closed_days'])) {
+	    $name = date_format($end_object, 'F jS');
+	    form_set_error('field_merci_date][0][value2][date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
+	  }
+	
+	  // Can't start or end a reservation on a day the facility
+	  // has no hours of operation, or outside hours of operation.
     
 	  $start_name = date_format($start_object, 'l');
 	  if (!$hours_of_operation[$start_day_of_week]) {
@@ -1875,7 +1874,95 @@ function merci_node_validate($form, &$form_state) {
         }
         // Either a date conflict, or the content type has been deactivated.
         else {
-          $message = t("The dates and times for %name conflict with one or more existing reservations", array('%name' => $title));
+        
+			$count_sql = "SELECT COUNT(n.nid) 
+			FROM {node} n 
+			JOIN {merci_node_type} t
+				ON t.type = n.type
+			WHERE n.status = 1 AND
+			(
+				(
+					t.type_setting = 'bucket'
+					AND n.type = '%s'
+				) OR
+				(
+					t.type_setting = 'resource'
+					AND n.title = '%s'
+				)
+			)";
+        
+          $count = db_result( db_query( $count_sql , $type , $title ) );
+
+          $start_mysql = date( 'Y-m-d' , strtotime( $start ) );
+          $end_mysql = date( 'Y-m-d' , strtotime( $end . ' +1 day' ) );
+
+          $reservations = merci_load_reservations_for_type_in_timespan( $type , $start_mysql , $end_mysql );
+          $reservations_by_date = array();
+          $hours = merci_load_hours_of_operation();
+          
+          $message = '<div> ' . t("The dates and times for %name conflict with one or more existing reservations", array('%name' => $title)) . '</div>';
+
+          $message.= '<div class="merci-availability-key"><span class="available"></span> = available <span class="unavailable"></span> = unavailable</div>';       
+          
+          foreach ( $reservations as $date => $times )
+          {
+
+			  $date_timestamp = strtotime( $date );
+	          $hours_date = $hours[ date( 'w' , $date_timestamp ) ];
+	          
+	          if ( isset( $hours_date['open'] ) )
+	          {
+
+		          $message.= '<table class="merci-availability-schedule"><thead><tr>';
+		          
+		          $message.= '<th>' . date( 'm/d/Y' , $date_timestamp ) . '</th>';
+		       
+		          $time = $hours_date['open'];
+		          
+		          while ( $time < $hours_date['close'] )
+		          {
+		          
+		            $message.= '<th colspan="4">' . date( 'g:i a' , strtotime( $time ) ) . '</th>';
+		            
+		            $time = date( 'H:i' , strtotime( $time . ' +1 hour' ) ); 
+		          
+		          }
+		          		          
+		          $message.= '</tr></thead><tbody>';
+		          
+		          for ( $i = 1; $i <= $count; $i++ )
+		          {
+		          
+			          $message.= '<tr><th>' . htmlspecialchars( $title );
+			          
+			          if ( $count > 1 ) $message.= ' ' . $i . '/' . $count;
+			          
+			          $message.= '</th>';
+			          
+			          $time = $hours_date['open'];
+			          
+			          while ( $time < $hours_date['close'] )
+			          {
+			          
+			          	if ( $times[ $time . ':00' ] >= $i )
+			          		$message.= '<td class="unavailable"></td>';
+			          	else
+			          		$message.= '<td class="available"></td>';
+			          			          
+			         	$time = date( 'H:i' , strtotime( $time . ' +15 minutes' ) ); 
+			          
+			          } // while
+			          
+			          $message.= '</tr>';
+		          
+		          } // for
+		          
+		          $message.= '</tbody></table>';
+	          
+	          } // if
+          
+          } // foreach
+          
         }
         form_set_error("choice][$num][item", $message);
       }
@@ -1889,6 +1976,83 @@ function merci_node_validate($form, &$form_state) {
     }
   }
 }
+
+/**
+ * Builds an array representing reservations for a given bucket within a given timespan
+ *
+ * @return
+ *   An associative array with keys as times (in MySQL datetime format) and values as number of reservations.
+ */
+
+function merci_load_reservations_for_type_in_timespan( $type , $start_date , $end_date )
+{
+	
+	$timezone_offset = variable_get( 'date_default_timezone' , 0 );
+	
+	$reservation_counts = array();
+
+	$datetime = strtotime( $start_date . ' 00:00:00' );
+	
+	while ( date( 'Y-m-d' , $datetime ) < $end_date )
+	{
+	
+		$date = date( 'Y-m-d' , $datetime );
+		$time = date( 'H:i:s' , $datetime );
+
+		if ( ! isset( $reservation_counts[ $date ] ) )
+			$reservation_counts[ $date ] = array();
+
+		$reservation_counts[ $date ][ $time ] = 0;
+
+		$datetime = strtotime( $date . ' ' . $time . ' +15 minutes' );
+	
+	} // while
+
+	// ! Get reservation times from database
+
+	$reservation_times = array();
+	
+	$sql = "SELECT r.field_merci_date_value AS start, r.field_merci_date_value2 AS end
+	FROM merci_reservation_detail d
+	JOIN node n
+		ON n.nid = d.placeholder_nid
+	JOIN content_type_merci_reservation r
+		ON r.vid = d.vid
+	WHERE n.type = '%s'
+	AND r.field_merci_date_value < '%s'
+	AND r.field_merci_date_value2 >= '%s'";
+
+	$times = db_query( $sql , $type , $end_date , $start_date );
+	
+    while ( $reservation_time = db_fetch_object( $times ) )
+		$reservation_times[] = $reservation_time;
+	
+	// ! Update reservation counts
+
+	foreach ( $reservation_times as $reservation_time )
+	{
+	
+		$datetime = $reservation_time -> start;
+			
+		while ( $datetime < $reservation_time -> end )
+		{
+		
+			list( $date , $time ) = explode( ' ' , $datetime );
+			
+			$time = date( 'H:i:s' , strtotime( $time ) + $timezone_offset );
+				
+			if ( isset( $reservation_counts[ $date ][ $time ] ) )
+				$reservation_counts[ $date ][ $time ]++;
+				
+			$datetime = date( 'Y-m-d H:i:s' , strtotime( $datetime . ' +15 minutes' ) );
+		
+		} // while
+	
+	} // foreach
+	
+	return $reservation_counts;
+
+} // merci_load_reservations_for_type_in_timespan
 
 /**
  * Builds an array representing the hours of operation for the facility.
