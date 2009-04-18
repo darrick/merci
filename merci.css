@@ -4,6 +4,15 @@ div.existing-items-table-header {
 	padding-top: 20px;
 }
 
+span.edit-details span.complete {
+	color: #c90;
+	font-size: 1.5em;
+	}
+
+span.edit-details span.admin {	
+	color: #0c0;
+	}
+
 table.merci-availability-schedule {
 	border-collapse: collapse;
 	}

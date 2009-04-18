@@ -38,6 +38,7 @@ define('MERCI_ITEM_STATUS_CHECKED_IN', -1);
  */
 function merci_init() {
   drupal_add_css(drupal_get_path('module', 'merci') .'/merci.css');
+  drupal_add_js(drupal_get_path('module', 'merci') .'/merci.js');
 }
 
 /**
@@ -351,6 +352,14 @@ function merci_menu() {
     'access arguments' => $admin,
     'description' => t('Configure system settings for MERCI.'),
   );
+  $items['merci/taxonomy'] = array(
+    'title' => 'JSON interface for node taxonomy',
+    'description' => 'Takes a node ID and returns taxonomy data as JSON',
+    'page arguments' => array(2),
+    'page callback' => 'merci_taxonomy_json',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+   );
 
   return $items;
 }
@@ -1460,7 +1469,7 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
     $operations = '';
     $placeholder_node = node_load($item->pnid);
     if (node_access('update', $placeholder_node)) {
-      $operations .= l(t('edit details'), "node/$item->pnid/edit", array('query' => drupal_get_destination()));
+      $operations .= '<span class="edit-details" id="merci-id-' . $item -> pnid . '">' . l(t('edit details'), "node/$item->pnid/edit", array('query' => drupal_get_destination())) . '</span>';
     }
     if ($edit_page && node_access('delete', $placeholder_node)) {
       $operations .= ' &nbsp;&nbsp;'. l(t('delete'), "node/$item->pnid/delete", array('query' => drupal_get_destination()));
@@ -1639,7 +1648,7 @@ function theme_merci_build_reservation_table_form($form) {
     $rows[] = array(
       $item,
       $form['#table'][$did]['type'],
-      $form['#table'][$did]['ops'],
+      $form['#table'][$did]['ops'] ,
     );
   }
 
@@ -2244,3 +2253,165 @@ function merci_check_existing_bucket_items($type, $status = FALSE) {
   $existing_items = db_result(db_query("SELECT nid FROM {node} WHERE type = '%s'$where", $type));
   return $existing_items;
 }
+
+/**
+ * Returns totals for reporting.
+ *
+ * @param $type
+ *   The bucket or resrouce node type.
+ * @param $startdate
+ *   TRUE to restrict to published items, FALSE otherwise.
+ * @return
+ *   Total reservation number for that type betweent the start and end dates
+ */
+function merci_reservation_totals($type, $startdate, $enddate) {
+  $result = db_query("SELECT COUNT(nid) as total  FROM node WHERE type LIKE '$type' and status = 0 AND created > $startdate AND created < $enddate");
+  $reservationnode = db_fetch_object($result);
+  return $reservationnode->total;
+}
+
+/**
+ * Sort by vid
+ *
+ * @param $a
+ *   The first object.
+ * @param $b
+ *   The second object
+ * @return
+ *   0,1, or -1 indicating which object has a higher VID
+ */
+ 
+function merci_by_vid()
+{
+
+	if ( $a -> vid == $b -> vid ) return 0;
+	return ( $a -> vid > $b -> vid ) ? -1 : 1;
+
+} // merci_by_vid
+
+/**
+ * Get taxonomy data as JSON for a node
+ *
+ * @param $node_id
+ *   The node ID.
+ * @return
+ *   JSON string of taxonomy data
+ */
+
+function merci_taxonomy_json( $node_id )
+{
+
+	$node = node_load( $node_id );
+	$output = array();
+
+	if ( node_access( 'update' , $node ) )
+	{
+	
+		// Current user has access to update this node
+	
+		$vocabularies = taxonomy_get_vocabularies( $node -> type );
+	
+		if ( isset( $_POST['taxonomy'] ) )
+		{
+		
+			// Changes to taxonomy sent
+		
+			$required_sent = true;
+			
+			// Make sure all required vocabularies were sent
+		
+			foreach ( $vocabularies as $vocabulary )
+			{
+			
+				if (
+					( $vocabulary -> required ) &&
+					( ! isset( $_POST['taxonomy'][ $vocabulary -> vid ] ) ) 
+				) $required_sent = false;
+			
+			} // foreach
+		
+			if ( $required_sent )
+			{
+			
+				// Save new node revision, clear taxonomy, and re-add sent terms
+			
+				node_save( $node );
+				taxonomy_node_delete_revision( $node );
+						
+				foreach ( $_POST['taxonomy'] as $vocabulary => $terms )
+				{
+				
+					foreach ( $terms as $id => $term_id )
+					{
+					
+						db_query( 'INSERT INTO {term_node} (nid, vid, tid) VALUES (%d, %d, %d)' , $node -> nid , $node -> vid , $term_id );
+				
+					} // foreach
+				
+				} // foreach
+						
+				$output['status'] = 'success';
+				$output['node'] = $node_id;
+
+			} // if
+			else
+			{
+			
+				// Missing required vocabulary
+			
+				$output['status'] = 'failed';
+				$output['error'] = 'Required fields not selected.';
+			
+			} // else
+		
+		} // if
+		else
+		{
+		
+			// Get last author admin status and node ID
+		
+			$user = user_load( $node -> revision_uid );
+	
+			$output['node'] = $node_id;
+			$output['vocabularies'] = array();
+			$output['admin'] = user_access( 'administer MERCI' , $user );
+
+			usort( $vocabularies , 'merci_by_vid' );
+			
+			// Get the select HTML and previously selected options for each vocabulary
+			
+			foreach ( $vocabularies as $vocabulary )
+			{
+			
+				$select = taxonomy_form( $vocabulary -> vid );
+				$select['#name'] = 'taxonomy[' . $vocabulary -> vid . ']';
+				$select['#parents'] = array();
+				$select_html = theme_select( $select );
+	
+				$vocabulary_output = array(
+					'select' => $select_html ,
+					'selected' => array()
+				);
+				
+				foreach ( $node -> taxonomy as $tid => $term )
+					$vocabulary_output['selected'][] = $tid;
+					
+				$output['vocabularies'][] = $vocabulary_output;
+					
+			} // foreach
+
+		} // else
+
+	} // if
+	else
+	{
+	
+		// No permission
+	
+		$output['error'] = 'Permission denied.';
+
+	} // else
+	
+	echo json_encode( $output );
+
+} // merci_taxonomy_json
