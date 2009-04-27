@@ -18,6 +18,7 @@ define('MERCI_STATUS_CHECKED_OUT', 3);
 define('MERCI_STATUS_CHECKED_IN', 4);
 define('MERCI_STATUS_CANCELLED', 5);
 define('MERCI_STATUS_DENIED', 6);
+define('MERCI_STATUS_NO_SHOW', 7);
 
 // Bucket/resource status options.
 define('MERCI_STATUS_ACTIVE', 1);
@@ -311,6 +312,14 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#element_validate' => array('merci_is_numeric_validate'),
         '#description' => t('The number of hours the item can be used before fees are charged.'),
       );
+      $form['merci']['merci_min_cancel_hours'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Minimum hours for cancelation without No Show'),
+        '#size' => 10,
+        '#default_value' => $settings ? $settings->min_cancel_hours : 0,
+        '#element_validate' => array('merci_is_numeric_validate'),
+        '#description' => t('Minimum number of hours a user can cancel a reservation for the item.'),
+      );
       break;
     case 'node_delete_confirm':
       $node = node_load((int) arg(1));
@@ -357,6 +366,14 @@ function merci_menu() {
     'description' => 'Takes a node ID and returns taxonomy data as JSON',
     'page arguments' => array(2),
     'page callback' => 'merci_taxonomy_json',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+   );
+   $items['merci/contract'] = array(
+    'title' => 'Printable contract',
+    'description' => 'Takes a node ID and returns a printable contract',
+    'page arguments' => array(2),
+    'page callback' => 'merci_printable_contract',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
    );
@@ -432,6 +449,30 @@ function merci_admin_settings() {
     '#cols' => 5,  // TODO: this doesn't seem to work...
     '#default_value' => variable_get('merci_closed_dates', ''),
     '#description' => t('<div>Enter dates which are closed regardless of the day of the week, one date per line, in the format <em>mm-dd</em></div>ex. <em>07-04</em> would mean July 4th is always closed, regardless of what day of the week it falls on.'),
+  );
+  $form['merci_contract_header'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Contract header'),
+    '#rows' => 10,
+    '#cols' => 5,  // TODO: this doesn't seem to work...
+    '#default_value' => variable_get('merci_contract_header', ''),
+    '#description' => t('Header portion of printable contract.  Allows HTML.'),
+  );
+   $form['merci_contract_boilerplate'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Contract boilerplate'),
+    '#rows' => 10,
+    '#cols' => 5,  // TODO: this doesn't seem to work...
+    '#default_value' => variable_get('merci_contract_boilerplate', ''),
+    '#description' => t('Legalese that makes the contract legally binding.'),
+  );
+   $form['merci_contract_footer'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Contract footer'),
+    '#rows' => 10,
+    '#cols' => 5,  // TODO: this doesn't seem to work...
+    '#default_value' => variable_get('merci_contract_footer', ''),
+    '#description' => t('Footer portion of printable contract.  Normally includes signature lines.  Allows HTML.'),
   );
 
   return system_settings_form($form);
@@ -1205,6 +1246,7 @@ function merci_record_status($code = NULL) {
     MERCI_STATUS_CHECKED_IN => t('Checked in'),
     MERCI_STATUS_CANCELLED => t('Cancelled'),
     MERCI_STATUS_DENIED => t('Denied'),
+    MERCI_STATUS_DENIED => t('No Show'),
   );
   if (isset($code)) {
     return $types[$code];
@@ -1232,15 +1274,16 @@ function merci_node_type_save_submit($form, &$form_state) {
     'merci_fee_free_hours_',
     'merci_status_',
     'merci_spare_items_',
+    'merci_min_cancel_hours_',
   );
   foreach ($variables as $variable) {
   	variable_del($variable . $merci['type']);
   }
 
   if ($form_state['clicked_button']['#value'] == t('Save content type')) {
-    db_query("UPDATE {merci_node_type} SET type_setting = '%s', max_hours_per_reservation = %d, allow_overnight = %d, allow_weekends = %d, late_fee_per_hour = %d, rate_per_hour = %d, fee_free_hours = %d, status = %d, spare_items = %d WHERE type = '%s'", $merci['merci_type_setting'], $merci['merci_max_hours_per_reservation'], $merci['merci_allow_overnight'], $merci['merci_allow_weekends'], $merci['merci_late_fee_per_hour'], $merci['merci_rate_per_hour'], $merci['merci_fee_free_hours'], $merci['merci_status'], $merci['merci_spare_items'], $merci['type']);
+    db_query("UPDATE {merci_node_type} SET type_setting = '%s', max_hours_per_reservation = %d, allow_overnight = %d, allow_weekends = %d, late_fee_per_hour = %d, rate_per_hour = %d, fee_free_hours = %d, status = %d, spare_items = %d, min_cancel_hours = %d WHERE type = '%s'", $merci['merci_type_setting'], $merci['merci_max_hours_per_reservation'], $merci['merci_allow_overnight'], $merci['merci_allow_weekends'], $merci['merci_late_fee_per_hour'], $merci['merci_rate_per_hour'], $merci['merci_fee_free_hours'], $merci['merci_status'], $merci['merci_spare_items'], $merci['merci_min_cancel_hours'], $merci['type']);
     if (!db_affected_rows()) {
-      db_query("INSERT INTO {merci_node_type} (type, type_setting, max_hours_per_reservation, allow_overnight, allow_weekends, late_fee_per_hour, rate_per_hour, fee_free_hours, status, spare_items) VALUES ('%s', '%s', %d, %d, %d, %d, %d, %d, %d, %d)", $merci['type'], $merci['merci_type_setting'], $merci['merci_max_hours_per_reservation'], $merci['merci_allow_overnight'], $merci['merci_allow_weekends'], $merci['merci_late_fee_per_hour'], $merci['merci_rate_per_hour'], $merci{'merci_fee_free_hours'}, $merci['merci_status'], $merci['merci_spare_items']);
+      db_query("INSERT INTO {merci_node_type} (type, type_setting, max_hours_per_reservation, allow_overnight, allow_weekends, late_fee_per_hour, rate_per_hour, fee_free_hours, status, spare_items, min_cancel_hours) VALUES ('%s', '%s', %d, %d, %d, %d, %d, %d, %d, %d, %d)", $merci['type'], $merci['merci_type_setting'], $merci['merci_max_hours_per_reservation'], $merci['merci_allow_overnight'], $merci['merci_allow_weekends'], $merci['merci_late_fee_per_hour'], $merci['merci_rate_per_hour'], $merci{'merci_fee_free_hours'}, $merci['merci_status'], $merci['merci_spare_items'], $merci['merci_min_cancel_hours']);
     }
   }
 }
@@ -1656,6 +1699,7 @@ function theme_merci_build_reservation_table_form($form) {
     $table_caption = in_array((int) $node->merci['status'], array(MERCI_STATUS_CHECKED_OUT, MERCI_STATUS_CHECKED_IN)) ? t('Checked out items') : t('Currently reserved items');
     $output .= '<div class="existing-items-table-header">'. $table_caption .'</div>';
     $output .= theme('table', $header, $rows);
+    $output .= '<div><a href="/merci/contract/' . $node -> nid . '">Printable Contract</a></div>';
   }
 
   return $output;
@@ -1711,7 +1755,7 @@ function merci_access($op, $node, $account) {
 function merci_node_validate($form, &$form_state) {
 
   $node = (object) $form_state['values'];
-
+  
   // No validation necessary on deletion.
   if ($form_state['clicked_button']['#id'] != 'edit-delete') {
     // Reservations with a checked out status.
@@ -1975,14 +2019,20 @@ function merci_node_validate($form, &$form_state) {
         }
         form_set_error("choice][$num][item", $message);
       }
+  
     }
+    
+    //if message wasn't set by a validation function
+	if(!$message){
+	  drupal_set_message(t('There are no conflicts with this Reservation. To continue with the process, Save the Reservation.'));
+	}
 
     // Prevent status changes on reservations that have past.
     $current_status = db_result(db_query("SELECT m.status FROM {node} n INNER JOIN {merci_reservation} m ON n.vid = m.vid WHERE n.nid = %d", $node->nid));
     if ($current_status && $current_status != $node->merci_status && time() > strtotime($node->field_merci_date[0]['value2']) && !in_array((int) $node->merci_status, array(MERCI_STATUS_CANCELLED, MERCI_STATUS_CHECKED_IN, MERCI_STATUS_DENIED))) {
       $statuses = merci_record_status();
       form_set_error('merci_status', t('You cannot change the status to %status for a reservation that has past.', array('%status' => $statuses[$node->merci_status])));
-    }
+    } 
   }
 }
 
@@ -2415,3 +2465,116 @@ function merci_taxonomy_json( $node_id )
 	echo json_encode( $output );
 
 } // merci_taxonomy_json
+
+function merci_printable_contract( $node_id )
+{
+
+	$node = node_load( $node_id );
+	$items = $node -> merci['reservation_items'];
+	$hours = round( ( strtotime( $node -> field_merci_date[0]['value2'] ) - strtotime( $node -> field_merci_date[0]['value'] ) ) / 3600 , 2 );
+	$header = variable_get( 'merci_contract_header' , '' );
+		
+	?>
+	<html>
+		<head>
+			<title>Contract</title>
+			<link type="text/css" rel="stylesheet" href="/<?php echo drupal_get_path('module', 'merci'); ?>/contract.css" />
+		</head>
+		<body>
+			<div id="page">
+				<div id="header">
+				
+				<img src="<?php print theme_get_setting( 'logo_path', '') ?>">
+				<h2><?php print variable_get( 'site_name' , '' ); ?> Equipment Rental Contract</h2>
+				<?php print variable_get( 'merci_contract_header' , '' ); ?></div>
+				<table id="cost">
+					<thead>
+						<tr>
+							<th>Item</th>
+							<th>Commercial Cost</th>
+							<th>Member Cost</th>
+						</tr>
+					</thead>
+					<tbody>
+					<?php
+				
+					$commercial_cost_total = 0;
+					$member_cost_total = 0;
+				
+					$even_odd = 'even';
+				
+					foreach ( $items as $item )
+					{
+							
+								
+						$item_node = node_load( $item -> pnid );	
+						
+						$type = merci_load_content_type_settings( $item -> type );
+						$fee_hours = $hours - ( $type -> fee_free_hours );						
+						$commercial_cost = $type -> rate_per_hour * $hours;
+						$member_cost = ( $fee_hours > 0 ) ? $type -> rate_per_hour * $fee_hours : 0;
+					
+						$commercial_cost_total+= $commercial_cost;
+						$member_cost_total+= $member_cost;
+					
+					    if($item -> ttitle){
+					     $ttitle = htmlspecialchars( $item -> ttitle );
+					    } else {
+					     $ttitle = '<b>SPECIFIC ITEM NOT SELECTED FROM BUCKET</b>';
+					    }
+						?>
+						<tr class="<?php echo $even_odd; ?>">
+							<td>
+								<div><?php print $ttitle; ?></div>
+								<?php
+								
+								if ( count( $item_node -> taxonomy ) > 0 )
+								{
+								
+									?>
+									<ul class="accessories">
+									<?php
+																				
+									foreach ( $item_node -> taxonomy as $accessory )
+									{
+									
+										?>
+										<li><?php echo $accessory -> name; ?></li>
+										<?php
+									
+									} // foreach
+										
+									?>
+									</ul>
+									<?php
+								
+								} // if
+								
+								?>
+							</td>
+							<td>$<?php echo $commercial_cost; ?></td>
+							<td>$<?php echo $member_cost; ?></td>
+						</tr>
+						<?php
+						
+						$even_odd = ( $even_odd == 'even' ) ? 'odd' : 'even';
+				
+					} // foreach
+					
+					?>
+					</tbody>
+					<tfoot>
+						<tr class="<?php echo $even_odd; ?>">
+							<th>Total</th>
+							<td>$<?php echo $commercial_cost_total ?></td>
+							<td>$<?php echo $member_cost_total ?></td>
+						</tr>
+					<tfoot>
+				</table>
+				<div id="boilerplate"><?php echo variable_get( 'merci_contract_boilerplate' , '' ); ?></div>
+				<div id="footer"><?php echo variable_get( 'merci_contract_footer' , '' ); ?></div>
+			</div>
+		</body>
+	<?php
+
+} // merci_printable_contract
