@@ -15,66 +15,9 @@ function merci_install() {
   drupal_load('module', 'merci');
   // Create tables.
   drupal_install_schema('merci');
-
   //db_query("UPDATE {system} SET weight = 1 WHERE name = 'merci'");
 
-}
-
-/**
- * Implementation of hook_uninstall().
- */
-function merci_uninstall() {
-
-  // Remove all MERCI variables.
-  $variables = db_query("SELECT name FROM {variable} WHERE name LIKE 'merci_%'");
-  while ($variable = db_fetch_object($variables)) {
-    variable_del($variable->name);
-  }
-
-  // Remove all MERCI content types and all associated nodes.
-  $content_types = db_query("SELECT type FROM {merci_node_type} WHERE type_setting <> 'disabled'");
-  while ($content_type = db_fetch_object($content_types)) {
-    $nodes = db_query("SELECT nid FROM {node} WHERE type = '%s'", $content_type->type);
-    while ($node = db_fetch_object($nodes)) {
-      node_delete($node->nid);
-    }
-  	node_type_delete($content_type->type);
-  }
-
-  // Remove the programatically created reservation node type
-  // and all associated nodes.
-  $nodes = db_query("SELECT nid FROM {node} WHERE type = 'merci_reservation'");
-  while ($node = db_fetch_object($nodes)) {
-    node_delete($node->nid);
-  }
-  node_type_delete('merci_reservation');
-
-  // You'd think the uninstall submit function would take care of this
-  // but it doesn't look like it.
-  node_types_rebuild();
-  menu_rebuild();
-
-  // Remove field_merci_date.
-  module_load_include('inc', 'content', 'includes/content.crud');
-  content_field_instance_delete('field_merci_date', 'merci_reservation');
-
-  // Remove tables.
-  drupal_uninstall_schema('merci');
-}
-
-/**
- * Implementation of hook_enable().
- */
-function merci_enable() {
-
-  // Not sure if we need this.
-  module_enable(array('date'));
-  // Create the date field for the reservation, if not yet created.
-
-  $field = content_fields('field_merci_date');
-
-  if(!isset($field)){
-
+  // Create the date field for the reservation.
   $field = array(
     'field_name' => 'field_merci_date',
     'type_name' => 'merci_reservation',
@@ -160,7 +103,54 @@ function merci_enable() {
   // Create the field.
   content_field_instance_create($field);
 
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function merci_uninstall() {
+
+  // Remove all MERCI variables.
+  $variables = db_query("SELECT name FROM {variable} WHERE name LIKE 'merci_%'");
+  while ($variable = db_fetch_object($variables)) {
+    variable_del($variable->name);
   }
+
+  // Remove all MERCI content types and all associated nodes.
+  $content_types = db_query("SELECT type FROM {merci_node_type} WHERE type_setting <> 'disabled'");
+  while ($content_type = db_fetch_object($content_types)) {
+    $nodes = db_query("SELECT nid FROM {node} WHERE type = '%s'", $content_type->type);
+    while ($node = db_fetch_object($nodes)) {
+      node_delete($node->nid);
+    }
+  	node_type_delete($content_type->type);
+  }
+
+  // Remove the programatically created reservation node type
+  // and all associated nodes.
+  $nodes = db_query("SELECT nid FROM {node} WHERE type = 'merci_reservation'");
+  while ($node = db_fetch_object($nodes)) {
+    node_delete($node->nid);
+  }
+  node_type_delete('merci_reservation');
+
+  // You'd think the uninstall submit function would take care of this
+  // but it doesn't look like it.
+  node_types_rebuild();
+  menu_rebuild();
+
+  // Remove field_merci_date.
+  module_load_include('inc', 'content', 'includes/content.crud');
+  content_field_instance_delete('field_merci_date', 'merci_reservation');
+
+  // Remove tables.
+  drupal_uninstall_schema('merci');
+}
+
+/**
+ * Implementation of hook_enable().
+ */
+function merci_enable() {
   // Add any node types to the MERCI tables that aren't already there.
   $existing_types = db_query("SELECT type FROM {merci_node_type}");
   $types = array();
@@ -250,6 +240,12 @@ function merci_schema() {
         'not null' => TRUE,
         'default' => 0,
         'description' => t("Number of spare items to leave unreserved for the resource."),
+      ),
+      'min_cancel_hours' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Minimum number of hours a user can cancel a reservation for the item."),
       ),
     ),
     'primary key' => array('type'),
@@ -456,4 +452,11 @@ function merci_schema() {
   // $schema[merci_resgroups'] = array();
 
   return $schema;
+}
+
+function merci_update_1() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE merci_bucket_node ADD min_cancel_hours TINYINT NOT NULL DEFAULT '0';");
+  $ret[] = update_sql("ALTER TABLE merci_resource_node ADD min_cancel_hours TINYINT NOT NULL DEFAULT '0';");
+  return $ret;
 }
