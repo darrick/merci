@@ -46,7 +46,7 @@ function merci_init() {
  * Implementation of hook_perm().
  */
 function merci_perm() {
-  return array('create reservations', 'administer MERCI');
+  return array('create reservations', 'create confirmed reservations', 'membership discount','administer MERCI');
 }
 
 /**
@@ -406,6 +406,77 @@ function merci_menu() {
  */
 function merci_admin_settings() {
   $form = array();
+  
+  $statuses = array();
+
+  $statuses[MERCI_STATUS_UNCONFIRMED] = t('Unconfirmed');
+  $statuses[MERCI_STATUS_PENDING] = t('Pending');
+  $statuses[MERCI_STATUS_CHECKED_OUT] =  t('Checked Out');
+  
+  $form['merci_default_reservation_status'] = array(
+    '#type' => 'select',
+    '#title' => t('Default Reservation Status'),
+    '#options' => $statuses,
+    '#default_value' => variable_get('merci_default_reservation_status', ''),
+    '#description' => t('New Reservations will be set to this by default.  Use Checked Out if you are using MERCI to manage the checkout, but do not allow actual Reservations.'),
+  );
+  
+  $form['merci_email_receipt'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Send Email Recepit'),
+    '#default_value' => variable_get('merci_email_receipt', 0),
+    '#description' => t('Use when default Reservation Status is Unconfirmed'),
+  );
+  
+  $form['merci_email_confirmation'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Send Email Confirmation'),
+    '#default_value' => variable_get('merci_email_confirmation', 0),
+    '#description' => t('Add link to change reservations from Unconfirmed to Confirmed'),
+  );
+  
+  $form['merci_saturday_is_weekend'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Saturday is a considered weekend'),
+    '#default_value' => variable_get('merci_saturday_is_weekend', 1),
+  );
+  
+   $form['merci_sunday_is_weekend'] = array( 
+    '#type' => 'checkbox',
+    '#title' => t('Sunday is a considered weekend'),
+    '#default_value' => variable_get('merci_sunday_is_weekend', 1),
+  );
+  
+  $form['merci_monday_is_weekend'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Monday is considered a weekend'),
+    '#default_value' => variable_get('merci_monday_is_weekend', 0),
+  );
+  
+   $form['merci_tuesday_is_weekend'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Tuesday is considered a weekend'),
+    '#default_value' => variable_get('merci_tuesday_is_weekend', 0),
+  );
+  
+   $form['merci_wednesday_is_weekend'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Wednesday is considered a weekend'),
+    '#default_value' => variable_get('merci_wednesday_is_weekend', 0),
+  );
+  
+   $form['merci_thursday_is_weekend'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Thursday is considered a weekend'),
+    '#default_value' => variable_get('merci_thrusday_is_weekend', 0),
+  );
+  
+   $form['merci_friday_is_weekend'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Firday is a considered weekend'),
+    '#default_value' => variable_get('merci_firday_is_weekend', 0),
+  );
+  
   $form['merci_hours_mon'] = array(
     '#type' => 'textfield',
     '#title' => t('Monday hours'),
@@ -469,6 +540,14 @@ function merci_admin_settings() {
     '#cols' => 5,  // TODO: this doesn't seem to work...
     '#default_value' => variable_get('merci_closed_dates', ''),
     '#description' => t('<div>Enter dates which are closed regardless of the day of the week, one date per line, in the format <em>mm-dd</em></div>ex. <em>07-04</em> would mean July 4th is always closed, regardless of what day of the week it falls on.'),
+  );
+    $form['merci_membership_discount'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Membership discount'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_membership_discount', ''),
+    '#description' => t('Percent comercial rate is reduced for users in a role with member discount permission. Enter as decimal.  50% would be .50'),
   );
   $form['merci_contract_header'] = array(
     '#type' => 'textarea',
@@ -543,7 +622,7 @@ function merci_form(&$node, $form_state) {
     $merci = $node->merci;
   }
   else {
-    $merci['status'] = MERCI_STATUS_UNCONFIRMED;
+    $merci['status'] = variable_get('merci_default_reservation_status', MERCI_STATUS_UNCONFIRMED);
   }
 
   // Choice adding code mostly stolen from poll module.
@@ -598,7 +677,7 @@ function merci_form(&$node, $form_state) {
       '#collapsible' => TRUE,
       '#collapsed' => FALSE,
     );
-
+    
     $form['merci']['merci_status'] = array(
       '#title' => t('Status'),
       '#type' => 'radios',
@@ -1532,7 +1611,7 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
     $operations = '';
     $placeholder_node = node_load($item->pnid);
     if (node_access('update', $placeholder_node)) {
-      $operations .= '<span class="edit-details" id="merci-id-' . $item -> pnid . '">' . l(t('edit details'), "node/$item->pnid/edit", array('query' => drupal_get_destination())) . '</span>';
+      $operations .= '<span class="edit-details" id="merci-id-' . $item -> pnid . '">' . l(t('Add accessories'), "node/$item->pnid/edit", array('query' => drupal_get_destination())) . '</span>';
     }
     if ($edit_page && node_access('delete', $placeholder_node)) {
       $operations .= ' &nbsp;&nbsp;'. l(t('delete'), "node/$item->pnid/delete", array('query' => drupal_get_destination()));
@@ -1719,7 +1798,9 @@ function theme_merci_build_reservation_table_form($form) {
     $table_caption = in_array((int) $node->merci['status'], array(MERCI_STATUS_CHECKED_OUT, MERCI_STATUS_CHECKED_IN)) ? t('Checked out items') : t('Currently reserved items');
     $output .= '<div class="existing-items-table-header">'. $table_caption .'</div>';
     $output .= theme('table', $header, $rows);
-    $output .= '<div><a href="/merci/contract/' . $node -> nid . '">Printable Contract</a></div>';
+    if (user_access('administer MERCI')) {
+	   $output .= '<div><a href="/merci/contract/' . $node -> nid . '">Printable Contract</a></div>';
+	}
   }
 
   return $output;
@@ -2549,7 +2630,7 @@ function merci_printable_contract( $node_id )
 					</thead>
 					<tbody>
 					<?php
-				
+				    $discount = variable_get( 'merci_membership_discount', 1 );
 					$commercial_cost_total = 0;
 					$member_cost_total = 0;
 				
@@ -2564,7 +2645,7 @@ function merci_printable_contract( $node_id )
 						$type = merci_load_content_type_settings( $item -> type );
 						$fee_hours = $hours - ( $type -> fee_free_hours );						
 						$commercial_cost = $type -> rate_per_hour * $hours;
-						$member_cost = ( $fee_hours > 0 ) ? $type -> rate_per_hour * $fee_hours : 0;
+						$member_cost = ( $fee_hours > 0 ) ? ($type -> rate_per_hour * $discount ) * $fee_hours : 0;
 					
 						$commercial_cost_total+= $commercial_cost;
 						$member_cost_total+= $member_cost;
