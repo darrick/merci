@@ -247,6 +247,27 @@ function merci_schema() {
         'default' => 0,
         'description' => t("Minimum number of hours a user can cancel a reservation for the item."),
       ),
+      'autocheckout' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("TRUE if the resource is automatically checked out when Reservation starts."),
+      ),
+      'autocheckin' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("TRUE if the resource is automatically checked in when Reservation starts."),
+      ),
+      'selfcheckout' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("TRUE if the resource is managed by selfcheckout."),
+      ),
     ),
     'primary key' => array('type'),
   );
@@ -311,12 +332,6 @@ function merci_schema() {
         'default' => 0,
         'description' => t('The status of the item associated in the item_nid column.'),
       ),
-      'min_cancel_hours' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => t("Minimum number of hours a user can cancel a reservation for the item."),
-      ),
     ),
     'primary key' => array('did'),
     'indexes' => array(
@@ -365,17 +380,38 @@ function merci_schema() {
         'default' => 0,
         'description' => t("Number of hours the item can be used before fees are charged."),
       ),
-      'sub_type' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => MERCI_SUB_TYPE_ITEM,
-        'description' => t("The subtype of bucket node, either item or reservation."),
-      ),
       'min_cancel_hours' => array(
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
         'description' => t("Minimum number of hours a user can cancel a reservation for the item."),
+      ),
+      'autocheckout' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("TRUE if the resource is automatically checked out when Reservation starts."),
+      ),
+      'autocheckin' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("TRUE if the resource is automatically checked in when Reservation starts."),
+      ),
+      'selfcheckout' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("TRUE if the resource is managed by selfcheckout."),
+      ),
+      'sub_type' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => MERCI_SUB_TYPE_ITEM,
+        'description' => t("The subtype of bucket node, either item or reservation."),
       ),
     ),
     'primary key' => array('nid', 'vid'),
@@ -420,6 +456,33 @@ function merci_schema() {
         'not null' => TRUE,
         'default' => 0,
         'description' => t("Number of hours the item can be used before fees are charged."),
+      ),
+      'min_cancel_hours' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Minimum number of hours a user can cancel a reservation for the item."),
+      ),
+      'autocheckout' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("TRUE if the resource is automatically checked out when Reservation starts."),
+      ),
+      'autocheckin' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("TRUE if the resource is automatically checked in when Reservation starts."),
+      ),
+      'selfcheckout' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("TRUE if the resource is managed by selfcheckout."),
       ),
       'sub_type' => array(
         'type' => 'int',
@@ -468,13 +531,16 @@ function merci_schema() {
 
 function merci_update_1() {
   $ret = array();
-  $ret[] = update_sql("ALTER TABLE merci_bucket_node ADD min_cancel_hours TINYINT NOT NULL DEFAULT '0';");
-  $ret[] = update_sql("ALTER TABLE merci_resource_node ADD min_cancel_hours TINYINT NOT NULL DEFAULT '0';");
+  $ret[] = update_sql("ALTER TABLE {merci_bucket_node} ADD min_cancel_hours TINYINT NOT NULL DEFAULT '0';");
+  $ret[] = update_sql("ALTER TABLE {merci_resource_node} ADD min_cancel_hours TINYINT NOT NULL DEFAULT '0';");
+  $ret[] = update_sql("ALTER TABLE {merci_node_type} ADD min_cancel_hours TINYINT NOT NULL DEFAULT '0';");
   return $ret;
 }
 
-function merci_update_2() {
+function merci_update_3() {
   $ret = array();
-  $ret[] = update_sql("ALTER TABLE merci_node_type ADD min_cancel_hours TINYINT NOT NULL DEFAULT '0';");
+  $ret[] = update_sql("ALTER TABLE {merci_bucket_node} ADD autocheckout TINYINT NOT NULL DEFAULT '0', ADD autocheckin TINYINT NOT NULL DEFAULT '0', ADD selfcheckout TINYINT NOT NULL DEFAULT '0';");
+  $ret[] = update_sql("ALTER TABLE {merci_resource_node} ADD autocheckout TINYINT NOT NULL DEFAULT '0', ADD autocheckin TINYINT NOT NULL DEFAULT '0', ADD selfcheckout TINYINT NOT NULL DEFAULT '0';");
+  $ret[] = update_sql("ALTER TABLE {merci_node_type} ADD autocheckout TINYINT NOT NULL DEFAULT '0', ADD autocheckin TINYINT NOT NULL DEFAULT '0', ADD slefcheckout TINYINT NOT NULL DEFAULT '0';");
   return $ret;
 }
