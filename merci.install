@@ -537,10 +537,12 @@ function merci_update_1() {
   return $ret;
 }
 
+
+
 function merci_update_3() {
   $ret = array();
   $ret[] = update_sql("ALTER TABLE {merci_bucket_node} ADD autocheckout TINYINT NOT NULL DEFAULT '0', ADD autocheckin TINYINT NOT NULL DEFAULT '0', ADD selfcheckout TINYINT NOT NULL DEFAULT '0';");
   $ret[] = update_sql("ALTER TABLE {merci_resource_node} ADD autocheckout TINYINT NOT NULL DEFAULT '0', ADD autocheckin TINYINT NOT NULL DEFAULT '0', ADD selfcheckout TINYINT NOT NULL DEFAULT '0';");
-  $ret[] = update_sql("ALTER TABLE {merci_node_type} ADD autocheckout TINYINT NOT NULL DEFAULT '0', ADD autocheckin TINYINT NOT NULL DEFAULT '0', ADD slefcheckout TINYINT NOT NULL DEFAULT '0';");
+  $ret[] = update_sql("ALTER TABLE {merci_node_type} ADD autocheckout TINYINT NOT NULL DEFAULT '0', ADD autocheckin TINYINT NOT NULL DEFAULT '0', ADD selfcheckout TINYINT NOT NULL DEFAULT '0';");
   return $ret;
 }
