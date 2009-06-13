@@ -455,7 +455,7 @@ function merci_menu() {
     'access arguments' => $admin,
     'description' => t('Configure system settings for MERCI.'),
   );
-  $items['merci/taxonomy/%node'] = array(
+  $items['merci/taxonomy'] = array(
     'title' => 'JSON interface for node taxonomy',
     'description' => 'Takes a node ID and returns taxonomy data as JSON',
     'page arguments' => array(2),
@@ -707,6 +707,7 @@ function merci_node_type($op, $info) {
  */
 function merci_form(&$node, $form_state) {
   $form = node_content_form($node, $form_state);
+  $template = array();
 
   // Build existing reserved items table on existing reservations.
   if (isset($node->nid)) {
@@ -738,11 +739,29 @@ function merci_form(&$node, $form_state) {
     '#suffix' => '</div>',
     '#theme' => 'merci_choices',
   );
+  
+  if (isset($_GET['template'])) {
+  
+  	$templates = db_query("SELECT nr.body FROM {node_revisions} nr WHERE nid = %d ORDER BY vid DESC LIMIT 1", intval($_GET['template']));
+  
+    while ($template_object = db_fetch_object($templates)) {
+      
+        $template = explode(',', $template_object->body);
+      
+    } // while
+  
+  } // if
 
   // Add the current choices to the form.
-  for ($delta = 0; $delta < $choice_count; $delta++) {
+  for ($delta = 0; $delta < $choice_count || $delta < count($template); $delta++) {
     $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
-
+    
+    if ($default == '' && isset($template[$delta]) ) {
+    
+    	$default = $template[$delta];
+    
+    } // if
+    
     $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default);
   }
 
@@ -2564,8 +2583,6 @@ function merci_by_vid()
  */
 
 function merci_taxonomy_json( $node_id )
-
-
 {
 
 	$node = node_load( $node_id );
@@ -2678,7 +2695,8 @@ else
 		$output['error'] = 'Permission denied.';
 
 	} // else
-//	echo json_encode( $output );
+
+  echo json_encode( $output );
 
 } // merci_taxonomy_json
 
