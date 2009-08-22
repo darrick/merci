@@ -983,65 +983,87 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
 function merci_check_content_type_restrictions($type_settings, $start, $end) {
   //Users in role with Administer MERCI permssion are exempt from content type restrictions
   if (!user_access('administer MERCI')) {
-	$hours_of_operation = merci_load_hours_of_operation();
-	$return = array();
-  
-	// Convert start/end dates to local time.
-	$start_object = merci_create_local_date_object($start);
-	$end_object = merci_create_local_date_object($end);
-  
-	// We want these timestamps generated in UTC.
-	$old_timezone = date_default_timezone_get();
-	date_default_timezone_set('UTC');
-	$start_timestamp = strtotime($start);
-	$end_timestamp = strtotime($end);
-	date_default_timezone_set($old_timezone);
-  
-	$reserved_hours = ($end_timestamp - $start_timestamp) / (60 * 60);
-	$start_day_of_week = date_format($start_object, 'w');
-	$end_day_of_week = date_format($end_object, 'w');
-  
-	// Make sure max hours aren't exceeded.
-	if ($type_settings->max_hours_per_reservation && $reserved_hours > $type_settings->max_hours_per_reservation) {
-	  $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
-	}
-  
-	// Validate allow_overnight.
-	if (!$type_settings->allow_overnight) {
-	  // Need the 48 hour check in case somebody starts and ends their
-	  // reservation on the same day.
-	  if ($start_day_of_week != $end_day_of_week || $reserved_hours > 48) {
-		$return[] = t('%name cannot be reserved overnight.');
-	  }
-	}
-  
-	// Validate allow_weekend.
-	if (!$type_settings->allow_weekends) {
-	  $on_weekend = FALSE;
-	  // Check the start and end dates for the reservation first.
-	  if (in_array($start_day_of_week, array('6', '0')) || in_array($end_day_of_week, array('6', '0'))) {
-		$on_weekend = TRUE;
-	  }
-	  // Check all dates between the start and end dates for the reservation next.
-	  if (!$on_weekend) {
-		$day = 60 * 60 * 24;
-		$counter = $start_timestamp + $day;
-		while ($counter <= $end_timestamp) {
-		  $utc_datetime = gmdate('Y-m-d H:i:s', $counter);
-		  $local_date = merci_create_local_date_object($utc_datetime);
-		  $day_of_week = date_format($local_date, 'w');
-		  if (in_array($day_of_week, array('6', '0'))) {
-			$on_weekend = TRUE;
-			break;
-		  }
-		  $counter += $day;
-		}
-	  }
-	  if ($on_weekend) {
-		$return[] = t('%name cannot be reserved on weekends.');
-	  }
-	}
+    $hours_of_operation = merci_load_hours_of_operation();
+    $return = array();
+
+    // Convert start/end dates to local time.
+    $start_object = merci_create_local_date_object($start);
+    $end_object = merci_create_local_date_object($end);
+
+    // We want these timestamps generated in UTC.
+    $old_timezone = date_default_timezone_get();
+    date_default_timezone_set('UTC');
+    $start_timestamp = strtotime($start);
+    $end_timestamp = strtotime($end);
+    date_default_timezone_set($old_timezone);
+
+    $reserved_hours = ($end_timestamp - $start_timestamp) / (60 * 60);
+    $start_day_of_week = date_format($start_object, 'w');
+    $end_day_of_week = date_format($end_object, 'w');
+
+    // Make sure max hours aren't exceeded.
+    if ($type_settings->max_hours_per_reservation && $reserved_hours > $type_settings->max_hours_per_reservation) {
+
+      // Override max_hours_per_reservation if we can reserve this over the weekend
+      if($type_settings->allow_weekends){
+
+        // Only allow if reserving the day before a weekend day.
+        // TODO check that the end time is not the same day and within the hours of being open.
+        if(is_array($hours_of_operation[date('w',$start_timestamp + 86400)])){
+          $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
+        } 
+
+        // Only extend the max time if the default max time falls on a weekend.
+        if(!is_array($hours_of_operation[date('w',$start_timestamp + $type_settings->max_hours_per_reservation * 60 * 60)])){
+
+          //$return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
+          //Find the next day we are open.
+          for($i = 1; $i <= 6; $i++){
+            if(is_array($hours_of_operation[date('w',$start_timestamp + $i * 86400)])){
+
+              // Does the end_day fall here?
+              // TODO force time to be exactly when open.
+              if($end_day_of_week != date('w',$start_timestamp + $i * 86400)){
+                $return[] = t('%name cannot be reserved more then one day after a weekend.', array('%hours' => $type_settings->max_hours_per_reservation));
+              }
+              break;
+            }
+          }
+        }
+      }
+      else {
+        $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
+      }
+    }
+
+    // Validate allow_overnight.
+    if (!$type_settings->allow_overnight) {
+      // Need the 48 hour check in case somebody starts and ends their
+      // reservation on the same day.
+      if ($start_day_of_week != $end_day_of_week || $reserved_hours > 48) {
+        $return[] = t('%name cannot be reserved overnight.');
+      }
+    }
+
+    // Validate allow_weekend.
+    if (!$type_settings->allow_weekends) {
+      for($i = 0; $i <= 6; $i++){
+
+        $test_day = date('w',$start_timestamp + $i * 86400);
+
+        if($test_day > $end_day_of_week){
+          // Our work here is done.
+          break;
+        } 
+
+        if(!is_array($hours_of_operation[$test_day])){
+          $return[] = t('%name cannot be reserved on weekends.');
+          break;
+        }
+      }
+    }
   }
+
   return $return;
 }
 
