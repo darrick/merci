@@ -1,0 +1,8 @@
+name = MERCI Template
+package = MERCI
+description = "Allows the resuse of previous reservation to prepopulate MERCI"
+
+core = 6.x
+
+dependencies[] = merci
+
