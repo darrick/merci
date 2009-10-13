@@ -298,7 +298,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#type' => 'item',
           '#title' => t('Reservable item type'),
           '#value' => $options[$settings->type_setting],
-          '#description' => t('The setting cannot be change because content already exists for this type.'),
+          '#description' => t('The setting cannot be changed because content already exists for this type.'),
         );
       }
       else {
@@ -515,7 +515,7 @@ function merci_admin_settings() {
   
   $form['merci_email_receipt'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Send Email Recepit'),
+    '#title' => t('Send Email Receipt'),
     '#default_value' => variable_get('merci_email_receipt', 0),
     '#description' => t('Use when default Reservation Status is Unconfirmed'),
   );
@@ -663,7 +663,7 @@ function merci_admin_settings() {
     '#rows' => 10,
     '#cols' => 5,  // TODO: this doesn't seem to work...
     '#default_value' => variable_get('merci_contract_footer', ''),
-    '#description' => t('Footer portion of printable contract.  Normally includes signature lines.  Allows HTML.'),
+    '#description' => t('Footer portion of printable contract. Normally includes signature lines. HTML allowed.'),
   );
 
   return system_settings_form($form);
@@ -770,7 +770,7 @@ function merci_form(&$node, $form_state) {
   $form['choice_wrapper']['merci_more'] = array(
     '#type' => 'submit',
     '#value' => t('Add more items'),
-    '#description' => t("If the amount of items above isn't enough, click here to add more items."),
+    '#description' => t("If the number of items above isn't enough, click here to add more items."),
     '#weight' => 1,
     '#submit' => array('merci_more_choices_submit'), // If no javascript action.
 /*    '#ahah' => array(
@@ -2263,7 +2263,7 @@ function merci_node_validate($form, &$form_state) {
 	   $current_status = db_result(db_query("SELECT m.status FROM {node} n INNER JOIN {merci_reservation} m ON n.vid = m.vid WHERE n.nid = %d", $node->nid));
 	   if ($current_status && $current_status != $node->merci_status && time() > strtotime($node->field_merci_date[0]['value2']) && !in_array((int) $node->merci_status, array(MERCI_STATUS_CANCELLED, MERCI_STATUS_CHECKED_IN, MERCI_STATUS_DENIED))) {
 		 $statuses = merci_record_status();
-		 form_set_error('merci_status', t('You cannot change the status to %status for a reservation that has past.', array('%status' => $statuses[$node->merci_status])));
+		 form_set_error('merci_status', t('You cannot change the status to %status for a reservation that has passed.', array('%status' => $statuses[$node->merci_status])));
 	   } 
 	 }
 	 
