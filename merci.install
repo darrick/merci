@@ -50,13 +50,13 @@ function merci_install() {
     'columns' => array(
       'value' => array(
         'type' => 'datetime',
-        'not null' => false,
-        'sortable' => true,
+        'not null' => FALSE,
+        'sortable' => TRUE,
       ),
       'value2' => array(
         'type' => 'datetime',
-        'not null' => false,
-        'sortable' => true,
+        'not null' => FALSE,
+        'sortable' => TRUE,
       ),
     ),
     'granularity' => array(
@@ -123,7 +123,7 @@ function merci_uninstall() {
     while ($node = db_fetch_object($nodes)) {
       node_delete($node->nid);
     }
-  	node_type_delete($content_type->type);
+    node_type_delete($content_type->type);
   }
 
   // Remove the programatically created reservation node type

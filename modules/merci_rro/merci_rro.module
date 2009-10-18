@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * Hooks and utility functions for MERCI Role Rule Override
+ */
+
+/**
  * Implementation of hook_menu().
  */
 
@@ -36,11 +41,11 @@ function merci_rro_node_type_menu_access($type_name) {
 
   if ($merci_settings->type_setting != 'disabled' && user_access('administer MERCI')) {
 
-    return true;
+    return TRUE;
 
   } // if
 
-  return false;
+  return FALSE;
 
 } // merci_rro_node_type_menu_access
 
@@ -48,7 +53,7 @@ function merci_rro_node_type_menu_access($type_name) {
  * Returns list of overrides associated with a given content type
  */
 
-function merci_rro_content_type_overrides($content_type, $cache = true) {
+function merci_rro_content_type_overrides($content_type, $cache = TRUE) {
 
   static $overrides = array();
 
@@ -93,30 +98,30 @@ function theme_merci_rro_override($override) {
   $role = merci_rro_role_name_from_rid($override->rid);
 
   $html = '<div class="merci-rro-override">
-    <h3 class="fn">' . check_plain($role) . '</h3>
+    <h3 class="fn">'. check_plain($role) .'</h3>
     <ul>
-      <li><b>' . t('Maximum hours per reservation:') . '</b> <span class="value">' . $override->max_hours_per_reservation . '</span></li>
-      <li><b>' . t('Allow overnight reservation:') . '</b> <span class="value">' . (($override->allow_overnight == 1) ? 'Yes' : 'No') . '</span></li>
-      <li><b>' . t('Allow weekend reservation:') . '</b> <span class="value">' . (($override->allow_weekends == 1) ? 'Yes' : 'No') . '</span></li>
-      <li><b>' . t('Rate per hour:') . '</b> <span class="value">' . $override->rate_per_hour . '</span></li>
-      <li><b>' . t('Late fee per hour:') . '</b> <span class="value">' . $override->late_fee_per_hour . '</span></li>
-      <li><b>' . t('Fee free hours:') . '</b> <span class="value">' . $override->fee_free_hours . '</span></li>
-      <li><b>' . t('Minimum hours for cancelation without No Show:') . '</b> <span class="value">' . $override->min_cancel_hours . '</span></li>
+      <li><b>'. t('Maximum hours per reservation:') .'</b> <span class="value">'. $override->max_hours_per_reservation .'</span></li>
+      <li><b>'. t('Allow overnight reservation:') .'</b> <span class="value">'. (($override->allow_overnight == 1) ? 'Yes' : 'No') .'</span></li>
+      <li><b>'. t('Allow weekend reservation:') .'</b> <span class="value">'. (($override->allow_weekends == 1) ? 'Yes' : 'No') .'</span></li>
+      <li><b>'. t('Rate per hour:') .'</b> <span class="value">'. $override->rate_per_hour .'</span></li>
+      <li><b>'. t('Late fee per hour:') .'</b> <span class="value">'. $override->late_fee_per_hour .'</span></li>
+      <li><b>'. t('Fee free hours:') .'</b> <span class="value">'. $override->fee_free_hours .'</span></li>
+      <li><b>'. t('Minimum hours for cancelation without No Show:') .'</b> <span class="value">'. $override->min_cancel_hours .'</span></li>
     </ul>';
 
   if (user_access('administer MERCI')) {
 
-    $html.= '<p><a href="' . base_path() . 'admin/content/node-type/' . $override->type . '/merci_rro?delete=' . $override->rid . '">Remove</a></p>';
+    $html .= '<p><a href="'. base_path() .'admin/content/node-type/'. $override->type .'/merci_rro?delete='. $override->rid .'">Remove</a></p>';
 
   } // if
 
-  $html.= '</div>';
+  $html .= '</div>';
 
   return $html;
 
 } // theme_merci_rro_override
 
-function merci_rro_role_name_from_rid($rid, $cache = true) {
+function merci_rro_role_name_from_rid($rid, $cache = TRUE) {
 
   static $roles;
 
