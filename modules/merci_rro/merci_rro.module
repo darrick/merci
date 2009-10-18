@@ -141,6 +141,52 @@ function merci_rro_role_name_from_rid($rid, $cache = TRUE) {
 
 function merci_rro_merci_rules_alter(&$rules) {
 
+  $overrides = merci_rro_content_type_overrides($rules->type);
+  
+  $rule_types = array(
+    'max_hours_per_reservation',
+    'allow_overnight',
+    'allow_weekends',
+    'rate_per_hour',
+    'late_fee_per_hour',
+    'fee_free_hours',
+    'min_cancel_hours', 
+  );
 
+  // Get best value for every rule type in every override
+  
+  foreach ($overrides as $override) {
+    foreach ($rule_types as $rule_type) {
+      $rules->{$rule_type} = merci_rro_determine_best_value($rule_type, $rules->{$rule_type}, $override->{$rule_type});
+    } // foreach
+  } // foreach
 
 } // merci_rro_merci_rules_alter
+
+function merci_rro_determine_best_value($rule_type, $a, $b) {
+
+  switch ($rule_type) {
+  
+    // Max value is best
+    case 'allow_overnight':
+    case 'allow_weekends':
+    case 'fee_free_hours':
+      return ($a > $b) ? $a : $b;
+      
+    // Minimum value is best
+    case 'min_cancel_hours':
+    case 'rate_per_hour':
+    case 'late_fee_per_hour':
+      return ($a < $b) ? $a : $b;
+      
+    // Other
+    case 'max_hours_per_reservation':
+      if ($a == 0) return $a;
+      if ($b == 0) return $b;
+      return ($b > $a) ? $b : $a;
+    default:
+      return $a;
+
+  } // switch
+
+} // merci_rro_determine_best_value
