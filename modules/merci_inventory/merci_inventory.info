@@ -1,0 +1,7 @@
+; $Id$
+
+name = MERCI Inventory
+package = MERCI
+description = "Applies inventory fields to MERCI resources"
+core = 6.x
+dependencies[] = merci
