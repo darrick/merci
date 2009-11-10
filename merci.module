@@ -289,7 +289,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       );
 
       // If any nodes have already been created, lock the type setting.
-      if (merci_check_existing_bucket_items($type)) {
+      if (isset($form['type']['#value']) && merci_check_existing_bucket_items($type)) {
         $form['merci']['merci_type_setting'] = array(
           '#type' => 'value',
           '#value' => $settings->type_setting,
