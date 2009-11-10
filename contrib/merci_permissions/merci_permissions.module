@@ -38,7 +38,6 @@ function theme_merci_permissions_form($form) {
       $row = array();
       // Module name
       if (is_numeric($key)) {
-        //$row[] = array('data' => t('@module module', array('@module' => drupal_render($form['permission'][$key]))), 'class' => 'module', 'id' => 'module-'. $form['permission'][$key]['#value'], 'colspan' => count($form['role_names']) + 1);
         $row[] = array('data' => t('Reservation permissions'), 'class' => 'module', 'id' => 'module-'. $form['permission'][$key]['#value'], 'colspan' => count($form['role_names']) + 1);
       }
       else {
@@ -76,7 +75,6 @@ function merci_permissions_form_alter(&$form, $form_state, $form_id) {
       $perms[] = "edit any $key content";
       $perms[] = "create $key content";
     }
-   // drupal_set_message("<pre>".print_r($form['checkboxes'],true)."</pre>");
     foreach (element_children($form['checkboxes']) as $rid) {
       if (is_array($form['checkboxes'][$rid])) {
         $options = array();
@@ -95,7 +93,6 @@ function merci_permissions_form_alter(&$form, $form_state, $form_id) {
         $form['checkboxes'][$rid]['#default_value'] = $defaults;
       }
     }
-    //drupal_set_message("<pre>".print_r($form['permission'],true)."</pre>");
     $new_perms = array();
     $new_perms[0] = $form['permission'][0];
     foreach ($form['permission'] as $key => $value) {
@@ -106,8 +103,6 @@ function merci_permissions_form_alter(&$form, $form_state, $form_id) {
     $form['permission'] = $new_perms;
 
     merci_permissions_add_form($form);
-
-  //drupal_set_message("<pre>".print_r($form,true)."</pre>");
   }
 }
 
@@ -126,9 +121,6 @@ function merci_permissions_add_form(&$form){
 
     $merci_types = merci_permissions_load_merci_type_settings();
     $options = array();
-    //$form['permission'][] = array(
-    //  '#value' => 'merci reservations',
-    //);
     $admin = array();
     $form['permission']['admin all reservations'] = array('#value' => t('Admin all reservations'));
     $options['admin all reservations'] = '';
@@ -169,24 +161,14 @@ function merci_permissions_add_form(&$form){
       $form['role_names'][$rid] = array('#value' => $name, '#tree' => TRUE);
     }
 
-    /*
-    foreach ($role_names as $rid => $name) {
-      $form['checkboxes'][$rid]['#options'] = array_merge($form['checkboxes'][$rid]['#options'],$options);
-      $form['checkboxes'][$rid]['#default_value'] = array_merge($form['checkboxes'][$rid]['#default_value'],isset($status[$rid]) ? $status[$rid] : array());
-    }
-     */
     $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save Permissions') );
     $form['#submit'][] = 'merci_permissions_settings_form_submit';
-    //$form['#theme'] = 'theme_merci_permissions_form';
-  //drupal_set_message("<pre>".print_r($form,true)."</pre>");
 }
 
 function merci_permissions_form() {
   $form = array();
   merci_permissions_add_form($form);
   return $form;
-  //return theme_merci_permissions_form($form);
-  //  }
 }
 
 function merci_permissions_load_merci_type_settings() {
@@ -232,10 +214,8 @@ function merci_permissions_settings_form_submit($form, &$form_state) {
           }
           if($value){
             $add_perms = array_merge($perms, $add_perms);
-//      drupal_set_message("<pre>adding  from role $role->name: ".print_r( $add_perms,true)."</pre>");
           }
           else {
-//      drupal_set_message("<pre>removing from role $role->name: ".print_r( $revoke_perms ,true)."</pre>");
             $revoke_perms = array_merge($perms, $revoke_perms);
           }
         }
@@ -266,7 +246,6 @@ function merci_permissions_grant_permissions($role_name, $new_permissions) {
 
       // rebuild the permission string
       $updated_permissions = join(', ', $permissions);
-      //drupal_set_message("<pre>updateing $role_name:".print_r($permissions,true)."</pre>");
       db_query("UPDATE {permission} SET perm = '%s' WHERE rid = %d", $updated_permissions, $role->rid);
     }
     else{
@@ -276,7 +255,6 @@ function merci_permissions_grant_permissions($role_name, $new_permissions) {
       }
       // rebuild the permission string
       $updated_permissions = join(', ', $permissions);
-      //drupal_set_message("<pre>inserting $role_name:".print_r($permissions,true)."</pre>");
       db_query("INSERT INTO {permission} (rid, perm, tid) VALUES(%d,'%s',%d)",$role->rid,$updated_permissions,0);       
     }
   }
@@ -298,7 +276,6 @@ function merci_permissions_revoke_permissions($role_name, $new_permissions) {
         $new_perms[] = $perm;
       }
     }
-    //drupal_set_message("<pre>Removing $role_name :".print_r($new_perms,true)."</pre>");
 
     // rebuild the permission string
     $updated_permissions = join(', ', $new_perms);
