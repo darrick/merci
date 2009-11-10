@@ -1,2 +1,160 @@
 <?php
 // $Id$
+
+/**
+ * @file
+ * Hooks and functions for MERCI Inventory
+ */
+
+/**
+ * Implementation of hook_menu().
+ */
+
+function merci_inventory_menu() {
+
+  $items = array();
+
+  foreach (array_keys(node_get_types()) as $type_name) {
+
+    $type_url_str = str_replace('_', '-', $type_name);
+
+    $items['admin/content/node-type/'. $type_url_str .'/merci_inventory'] = array(
+      'title' => 'MERCI Inventory',
+      'page callback' => 'merci_inventory_admin_page',
+      'page arguments' => array($type_name),
+      'access callback' => 'merci_inventory_node_type_menu_access',
+      'access arguments' => array($type_name),
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 10,
+    );
+
+  } // foreach
+
+  return $items;
+
+} // merci_inventory_menu
+
+/**
+ * Access check
+ */
+
+function merci_inventory_node_type_menu_access($type_name) {
+
+  $types = merci_inventory_sync_resource_types();
+
+  if ((!in_array($type_name, $types)) && user_access('administer MERCI')) {
+    return TRUE;
+  } // if
+
+  return FALSE;
+
+} // merci_inventory_node_type_menu_access
+
+/**
+ * Menu callback; sync fields
+ */
+
+function merci_inventory_admin_page($type_name = NULL) {
+
+  $html .= '<h2>Sync Inventory Fields</h2>';
+  $html .= drupal_get_form('merci_inventory_sync_fields', $type_name);
+
+  return $html;
+
+} // merci_inventory_admin_page
+
+/**
+ * Field sync form
+ */
+
+function merci_inventory_sync_fields(&$form_state, $type_name) {
+
+  $form = array();
+
+  $form['merci_inventory_type'] = array(
+    '#type' => 'hidden',
+    '#value' => $type_name,
+  );
+
+  $form['merci_inventory_sync_to_types'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Sync fields from') .' <i>'. $type_name .'</i> '. t('to these types'),
+    '#options' => array(),
+  );
+
+  $types = merci_inventory_sync_resource_types();
+
+  foreach ($types as $type) {
+    $form['merci_inventory_sync_to_types']['#options'][$type] = $type;
+  } // foreach
+
+  $form['merci_inventory_submit'] = array('#type' => 'submit', '#value' => t('Copy Fields'));
+  $form['#submit'] = array('merci_inventory_sync_fields_submit');
+
+  return $form;
+
+} // merci_inventory_sync_fields
+
+/**
+ * Field sync form submission handler
+ */
+
+function merci_inventory_sync_fields_submit($form_id, $form_values) {
+
+  module_load_include('inc', 'content', 'includes/content.crud');
+
+  $added = 0;
+
+  $values = $form_values['values'];
+  $params = array('type_name' => $values['merci_inventory_type']);
+
+  $fields = content_field_instance_read($params);
+
+  foreach ($values['merci_inventory_sync_to_types'] as $type => $value) {
+
+    if ($value !== 0) {
+
+      foreach ($fields as $field) {
+
+        $field['type_name'] = $type;
+
+        $params['type_name'] = $type;
+        $params['field_name'] = $field['field_name'];
+        $field_exists = content_field_instance_read($params);
+
+        if (count($field_exists) == 0) {
+          content_field_instance_create($field);
+          drupal_set_message('<i>'. check_plain($field['field_name']) .'</i> '. t('was added to') .' <i>'. check_plain($field['type_name']) .'</i>');
+          $added++;
+        } // if
+
+      } // foreach
+
+    } // if
+
+  } // foreach
+
+  if ($added == 0) {
+    drupal_set_message(t('No fields were synced, because all fields in') .' <i>'. $values['merci_inventory_type'] .'</i> '. t('already exist in all selected types'));
+  } // if
+
+} // merci_inventory_sync_fields_submit
+
+function merci_inventory_sync_resource_types($reset = FALSE) {
+
+  static $types = FALSE;
+
+  if ((!is_array($types)) || $reset) {
+
+    $types = array();
+    $result = db_query("SELECT type FROM {merci_node_type} WHERE type_setting = 'resource'");
+
+    while ($type = db_fetch_object($result)) {
+      $types[] = $type->type;
+    } // while
+
+  } // if
+
+  return $types;
+
+} // merci_inventory_sync_resource_types
