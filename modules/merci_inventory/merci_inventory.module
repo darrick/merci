@@ -147,7 +147,7 @@ function merci_inventory_sync_resource_types($reset = FALSE) {
   if ((!is_array($types)) || $reset) {
 
     $types = array();
-    $result = db_query("SELECT type FROM {merci_node_type} WHERE type_setting = 'resource'");
+    $result = db_query("SELECT type FROM {merci_node_type} WHERE type_setting = 'resource' OR  type_setting = 'bucket'");
 
     while ($type = db_fetch_object($result)) {
       $types[] = $type->type;
