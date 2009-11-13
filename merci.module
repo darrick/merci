@@ -2872,7 +2872,7 @@ function merci_confirm_reservation( $node_id ) {
  */
 function merci_cron() {
 
-  print('merci cron running<br />');
+  //print('merci cron running<br />');
   //find all autocheckouts that have started and set their stauts to checked out
   //only change status for unconfirmed and pending reservation
 
@@ -2881,8 +2881,8 @@ function merci_cron() {
   $time = date('Y-m-j H:m:s'); //2009-05-22 20:45:00
   date_default_timezone_set($old_timezone);
 
-  print('localized time: '. $time .'<br />');
-  print('set to checked out <br />');
+  //print('localized time: '. $time .'<br />');
+  //print('set to checked out <br />');
 
   // Reservation status options.
   //define('MERCI_STATUS_UNCONFIRMED', 1);
@@ -2896,20 +2896,40 @@ function merci_cron() {
   $reservations = db_query("SELECT ctmr.nid FROM {content_type_merci_reservation} ctmr JOIN {merci_reservation_detail} mrd ON ctmr.nid = mrd.nid JOIN {merci_reservation} mr ON ctmr.nid = mr.nid WHERE mr.status < 3 AND field_merci_date_value < '%s'", $time);
 
   while ($reservation = db_fetch_object($reservations)) {
-    print($reservation->nid .'<br />');
+    //print($reservation->nid .'<br />');
+    merci_auto_checkout($reservation->nid);
   }
 
   // find all autocheckins that have ended and set their stauts to checkedin
   // only change status for checked reservation
 
-  print('set to checked in <br />');
+  //print('set to checked in <br />');
 
   $reservations = db_query("SELECT * FROM {content_type_merci_reservation} WHERE field_merci_date_value2 > '%s'", $time);
 
   while ($reservation = db_fetch_object($reservations)) {
-    print($reservation->nid .'<br />');
+    merci_auto_checkin($reservation->nid);
   }
 
   // find all unconfirmed and pending reservations that have started and set their stauts to no show
 
+}
+
+function merci_related_reservations($nid){
+
+   date_default_timezone_set('UTC');
+
+   $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN {node} ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = $nid AND field_merci_date_value > NOW() ORDER BY field_merci_date_value");
+
+   while ($reservationnode = db_fetch_object($result)) {
+return '<a href="/node/' . $reservationnode->nid . '">' . $reservationnode->title . ' reserved from ' .   format_date(strtotime($reservationnode->field_merci_date_value), $type = 'medium') . ' ' . format_date(strtotime($reservationnode->field_merci_date_value2), $type = 'medium') . '</a><br />';
+   }
+}
+
+function merci_auto_checkout($nid){
+   db_query("UPDATE {merci_reservation} SET status = %d WHERE nid = %d", MERCI_STATUS_CHECKED_OUT, $nid);
+}
+
+function merci_auto_checkin($nid){
+  db_query("UPDATE {merci_reservation} SET status = %d WHERE nid = %d", MERCI_STATUS_CHECKED_in, $nid);
 }
