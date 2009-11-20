@@ -1462,7 +1462,7 @@ function merci_item_status($code = NULL) {
     MERCI_AVA_F => t('Available'),
     MERCI_UNA_F => t('Unavailable'),
     MERCI_AVA_S => t('Strictly Available'),
-    MERCI_UNA_S => t('Strictly Unavailable'),
+    MERCI_UNA_S => t('No Longer in Inventory'),
   );
   if (isset($code)) {
     return $statuses[$code];
@@ -1761,8 +1761,13 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
     $nid = isset($item->tnid) ? $item->tnid : $item->pnid;
     $operations = '';
     $placeholder_node = node_load($item->pnid);
+    //dsm($item);
     if (node_access('update', $placeholder_node)) {
-      $operations .= '<span class="edit-details" id="merci-id-'. $item -> pnid .'">'. l(t('Add accessories'), "node/$item->pnid/edit", array('query' => drupal_get_destination())) .'</span>';
+      
+       if(merci_has_accessories($item->type)){
+      
+          $operations .= '<span class="edit-details" id="merci-id-'. $item -> pnid .'">'. l(t('Add accessories'), "node/$item->pnid/edit", array('query' => drupal_get_destination())) .'</span>';
+        }
     }
     if ($edit_page && node_access('delete', $placeholder_node)) {
       $operations .= ' &nbsp;&nbsp;'. l(t('delete'), "node/$item->pnid/delete", array('query' => drupal_get_destination()));
@@ -2710,7 +2715,7 @@ function merci_taxonomy_json( $node_id ) {
 
 function merci_printable_contract( $node_id ) {
 
-  $node = node_load( $node_id );
+  
   $user = user_load( $node->uid );
   $username = $user->name;
   $email = $user->mail;
@@ -2726,8 +2731,7 @@ function merci_printable_contract( $node_id ) {
      $username = $ob[$user_id]['first_name'] .' '. $ob[$user_id]['middle_name'] .' '. $ob[$user_id]['last_name'];
      $phone = $ob[$user_id]['phone'];
   }
-
-  $items = $node -> merci['reservation_items'];
+  
 
   // We want these timestamps generated in UTC.
   $old_timezone = date_default_timezone_get();
@@ -2780,7 +2784,10 @@ function merci_printable_contract( $node_id ) {
           $member_cost_total = 0;
 
           $even_odd = 'even';
-
+          
+          $node = node_load( $node_id );
+          $items = $node -> merci['reservation_items'];
+  
           foreach ( $items as $item ) {
 
 
@@ -2927,9 +2934,40 @@ return '<a href="/node/' . $reservationnode->nid . '">' . $reservationnode->titl
 }
 
 function merci_auto_checkout($nid){
-   db_query("UPDATE {merci_reservation} SET status = %d WHERE nid = %d", MERCI_STATUS_CHECKED_OUT, $nid);
+   //db_query("UPDATE {merci_reservation} SET status = %d WHERE nid = %d", MERCI_STATUS_CHECKED_OUT, $nid);
 }
 
 function merci_auto_checkin($nid){
-  db_query("UPDATE {merci_reservation} SET status = %d WHERE nid = %d", MERCI_STATUS_CHECKED_in, $nid);
+  //db_query("UPDATE {merci_reservation} SET status = %d WHERE nid = %d", MERCI_STATUS_CHECKED_IN, $nid);
+}
+
+function merci_noshow($nid){
+  //db_query("UPDATE {merci_reservation} SET status = %d WHERE nid = %d", MERCI_STATUS_NO_SHOW, $nid);
+}
+
+function merci_calculate_costs($nid){
+   $node = node_load( $node_id );
+   $items = $node -> merci['reservation_items'];
+   $totalcost = array();
+	  foreach ( $items as $item ) {
+	
+	    $item_node = node_load( $item -> pnid );
+	
+	    $type = merci_load_content_type_settings( $item -> type );
+	    $fee_hours = $hours - ( $type -> fee_free_hours );
+	    $commercial_cost = $type -> rate_per_hour * $hours;
+	    $member_cost = ( $fee_hours > 0 ) ? ($type -> rate_per_hour * $discount ) * $fee_hours : 0;
+	
+	    $commercial_cost_total+= $commercial_cost;
+	    $member_cost_total+= $member_cost;
+	  }  // foreach
+	  
+	  $totalcost['commercial'] = $commercial_cost_total;
+	  $totalcost['commercial'] = $member_cost_total;
+	  
+	  return $totalcost;
+}
+
+function merci_has_accessories($content_type){
+   return db_fetch_object(db_query("SELECT * FROM {vocabulary_node_types} WHERE type = '%s'", $content_type));
 }
