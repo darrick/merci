@@ -176,9 +176,6 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
               db_query("UPDATE {". fieldgroup_tablename() ."} SET weight = %d WHERE type_name = '%s' AND group_name = '%s'",
               $group['weight'] + 1000, $type, $group_name);
 
-              dsm($existing_groups[$group_name]);
-              dsm($group);
-
             } // else
 
             // Sync fields in group
