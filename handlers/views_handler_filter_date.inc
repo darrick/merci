@@ -8,7 +8,8 @@ class views_handler_filter_datetime extends views_handler_filter_date {
     if ($this->value['type'] == 'offset') {
       $value = 'NOW()' . sprintf('%+d', $value); // keep sign
       $this->query->add_where($this->options['group'], "$field $this->operator %s", $value);
-    } else {
+    }
+    else {
       $this->query->add_where($this->options['group'], "$field $this->operator '%s'", $value);
     }
   }
