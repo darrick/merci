@@ -88,7 +88,7 @@ function merci_inventory_sync_fields(&$form_state, $type_name) {
     $form['merci_inventory_sync_to_types']['#options'][$type] = $type;
   } // foreach
 
-  $form['merci_inventory_submit'] = array('#type' => 'submit', '#value' => t('Copy Fields'));
+  $form['merci_inventory_submit'] = array('#type' => 'submit', '#value' => t('Sync Fields'));
   $form['#submit'] = array('merci_inventory_sync_fields_submit');
 
   return $form;
@@ -106,9 +106,19 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
   $added = 0;
 
   $values = $form_values['values'];
-  $params = array('type_name' => $values['merci_inventory_type']);
+  $base_type = $values['merci_inventory_type'];
+  $params = array('type_name' => $base_type);
 
   $fields = content_field_instance_read($params);
+
+  // Sync groups if fieldgroup module is enabled
+
+  if (module_exists('fieldgroup')) {
+    $groups = fieldgroup_groups($base_type);
+  } // if
+  else {
+    $groups = array();
+  } // else
 
   foreach ($values['merci_inventory_sync_to_types'] as $type => $value) {
 
@@ -123,19 +133,86 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
         $field_exists = content_field_instance_read($params);
 
         if (count($field_exists) == 0) {
+
+          // Sync field
+
           content_field_instance_create($field);
-          drupal_set_message('<i>'. check_plain($field['field_name']) .'</i> '. t('was added to') .' <i>'. check_plain($field['type_name']) .'</i>');
+          drupal_set_message('<i>'. check_plain($field['field_name']) .'</i> '. t('was added to') .' <i>'. check_plain($type) .'</i>');
           $added++;
+
         } // if
+        else {
+
+          // Update all weights (faster than checking for which weights need updating)
+
+          $field_exists[0]['widget']['weight'] = $field['widget']['weight'] + 1000;
+          content_field_instance_update($field_exists[0]);
+
+        } // else
 
       } // foreach
+
+      if (module_exists('fieldgroup')) {
+
+        $existing_groups = fieldgroup_groups($type);
+
+          foreach ($groups as $group_name => $group) {
+
+            if (!isset($existing_groups[$group_name])) {
+
+              // Add group
+
+              fieldgroup_save_group($type, $group);
+              drupal_set_message('<i>'. check_plain($group_name) .'</i> '. t('was added to') .' <i>'. check_plain($type) .'</i>');
+              $added++;
+
+              $existing_groups = fieldgroup_groups($type, FALSE, TRUE);
+
+            } // if
+            else {
+
+              // Update all weights
+
+              db_query("UPDATE {". fieldgroup_tablename() ."} SET weight = %d WHERE type_name = '%s' AND group_name = '%s'",
+              $group['weight'] + 1000, $type, $group_name);
+
+              dsm($existing_groups[$group_name]);
+              dsm($group);
+
+            } // else
+
+            // Sync fields in group
+
+            foreach ($group['fields'] as $field_name => $field) {
+
+              if (!isset($existing_groups[$group_name]['fields'][$field_name])) {
+
+                $group_field_params = array(
+                  'group' => $group_name,
+                  'field_name' => $field_name,
+                  'type_name' => $type,
+                );
+
+                fieldgroup_update_fields($group_field_params);
+
+                drupal_set_message('<i>'. check_plain($field_name) .'</i> '. t('was moved into group') .' <i>'. check_plain($group_name) .'</i> '. t('of') . ' <i>'. check_plain($type) .'</i>');
+                $added++;
+
+
+              } // if
+
+            } // foreach
+
+          } // foreach
+
+      } // if
 
     } // if
 
   } // foreach
 
   if ($added == 0) {
-    drupal_set_message(t('No fields were synced, because all fields in') .' <i>'. $values['merci_inventory_type'] .'</i> '. t('already exist in all selected types'));
+    drupal_set_message(t('No fields were synced, because all fields in') .' <i>'. check_plain($values['merci_inventory_type']) .'</i> '. t('are already synced in all selected types'));
   } // if
 
 } // merci_inventory_sync_fields_submit
