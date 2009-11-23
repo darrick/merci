@@ -165,6 +165,66 @@ function merci_rro_add_new_override(&$form_state, $type_name, $exclude_roles) {
     '#element_validate' => array('merci_is_numeric_validate'),
     '#description' => t('Minimum number of hours a user can cancel a reservation for the item.'),
   );
+  
+  $hours_description = t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.');
+
+  $form['merci_hours_mon'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Monday hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_hours_mon', ''),
+    '#description' => $hours_description,
+  );
+  $form['merci_hours_tue'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Tuesday hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_hours_tue', ''),
+    '#description' => $hours_description,
+  );
+  $form['merci_hours_wed'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Wednesday hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_hours_wed', ''),
+    '#description' => $hours_description,
+  );
+  $form['merci_hours_thu'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Thursday hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_hours_thu', ''),
+    '#description' => $hours_description,
+  );
+  $form['merci_hours_fri'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Friday hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_hours_fri', ''),
+    '#description' => $hours_description,
+  );
+  $form['merci_hours_sat'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Saturday hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_hours_sat', ''),
+    '#description' => $hours_description,
+  );
+  $form['merci_hours_sun'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Sunday hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_hours_sun', ''),
+    '#description' => $hours_description,
+  );
+  
   $form['merci_rro_submit'] = array('#type' => 'submit', '#value' => t('Add'));
   $form['#submit'] = array('merci_rro_new_submit');
 
@@ -180,19 +240,28 @@ function merci_rro_new_submit($form_id, $form_values) {
   (
     rid,	type, max_hours_per_reservation,
     allow_overnight, allow_weekends, late_fee_per_hour,
-    rate_per_hour, fee_free_hours, min_cancel_hours
+    rate_per_hour, fee_free_hours, min_cancel_hours,
+    hours_mon, hours_tue, hours_wed,
+    hours_thu, hours_fri, hours_sat,
+    hours_sun
   )
   VALUES
   (
     %d, '%s', %d,
     %d, %d, %d,
-    %d, %d, %d
+    %d, %d, %d,
+    '%s', '%s', '%s',
+    '%s', '%s', '%s',
+    '%s'
   )";
 
   db_query($sql,
     $values['merci_rro_roles'], $values['merci_rro_type'], $values['merci_rro_max_hours_per_reservation'],
     $values['merci_rro_allow_overnight'], $values['merci_rro_allow_weekends'], $values['merci_rro_rate_per_hour'],
-    $values['merci_rro_late_fee_per_hour'], $values['merci_rro_fee_free_hours'], $values['merci_rro_min_cancel_hours']
+    $values['merci_rro_late_fee_per_hour'], $values['merci_rro_fee_free_hours'], $values['merci_rro_min_cancel_hours'],
+    $values['merci_hours_mon'], $values['merci_hours_tue'], $values['merci_hours_wed'],
+    $values['merci_hours_thu'], $values['merci_hours_fri'], $values['merci_hours_sat'],
+    $values['merci_hours_sun']    
   );
 
   $role = merci_rro_role_name_from_rid($values['merci_rro_roles']);

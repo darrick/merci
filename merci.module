@@ -300,7 +300,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#type' => 'item',
           '#title' => t('Reservable item type'),
           '#value' => $options[$settings->type_setting],
-          '#description' => t('The setting cannot be changed because content already exists for this type.'),
+          '#description' => t('The setting can not be changed because content already exists for this type.'),
         );
       }
       else {
@@ -581,47 +581,47 @@ function merci_admin_settings() {
     '#description' => t('Add link to change reservations from Unconfirmed to Confirmed'),
   );
 
+  // Weekend
+
   $form['merci_general']['merci_saturday_is_weekend'] = array(
     '#type' => 'checkbox',
     '#title' => t('Saturday is a considered weekend'),
     '#default_value' => variable_get('merci_saturday_is_weekend', 1),
   );
-
   $form['merci_general']['merci_sunday_is_weekend'] = array(
     '#type' => 'checkbox',
     '#title' => t('Sunday is a considered weekend'),
     '#default_value' => variable_get('merci_sunday_is_weekend', 1),
   );
-
   $form['merci_general']['merci_monday_is_weekend'] = array(
     '#type' => 'checkbox',
     '#title' => t('Monday is considered a weekend'),
     '#default_value' => variable_get('merci_monday_is_weekend', 0),
   );
-
   $form['merci_general']['merci_tuesday_is_weekend'] = array(
     '#type' => 'checkbox',
     '#title' => t('Tuesday is considered a weekend'),
     '#default_value' => variable_get('merci_tuesday_is_weekend', 0),
   );
-
   $form['merci_general']['merci_wednesday_is_weekend'] = array(
     '#type' => 'checkbox',
     '#title' => t('Wednesday is considered a weekend'),
     '#default_value' => variable_get('merci_wednesday_is_weekend', 0),
   );
-
   $form['merci_general']['merci_thursday_is_weekend'] = array(
     '#type' => 'checkbox',
     '#title' => t('Thursday is considered a weekend'),
     '#default_value' => variable_get('merci_thrusday_is_weekend', 0),
   );
-
   $form['merci_general']['merci_friday_is_weekend'] = array(
     '#type' => 'checkbox',
     '#title' => t('Firday is a considered weekend'),
     '#default_value' => variable_get('merci_firday_is_weekend', 0),
   );
+
+  // Hours of operation
+
+  $hours_description = t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.');
 
   $form['merci_general']['merci_hours_mon'] = array(
     '#type' => 'textfield',
@@ -629,7 +629,7 @@ function merci_admin_settings() {
     '#size' => 11,
     '#maxlength' => 11,
     '#default_value' => variable_get('merci_hours_mon', ''),
-    '#description' => t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.'),
+    '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_tue'] = array(
     '#type' => 'textfield',
@@ -637,7 +637,7 @@ function merci_admin_settings() {
     '#size' => 11,
     '#maxlength' => 11,
     '#default_value' => variable_get('merci_hours_tue', ''),
-    '#description' => t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.'),
+    '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_wed'] = array(
     '#type' => 'textfield',
@@ -645,7 +645,7 @@ function merci_admin_settings() {
     '#size' => 11,
     '#maxlength' => 11,
     '#default_value' => variable_get('merci_hours_wed', ''),
-    '#description' => t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>  -- ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.'),
+    '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_thu'] = array(
     '#type' => 'textfield',
@@ -653,7 +653,7 @@ function merci_admin_settings() {
     '#size' => 11,
     '#maxlength' => 11,
     '#default_value' => variable_get('merci_hours_thu', ''),
-    '#description' => t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.'),
+    '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_fri'] = array(
     '#type' => 'textfield',
@@ -661,7 +661,7 @@ function merci_admin_settings() {
     '#size' => 11,
     '#maxlength' => 11,
     '#default_value' => variable_get('merci_hours_fri', ''),
-    '#description' => t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.'),
+    '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_sat'] = array(
     '#type' => 'textfield',
@@ -669,7 +669,7 @@ function merci_admin_settings() {
     '#size' => 11,
     '#maxlength' => 11,
     '#default_value' => variable_get('merci_hours_sat', ''),
-    '#description' => t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.'),
+    '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_sun'] = array(
     '#type' => 'textfield',
@@ -677,7 +677,7 @@ function merci_admin_settings() {
     '#size' => 11,
     '#maxlength' => 11,
     '#default_value' => variable_get('merci_hours_sun', ''),
-    '#description' => t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.'),
+    '#description' => $hours_description,
   );
 
   $form['merci_general']['merci_closed_dates'] = array(
@@ -853,7 +853,7 @@ function merci_form(&$node, $form_state) {
       '#type' => 'radios',
       '#options' => merci_record_status(),
       '#default_value' => $merci['status'],
-      '#description' => t('Finalized bookings cannot have time conflicts with each other.'),
+      '#description' => t('Finalized bookings can not have time conflicts with each other.'),
     );
   }
   else {
@@ -965,62 +965,87 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
   // Buckets.
   $buckets = merci_load_merci_type_settings('bucket');
   $bucket_options = array();
+
   // Loop through each bucket type.
   while ($bucket = db_fetch_object($buckets)) {
+
     // Only include active buckets, and content types the user
     // can reserve.
     if ($bucket->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($bucket->type)) {
+      
       // No filtering for new reservations.
       if (isset($is_new)) {
+
         // Only add the bucket if there is at least one published item.
         if (merci_check_existing_bucket_items($bucket->type, TRUE)) {
           $bucket_options[$bucket->type] = $bucket->name;
-        }
-      }
+        } // if
+
+      } // if
       else {
+
         // Check bucket restrictions.
         $restrictions = merci_check_content_type_restrictions($bucket->type, $start, $end);
+
         if (empty($restrictions)) {
+
           // Check for available items in the bucket.
           $available_bucket_items = merci_get_available_bucket_count($bucket->type, $start, $end, $reservation_nid) > $bucket->spare_items;
+
           if ($available_bucket_items) {
             $bucket_options[$bucket->type] = $bucket->name;
-          }
-        }
-      }
-    }
-  }
+          } // if
+
+        } // if
+
+      } // else
+
+    } // if
+
+  } // whiel
+
   $options['options'][t('Buckets')] = $bucket_options;
   $options['flat_options'] = array_keys($bucket_options);
 
   // Resources.
   $resources = merci_load_merci_type_settings('resource');
+
   // Loop through each resource type.
   while ($resource = db_fetch_object($resources)) {
+  
     $item_options = array();
-    // Only include active resources, and content types the user
-    // can reserve.
+
+    // Only include active resources, and content types the user can reserve.
     if ($resource->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($resource->type)) {
 
       // No filtering for new reservations.
       if (isset($is_new)) {
+
         // Filter out any placeholder nodes for this resource.
         $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.sub_type = %d ORDER BY n.title", $resource->type, 1, MERCI_SUB_TYPE_ITEM);
+
         while ($item = db_fetch_object($items)) {
           $item_options[$item->nid] = $item->title;
-        }
-      }
+        } // while
+
+      } // if
       else {
+
         // Check resource restrictions.
         $restrictions = merci_check_content_type_restrictions($resource->type, $start, $end);
+
         if (empty($restrictions)) {
           $item_options = merci_get_reservable_items('resource', $resource->type, $start, $end, $reservation_nid);
-        }
-      }
+        } // if
+
+      } // else
+
       $options['options'][$resource->name] = $item_options;
       $options['flat_options'] = array_merge($options['flat_options'], array_keys($item_options));
-    }
-  }
+
+    } // if
+
+  } // while
 
   return $options;
 }
@@ -1042,72 +1067,84 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
  */
 function merci_check_content_type_restrictions($content_type, $start, $end) {
 
-  $type_settings = merci_content_type_rules($content_type);
-
-  //Users in role with Administer MERCI permssion are exempt from content type restriction
+  // Users in role with Administer MERCI permssion are exempt from content type restriction
+  
   if (!user_access('administer MERCI')) {
 
-  $hours_of_operation = merci_load_hours_of_operation();
-  $return = array();
+    $type_settings = merci_content_type_rules($content_type);
+    $hours_of_operation = merci_load_hours_of_operation($content_type);
+    $return = array();
 
-  // Convert start/end dates to local time.
-  $start_object = merci_create_local_date_object($start);
-  $end_object = merci_create_local_date_object($end);
+    // Convert start/end dates to local time.
+    $start_object = merci_create_local_date_object($start);
+    $end_object = merci_create_local_date_object($end);
+  
+    // We want these timestamps generated in UTC.
+    $old_timezone = date_default_timezone_get();
+    date_default_timezone_set('UTC');
+    $start_timestamp = strtotime($start);
+    $end_timestamp = strtotime($end);
+    date_default_timezone_set($old_timezone);
 
-  // We want these timestamps generated in UTC.
-  $old_timezone = date_default_timezone_get();
-  date_default_timezone_set('UTC');
-  $start_timestamp = strtotime($start);
-  $end_timestamp = strtotime($end);
-  date_default_timezone_set($old_timezone);
-
-  $reserved_hours = ($end_timestamp - $start_timestamp) / (60 * 60);
-  $start_day_of_week = date_format($start_object, 'w');
-  $end_day_of_week = date_format($end_object, 'w');
-
-  // Make sure max hours aren't exceeded.
-  if ($type_settings->max_hours_per_reservation && $reserved_hours > $type_settings->max_hours_per_reservation) {
-    $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
-  }
-
-  // Validate allow_overnight.
-  if (!$type_settings->allow_overnight) {
-    // Need the 48 hour check in case somebody starts and ends their
-    // reservation on the same day.
-    if ($start_day_of_week != $end_day_of_week || $reserved_hours > 48) {
-    $return[] = t('%name cannot be reserved overnight.');
+    $reserved_hours = ($end_timestamp - $start_timestamp) / (60 * 60);
+    $start_day_of_week = date_format($start_object, 'w');
+    $end_day_of_week = date_format($end_object, 'w');
+  
+    // Make sure max hours aren't exceeded.
+    if ($type_settings->max_hours_per_reservation && $reserved_hours > $type_settings->max_hours_per_reservation) {
+      $return[] = t('%name can not be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
     }
-  }
 
-  // Validate allow_weekend.
-  if (!$type_settings->allow_weekends) {
-    $on_weekend = FALSE;
-    // Check the start and end dates for the reservation first.
-    if (in_array($start_day_of_week, array('6', '0')) || in_array($end_day_of_week, array('6', '0'))) {
-    $on_weekend = TRUE;
-    }
-    // Check all dates between the start and end dates for the reservation next.
-    if (!$on_weekend) {
-    $day = 60 * 60 * 24;
-    $counter = $start_timestamp + $day;
-    while ($counter <= $end_timestamp) {
-      $utc_datetime = gmdate('Y-m-d H:i:s', $counter);
-      $local_date = merci_create_local_date_object($utc_datetime);
-      $day_of_week = date_format($local_date, 'w');
-      if (in_array($day_of_week, array('6', '0'))) {
-      $on_weekend = TRUE;
-      break;
+    // Validate allow_overnight.
+    if (!$type_settings->allow_overnight) {
+      // Need the 48 hour check in case somebody starts and ends their
+      // reservation on the same day.
+      if ($start_day_of_week != $end_day_of_week || $reserved_hours > 48) {
+        $return[] = t('%name can not be reserved overnight.');
       }
-      $counter += $day;
     }
-    }
-    if ($on_weekend) {
-    $return[] = t('%name cannot be reserved on weekends.');
-    }
-  }
-  }
+
+    // Validate allow_weekend.
+    if (!$type_settings->allow_weekends) {
+
+      $on_weekend = FALSE;
+      // Check the start and end dates for the reservation first.
+      if (in_array($start_day_of_week, array('6', '0')) || in_array($end_day_of_week, array('6', '0'))) {
+        $on_weekend = TRUE;
+      }
+
+      // Check all dates between the start and end dates for the reservation next.
+      if (!$on_weekend) {
+
+        $day = 60 * 60 * 24;
+        $counter = $start_timestamp + $day;
+        while ($counter <= $end_timestamp) {
+
+          $utc_datetime = gmdate('Y-m-d H:i:s', $counter);
+          $local_date = merci_create_local_date_object($utc_datetime);
+          $day_of_week = date_format($local_date, 'w');
+
+          if (in_array($day_of_week, array('6', '0'))) {
+            $on_weekend = TRUE;
+            break;
+          } // if
+
+          $counter += $day;
+
+        } // while
+
+      } // if
+      else {
+        $return[] = t('%name can not be reserved on weekends.');
+      } // else
+
+    } // if
+
+  } // if
+  
   return $return;
-}
+
+} // merci_check_content_type_restrictions
 
 /**
  * Ensures the user has 'edit own [type] content' and 'delete own [type] content'
@@ -1116,8 +1153,8 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
  * @return TRUE if the user has access to reserve the content type, FALSE
  *   otherwise.
  */
-function merci_check_content_type_user_permissions($type) {
 
+function merci_check_content_type_user_permissions($type) {
   return user_access("edit own $type content") && user_access("delete own $type content");
 }
 
@@ -1134,6 +1171,14 @@ function merci_content_type_rules($content_type) {
 
   // Load default rules
   $rules = merci_load_content_type_settings($content_type);
+
+  $rules->hours_mon = variable_get('merci_hours_mon', '');
+  $rules->hours_tue = variable_get('merci_hours_tue', '');
+  $rules->hours_wed = variable_get('merci_hours_wed', '');
+  $rules->hours_thu = variable_get('merci_hours_thu', '');
+  $rules->hours_fri = variable_get('merci_hours_fri', '');
+  $rules->hours_sat = variable_get('merci_hours_sat', '');
+  $rules->hours_sun = variable_get('merci_hours_sun', '');
 
   // Allow any other modules (e.g. merci_rro) to change the rules
   module_invoke_all('merci_rules_alter', $rules);
@@ -1164,6 +1209,7 @@ function merci_load_content_type_settings($content_type) {
  *   specified MERCI type.
  */
 function merci_load_merci_type_settings($merci_type) {
+
   $sql = "SELECT nt.type, nt.name, m.status, m.spare_items
   FROM {node_type} nt
   INNER JOIN {merci_node_type} m
@@ -1172,6 +1218,7 @@ function merci_load_merci_type_settings($merci_type) {
   ORDER BY nt.name";
 
   return db_query($sql, $merci_type);
+
 } // merci_load_merci_type_settings
 
 /**
@@ -1382,7 +1429,7 @@ function merci_validate_default_availability($node) {
     }
 
     if (!empty($bad_reservations)) {
-      form_set_error('merci_default_availability', t('%title cannot be set to an unavailable status until it is removed from the following reservations:', array('%title' => $node->title)) . theme('item_list', $bad_reservations));
+      form_set_error('merci_default_availability', t('%title can not be set to an unavailable status until it is removed from the following reservations:', array('%title' => $node->title)) . theme('item_list', $bad_reservations));
     }
   }
 }
@@ -1416,7 +1463,7 @@ function merci_delete_item_validate($node, $single = TRUE) {
     }
 
     if (!empty($bad_reservations)) {
-      drupal_set_message(t('%title cannot be deleted, because it is associated with the following reservations:', array('%title' => $node->title)) . theme('item_list', $bad_reservations), 'error');
+      drupal_set_message(t('%title can not be deleted, because it is associated with the following reservations:', array('%title' => $node->title)) . theme('item_list', $bad_reservations), 'error');
       // Lock out single deletion attempts here.
       if ($single) {
         module_invoke_all('exit');
@@ -1456,7 +1503,7 @@ function merci_node_type_save_validate($form, &$form_state) {
     }
 
     if (!empty($bad_reservations)) {
-      form_set_error('merci_status', t('@type_setting cannot be set to an inactive status until all @type_setting items are removed from the following reservations:', array('@type_setting' => $type_setting)) . theme('item_list', $bad_reservations));
+      form_set_error('merci_status', t('@type_setting can not be set to an inactive status until all @type_setting items are removed from the following reservations:', array('@type_setting' => $type_setting)) . theme('item_list', $bad_reservations));
     }
   }
 }
@@ -1488,7 +1535,7 @@ function merci_delete_node_type_validate($type) {
     }
 
     if (!empty($bad_reservations)) {
-      drupal_set_message(t('@type cannot be deleted because it is associated with the following reservations:', array('@type' => $settings->name)) . theme('item_list', $bad_reservations), 'error');
+      drupal_set_message(t('@type can not be deleted because it is associated with the following reservations:', array('@type' => $settings->name)) . theme('item_list', $bad_reservations), 'error');
       module_invoke_all('exit');
       drupal_access_denied();
     }
@@ -1498,6 +1545,7 @@ function merci_delete_node_type_validate($type) {
 /**
  * Implementation of hook_theme().
  */
+
 function merci_theme() {
   return array(
     'merci_choices' => array(
@@ -1505,6 +1553,11 @@ function merci_theme() {
     ),
     'merci_build_reservation_table_form' => array(
       'arguments' => array('form' => NULL),
+    ),
+    'merci_reservation_table' => array(
+      'template' => 'merci_reservation_table',
+      'path' => drupal_get_path('module', 'merci') .'/templates',
+      'arguments' => array('reservations' => NULL, 'count' => NULL, 'hours' => NULL, 'title' => NULL),
     ),
   );
 }
@@ -1821,7 +1874,6 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
     $nid = isset($item->tnid) ? $item->tnid : $item->pnid;
     $operations = '';
     $placeholder_node = node_load($item->pnid);
-    //dsm($item);
     if (node_access('update', $placeholder_node)) {
 
       if (merci_has_accessories($item->type)) {
@@ -1935,7 +1987,48 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
   //      of the this reservation where the item is in an already reserved state.
   //   3. Allows a reservation to be excluded from the exclusions if necessary (thi
   //      is usually used to allow an already assigned item to not conflict with itself.
-  $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_{$merci_type}_node} m ON n.vid = m.vid WHERE (m.default_availability IN (%d, %d) AND n.type = '%s' AND m.sub_type = %d AND n.nid NOT IN (SELECT md2.item_nid FROM {". $table ."} ct INNER JOIN {merci_reservation_detail} md2 ON ct.vid = md2.vid INNER JOIN {merci_{$merci_type}_node} m2 ON md2.item_nid = m2.nid INNER JOIN {node} ctn ON ctn.vid = ct.vid INNER JOIN {node} m2n ON m2.vid = m2n.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s')) AND NOT (md2.item_status <= %d)$inner_where)) ORDER BY n.title", $args);
+
+  $sql = "SELECT n.nid, n.title 
+  FROM {node} n 
+  INNER JOIN {merci_". $merci_type ."_node} m 
+    ON n.vid = m.vid 
+  WHERE (
+    m.default_availability IN (%d, %d)
+    AND n.type = '%s' AND m.sub_type = %d 
+    AND n.nid NOT IN (
+      SELECT md2.item_nid 
+      FROM {". $table ."} ct 
+      INNER JOIN {merci_reservation_detail} md2 
+        ON ct.vid = md2.vid 
+      INNER JOIN {merci_". $merci_type. "_node} m2 
+        ON md2.item_nid = m2.nid 
+      INNER JOIN {node} ctn 
+        ON ctn.vid = ct.vid 
+      INNER JOIN {node} m2n 
+        ON m2.vid = m2n.vid 
+      WHERE (
+        (
+          ". $column_start_date ." >= '%s' 
+          AND ". $column_start_date ." <= '%s'
+        ) 
+        OR 
+        (
+          ". $column_end_date ." >= '%s' 
+          AND ". $column_end_date ." <= '%s'
+        ) 
+        OR 
+        (
+          ". $column_start_date ." <= '%s' 
+          AND ". $column_end_date ." >= '%s'
+        )
+      )
+      AND NOT (md2.item_status <= %d)
+      ". $inner_where ."
+    )
+  )
+  ORDER BY n.title";
+  
+  $items = db_query($sql, $args);
 
   $options = array();
   while ($item = db_fetch_object($items)) {
@@ -1943,7 +2036,8 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
   }
 
   return $options;
-}
+
+} // merci_get_reservable_items
 
 /**
  * Calculates the total number of available bucket items for a reservation.
@@ -2070,24 +2164,30 @@ function merci_access($op, $node, $account) {
  * Implementation of hook_validate().
  */
 function merci_node_validate($form, &$form_state) {
+
   if (user_access('suspend MERCI access') && !user_access('administer MERCI')) {
     form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
   }
   else {
-    $node = (object) $form_state['values'];
 
     // No validation necessary on deletion.
     if ($form_state['clicked_button']['#id'] != 'edit-delete') {
+
+      $node = (object) $form_state['values'];
+
       // Reservations with a checked out status.
       if ($node->merci_status == MERCI_STATUS_CHECKED_OUT) {
+
         // Make sure all existing bucket reservations have an item assigned.
         if (isset($node->existing_items['items'])) {
+
           foreach ($node->existing_items['items'] as $did => $item_nid) {
             if (!$item_nid) {
               form_set_error("existing_items][items][$did", t("The bucket reservation must have an item associated with it for finalized reservations."));
             }
           }
-        }
+
+        } // if
         else {
           form_set_error('merci_status', t('You can not finalize a reservation that has no reserved items.'));
         } // else
@@ -2096,109 +2196,56 @@ function merci_node_validate($form, &$form_state) {
         foreach ($node->choice as $num => $choice) {
           $item = $choice['item'];
           if ($item && !is_numeric($item)) {
-            form_set_error("choice][$num][item", t("You cannot finalize a reservation while adding a bucket item."));
+            form_set_error("choice][$num][item", t("You can not finalize a reservation while adding a bucket item."));
           } // if
         } // foreach
+
       } // if
 
-      // Build date objects we'll need for our different validations.
-      $start = $node->field_merci_date[0]['value'];
-      $end = $node->field_merci_date[0]['value2'];
-      $start_object = merci_create_local_date_object($start);
-      $end_object = merci_create_local_date_object($end);
-      $hours_of_operation = merci_load_hours_of_operation();
-      $start_day_of_week = (int) date_format($start_object, 'w');
-      $end_day_of_week = (int) date_format($end_object, 'w');
-      $start_month_day = date_format($start_object, 'm-d');
-      $end_month_day = date_format($end_object, 'm-d');
-      $start_hours = $hours_of_operation[$start_day_of_week];
-      $end_hours = $hours_of_operation[$end_day_of_week];
-      $start_date = date_format($start_object, 'm-d-Y');
-      $max_days = variable_get("merci_max_days_advance_reservation", '0');
-
-      //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restriction
-      if (!user_access('administer MERCI')) {
-        // Reservation start date cannot exceed the max advance
-        if ($max_days) {
-          $max_date = date('m-d-Y', mktime(0, 0, 0, date("m"), date("d")+$max_days, date("Y")));
-          if ( $start_date > $max_date ) {
-            form_set_error('merci_status', t('You cannot make a Reservation more than %days days in advance. Start the Reservation before %date.', array('%days' => $max_days, '%date' => $max_date)));
-          }
-        } // if
-
-        // Can't start or end a reservation on days that are
-        // closed dates.
-        if (in_array($start_month_day, $hours_of_operation['closed_days'])) {
-          $name = date_format($start_object, 'F jS');
-          form_set_error('field_merci_date][0][value][date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
-        }
-        if (in_array($end_month_day, $hours_of_operation['closed_days'])) {
-          $name = date_format($end_object, 'F jS');
-          form_set_error('field_merci_date][0][value2][date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
-        } // if
-
-        // Can't start or end a reservation on a day the facility
-        // has no hours of operation, or outside hours of operation.
-
-        $start_name = date_format($start_object, 'l');
-        if (!$hours_of_operation[$start_day_of_week]) {
-          form_set_error('field_merci_date][0][value][date', t('Reservations cannot start on a %day.', array('%day' => $start_name)));
-        } // if
-        else {
-          $start_time = date_format($start_object, 'H:s');
-          if ($start_time < $start_hours['open']) {
-            form_set_error('field_merci_date][0][value][time', t('Reservations cannot start on a %day before %start.', array('%day' => $start_name, '%start' => date("g:i a", strtotime($start_hours['open'])))));
-          }
-          elseif ($start_time > $start_hours['close']) {
-            form_set_error('field_merci_date][0][value][time', t('Reservations cannot start on a %day after %end.', array('%day' => $start_name, '%end' => date("g:i a", strtotime($start_hours['close'])))));
-          }
-        } // else
-
-        $end_name = date_format($end_object, 'l');
-        if (!$hours_of_operation[$end_day_of_week]) {
-          form_set_error('field_merci_date][0][value2][date', t('Reservations cannot end on a %day.', array('%day' => $end_name)));
-        }
-        else {
-          $end_time = date_format($end_object, 'H:s');
-          if ($end_time < $end_hours['open']) {
-            form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end on a %day before %start.', array('%day' => $end_name, '%start' => $end_hours['open'])));
-          }
-          elseif ($end_time > $end_hours['close']) {
-            form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end on a %day after %end.', array('%day' => $end_name, '%end' => $end_hours['close'])));
-          }
-        } // else
-      } // if
+      /**
+       * Check existing item restrictions
+       */
 
       // Tests for existing items.
       if (isset($node->nid)) {
-        // For saved reservations, include the items already reserved
-        // in the available list.
+        // For saved reservations, include the items already reserved in the available list.
         $options = merci_build_reservable_items($node, $form_state, $node->nid);
       } // if
       else {
         $options = merci_build_reservable_items($node, $form_state);
       } // else
+
       $flat_options = $options['flat_options'];
 
       if (isset($node->existing_items)) {
+
         // Check each reserved item.
         foreach ($node->existing_items['bucket_resource'] as $did => $value) {
+
+          // Resource.
+          if (is_numeric($value)) {
+            $new_item = db_fetch_object(db_query("SELECT title, type FROM {node} WHERE nid = %d", $value));
+            $title = $new_item->title;
+            $type = $new_item->type;
+          } // if
+          // Bucket.
+          elseif ($value) {
+            $title = db_result(db_query("SELECT name FROM {node_type} WHERE type = '%s'", $value));
+            $type = $value;
+          } // else if
+          
+          merci_date_restriction_validate(
+            $type, 
+            $node->field_merci_date[0]['value'], $node->field_merci_date[0]['value2'], 
+            'field_merci_date][0][value]', 'field_merci_date][0][value2]'
+          );
+
           // The item is no longer reservable, so figure out why.
           if (!in_array($value, $flat_options)) {
-            // Resource.
-            if (is_numeric($value)) {
-              $new_item = db_fetch_object(db_query("SELECT title, type FROM {node} WHERE nid = %d", $value));
-              $title = $new_item->title;
-              $type = $new_item->type;
-            } // if
-            // Bucket.
-            elseif ($value) {
-              $title = db_result(db_query("SELECT name FROM {node_type} WHERE type = '%s'", $value));
-              $type = $value;
-            } // else if
 
             // Make sure the item still passes content type restrictions.
             $restrictions = merci_check_content_type_restrictions($type, $start, $end);
+
             if (!empty($restrictions)) {
               $message = '';
               foreach ($restrictions as $restriction) {
@@ -2209,7 +2256,9 @@ function merci_node_validate($form, &$form_state) {
             else {
               $message = t("The existing reservation for %name is no longer reservable with your current date settings.", array('%name' => $title));
             } // else
+
             form_set_error("existing_items][placeholders][$did", $message);
+
           } // if
 
           // Check to make sure the currently assigned bucket item is still
@@ -2222,19 +2271,29 @@ function merci_node_validate($form, &$form_state) {
               form_set_error("existing_items][placeholders][$did", t("The assignment of %item for the %bucket reservation is no longer reservable with your current date settings.", array('%item' => $title_name->title, '%bucket' => $title_name->name)));
             } // if
           } // else if
+
         } // foreach
+
       } // if
 
+      /**
+       * Check new item restrictions
+       */
+
       // Tests for new items.
-      if (isset($node->nid)) { // Only need to rebuild this again for existing nodes.
+      if (isset($node->nid)) {
+
+        // Only need to rebuild this again for existing nodes.
         $options = merci_build_reservable_items($node, $form_state);
         $flat_options = $options['flat_options'];
+
       } // if
 
       // Check each new item.
       foreach ($node->choice as $num => $choice) {
-        // The item is no longer reservable, so figure out why.
-        if ($choice['item'] && !in_array($choice['item'], $flat_options)) {
+
+        if ($choice['item']) {
+
           // Resource.
           if (is_numeric($choice['item'])) {
             $new_item = db_fetch_object(db_query("SELECT title, type FROM {node} WHERE nid = %d", $choice['item']));
@@ -2246,100 +2305,66 @@ function merci_node_validate($form, &$form_state) {
             $title = db_result(db_query("SELECT name FROM {node_type} WHERE type = '%s'", $choice['item']));
             $type = $choice['item'];
           } // elseif
-
-          // Make sure the item still passes content type restrictions.
-          $restrictions = merci_check_content_type_restrictions($type, $start, $end);
-          if (!empty($restrictions)) {
-            $message = '';
-            foreach ($restrictions as $restriction) {
-              $message .= '<div>'. strtr($restriction, array('%name' => theme('placeholder', $title))) .'</div>';
-            } // foreach
+  
+          merci_date_restriction_validate(
+            $type, 
+            $node->field_merci_date[0]['value'], $node->field_merci_date[0]['value2'], 
+            'field_merci_date][0][value]', 'field_merci_date][0][value2]'
+          );
+  
+          // The item is not reservable, so figure out why.
+          if (!in_array($choice['item'], $flat_options)) {
+  
+  
+            // Make sure the item passes content type restrictions.
+            $restrictions = merci_check_content_type_restrictions($type, $start, $end);
+            
+            if (!empty($restrictions)) {
+              $message = '';
+              foreach ($restrictions as $restriction) {
+                $message .= '<div>'. strtr($restriction, array('%name' => theme('placeholder', $title))) .'</div>';
+              } // foreach
+            } // if
+  
+            // Either a date conflict, or the content type has been deactivated.
+            else {
+  
+              $message = '<div>'. t("The dates and times for %name conflict with one or more existing reservations", array('%name' => $title)) .'</div>';
+  
+              $message .= '<div class="merci-availability-key"><span class="available"></span> = '. t('available') .' <span class="unavailable"></span> = '. t('unavailable') .'</div>';
+  
+              $count_sql = "SELECT COUNT(n.nid)
+              FROM {node} n
+              JOIN {merci_node_type} t
+               ON t.type = n.type
+              WHERE n.status = 1 AND
+              (
+               (
+                 t.type_setting = 'bucket'
+                 AND n.type = '%s'
+               ) OR
+               (
+                 t.type_setting = 'resource'
+                 AND n.title = '%s'
+               )
+              )";
+  
+              $count = db_result(db_query($count_sql, $type, $title));
+  
+              $start_mysql = date('Y-m-d', strtotime($start));
+              $end_mysql = date('Y-m-d', strtotime($end .' +1 day'));
+  
+              $reservations = merci_load_reservations_for_type_in_timespan($type, $start_mysql, $end_mysql);
+              $hours = merci_load_hours_of_operation($type);
+  
+              $message .= theme('merci_reservation_table', $reservations, $count, $hours, $title);
+  
+            } // else
+  
+            form_set_error("choice][$num][item", $message);
+  
           } // if
-
-          // Either a date conflict, or the content type has been deactivated.
-          else {
-
-            $count_sql = "SELECT COUNT(n.nid)
-            FROM {node} n
-            JOIN {merci_node_type} t
-             ON t.type = n.type
-            WHERE n.status = 1 AND
-            (
-             (
-               t.type_setting = 'bucket'
-               AND n.type = '%s'
-             ) OR
-             (
-               t.type_setting = 'resource'
-               AND n.title = '%s'
-             )
-            )";
-
-            $count = db_result( db_query( $count_sql , $type , $title ) );
-
-            $start_mysql = date( 'Y-m-d' , strtotime( $start ) );
-            $end_mysql = date( 'Y-m-d' , strtotime( $end .' +1 day' ) );
-
-            $reservations = merci_load_reservations_for_type_in_timespan( $type , $start_mysql , $end_mysql );
-            $reservations_by_date = array();
-            $hours = merci_load_hours_of_operation();
-
-            $message = '<div>'. t("The dates and times for %name conflict with one or more existing reservations", array('%name' => $title)) .'</div>';
-
-            $message .= '<div class="merci-availability-key"><span class="available"></span> = available <span class="unavailable"></span> = unavailable</div>';
-
-            foreach ( $reservations as $date => $times ) {
-
-              $date_timestamp = strtotime( $date );
-              $hours_date = $hours[ date( 'w' , $date_timestamp ) ];
-
-              if ( isset( $hours_date['open'] ) ) {
-
-                $message .= '<table class="merci-availability-schedule"><thead><tr>';
-
-                $message .= '<th>'. date( 'm/d/Y' , $date_timestamp ) .'</th>';
-
-                $time = $hours_date['open'];
-
-                while ( $time < $hours_date['close'] ) {
-
-                  $message .= '<th colspan="4">'. date( 'g:i a' , strtotime( $time ) ) .'</th>';
-                  $time = date( 'H:i' , strtotime( $time .' +1 hour' ) );
-
-                } // while
-
-                $message .= '</tr></thead><tbody>';
-
-                for ( $i = 1; $i <= $count; $i++ ) {
-
-                  $message .= '<tr><th>'. htmlspecialchars( $title );
-
-                  if ( $count > 1 ) $message .= ' '. $i .'/'. $count;
-
-                  $message .= '</th>';
-                  $time = $hours_date['open'];
-
-                  while ( $time < $hours_date['close'] ) {
-
-                    if ( $times[ $time .':00' ] >= $i ) $message .= '<td class="unavailable"></td>';
-                    else $message .= '<td class="available"></td>';
-                    $time = date( 'H:i' , strtotime( $time .' +15 minutes' ) );
-
-                  } // while
-
-                  $message .= '</tr>';
-
-                } // for
-
-                $message .= '</tbody></table>';
-
-              } // if
-
-            } // foreach
-
-          } // else
-
-          form_set_error("choice][$num][item", $message);
+          
         } // if
 
       } // foreach
@@ -2349,16 +2374,90 @@ function merci_node_validate($form, &$form_state) {
         drupal_set_message(t('There are no conflicts with this Reservation.'));
       } // if
 
-      // Prevent status changes on reservations that have past.
+      // Prevent status changes on reservations that have passed
       $current_status = db_result(db_query("SELECT m.status FROM {node} n INNER JOIN {merci_reservation} m ON n.vid = m.vid WHERE n.nid = %d", $node->nid));
       if ($current_status && $current_status != $node->merci_status && time() > strtotime($node->field_merci_date[0]['value2']) && !in_array((int) $node->merci_status, array(MERCI_STATUS_CANCELLED, MERCI_STATUS_CHECKED_IN, MERCI_STATUS_DENIED))) {
         $statuses = merci_record_status();
-        form_set_error('merci_status', t('You cannot change the status to %status for a reservation that has passed.', array('%status' => $statuses[$node->merci_status])));
+        form_set_error('merci_status', t('You can not change the status to %status for a reservation that has passed.', array('%status' => $statuses[$node->merci_status])));
       } // if
+
     } // if
+
   } // else
 
 } // merci_node_validate
+
+/**
+ * Check date restrictions
+ */
+function merci_date_restriction_validate($type, $start, $end, $start_field, $end_field) {
+
+  // Build date objects we'll need for our different validations.
+  $start_object = merci_create_local_date_object($start);
+  $end_object = merci_create_local_date_object($end);
+  $hours_of_operation = merci_load_hours_of_operation($type);
+  $start_day_of_week = (int) date_format($start_object, 'w');
+  $end_day_of_week = (int) date_format($end_object, 'w');
+  $start_month_day = date_format($start_object, 'm-d');
+  $end_month_day = date_format($end_object, 'm-d');
+  $start_hours = $hours_of_operation[$start_day_of_week];
+  $end_hours = $hours_of_operation[$end_day_of_week];
+  $start_date = date_format($start_object, 'm-d-Y');
+  $max_days = variable_get("merci_max_days_advance_reservation", '0');
+
+  //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restriction
+  if (!user_access('administer MERCI')) {
+    // Reservation start date can not exceed the max advance
+    if ($max_days) {
+      $max_date = date('m-d-Y', mktime(0, 0, 0, date("m"), date("d")+$max_days, date("Y")));
+      if ( $start_date > $max_date ) {
+        form_set_error('merci_status', t('You can not make a Reservation more than %days days in advance. Start the Reservation before %date.', array('%days' => $max_days, '%date' => $max_date)));
+      }
+    } // if
+
+    // Can't start or end a reservation on days that are closed dates.
+    if (in_array($start_month_day, $hours_of_operation['closed_days'])) {
+      $name = date_format($start_object, 'F jS');
+      form_set_error($start_field .'[date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
+    }
+    if (in_array($end_month_day, $hours_of_operation['closed_days'])) {
+      $name = date_format($end_object, 'F jS');
+      form_set_error($end_field .'[date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
+    } // if
+
+    // Can't start or end a reservation on a day the facility
+    // has no hours of operation, or outside hours of operation.
+
+    $start_name = date_format($start_object, 'l');
+    if (!$hours_of_operation[$start_day_of_week]) {
+      form_set_error($start_field .'[date', t('Reservations can not start on a %day.', array('%day' => $start_name)));
+    } // if
+    else {
+      $start_time = date_format($start_object, 'H:s');
+      if ($start_time < $start_hours['open']) {
+        form_set_error($start_field .'[time', t('Reservations can not start on a %day before %start.', array('%day' => $start_name, '%start' => date("g:i a", strtotime($start_hours['open'])))));
+      }
+      elseif ($start_time > $start_hours['close']) {
+        form_set_error($start_field .'[time', t('Reservations can not start on a %day after %end.', array('%day' => $start_name, '%end' => date("g:i a", strtotime($start_hours['close'])))));
+      }
+    } // else
+
+    $end_name = date_format($end_object, 'l');
+    if (!$hours_of_operation[$end_day_of_week]) {
+      form_set_error($end_field .'[date', t('Reservations can not end on a %day.', array('%day' => $end_name)));
+    }
+    else {
+      $end_time = date_format($end_object, 'H:s');
+      if ($end_time < $end_hours['open']) {
+        form_set_error($end_field .'[time', t('Reservations can not end on a %day before %start.', array('%day' => $end_name, '%start' => date("g:i a", strtotime($end_hours['open'])))));
+      }
+      elseif ($end_time > $end_hours['close']) {
+        form_set_error($end_field .'[time', t('Reservations can not end on a %day after %end.', array('%day' => $end_name, '%end' => date("g:i a", strtotime($end_hours['close'])))));
+      }
+    } // else
+  } // if
+  
+} // merci_date_restriction_validate
 
 /**
  * Builds an array representing reservations for a given bucket within a given timespan
@@ -2444,7 +2543,8 @@ function merci_load_reservations_for_type_in_timespan( $type , $start_date , $en
  *         'close' => Closing time (military).
  *     'closed_days' => An array of closed dates in mm-dd format.
  */
-function merci_load_hours_of_operation() {
+function merci_load_hours_of_operation($content_type) {
+
   $days_of_the_week = array(
     'sun',
     'mon',
@@ -2455,38 +2555,41 @@ function merci_load_hours_of_operation() {
     'sat',
   );
 
+  $rules = merci_content_type_rules($content_type);
+
   $hours_of_operation = array();
   foreach ($days_of_the_week as $num => $day) {
-    $hours = variable_get("merci_hours_$day", '');
-    if (drupal_strlen($hours) == 11) {
-      $parts = explode('-', $hours);
-      if (count($parts == 2)) {
-        $hours_of_operation[$num] = array(
-         'open' => $parts[0],
-         'close' => $parts[1],
-        );
-      }
-      else {
-        $hours_of_operation[$num] = FALSE;
-      }
-    }
-    else {
-      $hours_of_operation[$num] = FALSE;
-    }
+    $hours_of_operation[$num] = merci_hours_str_to_array($rules->{'hours_'. $day});
   }
+
   $closed_days_raw = variable_get('merci_closed_dates', '');
-  $closed_days = array();
+  $hours_of_operation['closed_days'] = array();
   $parts = explode("\n", $closed_days_raw);
   foreach ($parts as $date) {
     $date = trim($date);
     if (drupal_strlen($date) == 5) {
-      $closed_days[] = $date;
+      $hours_of_operation['closed_days'][] = $date;
     }
   }
-  $hours_of_operation['closed_days'] = $closed_days;
 
   return $hours_of_operation;
 }
+
+function merci_hours_str_to_array($str) {
+
+  if (drupal_strlen($str) == 11) {
+    $parts = explode('-', ($str));
+    if (count($parts) == 2) {
+      return array(
+       'open' => $parts[0],
+       'close' => $parts[1],
+      );
+    }
+  }
+
+  return false;
+
+} // merci_hours_str_to_array
 
 /**
  * Creates a date object based on the site's local timezone.
