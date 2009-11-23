@@ -2650,11 +2650,13 @@ function merci_simpletest() {
 }
 
 /**
- * Implementation of hook_views_api().
- */
+   * Implementation of hook_views_api().
+    */
 function merci_views_api() {
   return array(
-    'api' => '2.0',
+    'api' => 2,
+    'path' => drupal_get_path('module', 'merci'),
+    //'path' => drupal_get_path('module', 'merci') . '/includes',
   );
 }
 
@@ -3136,3 +3138,4 @@ function merci_calculate_costs($nid) {
 function merci_has_accessories($content_type) {
   return db_fetch_object(db_query("SELECT * FROM {vocabulary_node_types} WHERE type = '%s'", $content_type));
 }
+
