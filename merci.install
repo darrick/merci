@@ -447,6 +447,12 @@ function merci_schema() {
         'default' => 0,
         'description' => t("TRUE if the resource is managed by selfcheckout."),
       ),
+      'grouping' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => FALSE,
+        'description' => t("tid of MERCI Equiment Grouping vocabulary"),
+      ),
     ),
     'primary key' => array('type'),
   );
