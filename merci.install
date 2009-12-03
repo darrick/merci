@@ -15,10 +15,10 @@ function merci_install() {
   drupal_load('module', 'merci');
   // Create tables.
   drupal_install_schema('merci');
-  //db_query("UPDATE {system} SET weight = 1 WHERE name = 'merci'");
+  db_query("UPDATE {system} SET weight = 1 WHERE name = 'merci'");
 
-  // Create the date field for the reservation.
-  $field = array(
+  // Create the date, commercial_total, and member_total fields for the reservation.
+  $date_field = array(
     'field_name' => 'field_merci_date',
     'type_name' => 'merci_reservation',
     'display_settings' => array(
@@ -97,11 +97,182 @@ function merci_install() {
       'module' => 'date',
     ),
   );
+  
+  $member_cost_field = array (
+    'label' => 'Member Cost',
+    'field_name' => 'field_merci_member_cost',
+    'type_name' => 'merci_reservation',
+    'type' => 'number_integer',
+    'widget_type' => 'number',
+    'change' => 'Change basic information',
+    'weight' => 0,
+    'locked' => '1',
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'value' => '',
+        '_error_element' => 'default_value_widget][field_merci_member_cost][0][value',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => NULL,
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '',
+    'max' => '',
+    'prefix' => '',
+    'suffix' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'number',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => 0,
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 1,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 1,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  );  
 
+  
+  $commerical_cost_field = array (
+    'label' => 'Commercial Cost',
+    'field_name' => 'field_merci_commercial_cost',
+    'type_name' => 'merci_reservation',
+    'type' => 'number_integer',
+    'widget_type' => 'number',
+    'change' => 'Change basic information',
+    'weight' => '1',
+    'locked' => '1',
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'value' => '',
+        '_error_element' => 'default_value_widget][field_merci_commercial_cost][0][value',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => NULL,
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '',
+    'max' => '',
+    'prefix' => '',
+    'suffix' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'number',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '1',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 1,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 1,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  );    
+  
   // Need to load the CCK include file where content_field_instance_create() is defined.
   module_load_include('inc', 'content', 'includes/content.crud');
   // Create the field.
-  content_field_instance_create($field);
+  
+  
+  content_field_instance_create($date_field);
+  content_field_instance_create($commerical_cost_field);
+  content_field_instance_create($member_cost_field);
+  
+  
+  
+  
+  // borrowed from Forum module
+  
+    // Create the forum vocabulary if it does not exist. Assign the vocabulary
+    // a low weight so it will appear first in forum topic create and edit
+    // forms.
+    $vocabulary = array(
+      'name' => t('MERCI Equipment Grouping'),
+      'multiple' => 0,
+      'required' => 0,
+      'hierarchy' => 0,
+      'relations' => 0,
+      'module' => 'merci',
+      'weight' => -10,
+    );
+    taxonomy_save_vocabulary($vocabulary);
+
+    variable_set('merci_equipment_grouping_vid', $vocabulary['vid']);
+  
 
 }
 
@@ -116,14 +287,15 @@ function merci_uninstall() {
     variable_del($variable->name);
   }
 
-  // Remove all MERCI content types and all associated nodes.
+  // Remove all MERCI all associated nodes 
+  //No longer removes content types
   $content_types = db_query("SELECT type FROM {merci_node_type} WHERE type_setting <> 'disabled'");
   while ($content_type = db_fetch_object($content_types)) {
     $nodes = db_query("SELECT nid FROM {node} WHERE type = '%s'", $content_type->type);
     while ($node = db_fetch_object($nodes)) {
       node_delete($node->nid);
     }
-    node_type_delete($content_type->type);
+    //node_type_delete($content_type->type);
   }
 
   // Remove the programatically created reservation node type
@@ -142,6 +314,8 @@ function merci_uninstall() {
   // Remove field_merci_date.
   module_load_include('inc', 'content', 'includes/content.crud');
   content_field_instance_delete('field_merci_date', 'merci_reservation');
+  content_field_instance_delete('field_merci_commercial_cost', 'merci_reservation');
+  content_field_instance_delete('field_merci_member_cost', 'merci_reservation');
 
   // Remove tables.
   drupal_uninstall_schema('merci');
@@ -494,38 +668,6 @@ function merci_schema() {
     'primary key' => array('nid', 'vid'),
   );
 
-/*  $schema['merci_group'] = array(
-    'description' => t('Stores information on bookable groups.'),
-    'fields' => array(
-      'nid' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'description' => t("The bookable group nid."),
-      ),
-      'type' => array(
-        'type' => 'varchar',
-        'length' => 10,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => t("The type of bookable resource, either 'item' or 'resource'."),
-      ),
-      'id' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => t('The ID of the bookable resource -- can be either an item nid or a resource node type.'),
-      ),
-    ),
-    'indexes' => array(
-      'nid' => array('nid'),
-    ),
-  );*/
-
-  // TODO: resource groups, for heirarchical / blanket effects on bookings
-  // possibly for categorizing seats into theatres and theatre sections, for example
-  // $schema[merci_resgroups'] = array();
-
   return $schema;
 }
 
@@ -546,3 +688,10 @@ function merci_update_3() {
   $ret[] = update_sql("ALTER TABLE {merci_node_type} ADD autocheckout TINYINT NOT NULL DEFAULT '0', ADD autocheckin TINYINT NOT NULL DEFAULT '0', ADD selfcheckout TINYINT NOT NULL DEFAULT '0';");
   return $ret;
 }
+
+function merci_update_4() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {merci_node_type} ADD grouping TINYINT NULL;");
+  return $ret;
+}
+
