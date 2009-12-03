@@ -1,0 +1,43 @@
+<?php
+// $Id$ 
+
+/**
+* Implementation of hook_install().
+*/
+function merci_inventory_install() {
+
+  drupal_set_message(t('Merci Inventory module successfully installed. merci_inventory_master content types created.  Do not add nodes to this content type.  Only use it to push CCK fields out to other MERCI managed content types.'));
+
+}
+
+function merci_inventory_enable(){    
+  // create content types
+  include_once('./'. drupal_get_path('module', 'merci_inventory') .'/includes/content_types/content_types.inc');
+  _merci_inventory_install_create_content_types();
+
+  
+} // function merci_inventory_install
+
+
+
+
+
+/**
+* Implementation of hook_uninstall().
+*/
+function merci_inventory_uninstall() {
+
+  
+  // delete any merci_inventory_master nodes... even though there really shouldn't be any
+  $result = db_query("SELECT nid FROM {node} WHERE type = 'merci_inventory_master'");
+  while ($node = db_fetch_object($result)) {
+    node_delete($node->nid);
+  }
+  
+  // delete CCK content_types
+  $return = node_type_delete('merci_inventory_master');
+
+  drupal_set_message(t('MERCI Inventory module successfully uninstalled.  merci_inventory_master content type and nodes deleted.'));
+} // merci_inventory_uninstall
+
+
