@@ -15,7 +15,12 @@ function merci_install() {
   drupal_load('module', 'merci');
   // Create tables.
   drupal_install_schema('merci');
-  db_query("UPDATE {system} SET weight = 1 WHERE name = 'merci'");
+  
+  // Set the weight of the merci module to be higher than that of the date
+  // module.
+  $date_weight = db_result(db_query("SELECT weight FROM {system} WHERE name = 'date'"));
+  $weight = ($date_weight ? $date_weight + 1 : 0);
+  db_query("UPDATE {system} SET weight = %d WHERE name = 'merci'", $weight);
 
   // Create the date, commercial_total, and member_total fields for the reservation.
   $date_field = array(
