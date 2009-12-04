@@ -353,16 +353,21 @@ function merci_form_alter(&$form, $form_state, $form_id) {
  
       $items = array();
       $terms = taxonomy_get_tree(variable_get('merci_equipment_grouping_vid', 0));
+      
+      
+      $groupings[0] = 'None';
       foreach ( $terms as $term ) {
          $groupings[$term->tid] = $term->name;
       } 
+      
     
+      // TODO - Fix default setting value
       $form['merci']['merci_grouping'] = array(
         '#type' => 'select',
         '#title' => t('Grouping'),
-        '#default_value' => $settings ? $settings->grouping : 1,
+        '#default_value' => $settings ? $settings->grouping : 0,
         '#options' => $groupings,
-        '#description' => t('This will alter order the content types are displayed to users reserving items from buckets.'),
+        '#description' => t('This will alter order the content types are displayed to users reserving items from buckets.  Terms added to the MERCI Equipment Groupings taxonomy will appear here.'),
       );
       
       $form['merci']['merci_max_hours_per_reservation'] = array(
@@ -1230,12 +1235,21 @@ function merci_load_content_type_settings($content_type) {
  */
 function merci_load_merci_type_settings($merci_type) {
 
-  $sql = "SELECT nt.type, nt.name, m.status, m.spare_items
-  FROM {node_type} nt
-  INNER JOIN {merci_node_type} m
+  //$sql = "SELECT nt.type, nt.name, m.status, m.spare_items
+  //FROM {node_type} nt
+  //INNER JOIN {merci_node_type} m
+  //  ON nt.type = m.type
+  //WHERE m.type_setting = '%s'
+  //ORDER BY nt.name";
+  
+  $sql = "SELECT nt.type, nt.name, m.status, m.spare_items, m.grouping, td.name
+  FROM node_type nt
+  INNER JOIN merci_node_type m
     ON nt.type = m.type
-  WHERE m.type_setting = '%s'
-  ORDER BY nt.name";
+  LEFT JOIN term_data td
+    ON m.grouping = td.tid
+  WHERE m.type_setting = 'bucket'
+  ORDER BY td.name, nt.name";
 
   return db_query($sql, $merci_type);
 
@@ -1345,7 +1359,7 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         if (isset($node->nid)) {
           switch ($type) {
             case 'bucket':
-              $merci_node = db_fetch_array(db_query("SELECT default_availability, late_fee_per_hour, rate_per_hour, fee_free_hours, min_cancel_hours, autocheckout, autocheckin, selfcheckout, sub_type, grouping FROM {merci_bucket_node} WHERE vid = %d", $node->vid));
+              $merci_node = db_fetch_array(db_query("SELECT default_availability, late_fee_per_hour, rate_per_hour, fee_free_hours, min_cancel_hours, autocheckout, autocheckin, selfcheckout, sub_type FROM {merci_bucket_node} WHERE vid = %d", $node->vid));
               break;
             case 'resource':
               $merci_node = db_fetch_array(db_query("SELECT default_availability, late_fee_per_hour, rate_per_hour, fee_free_hours, min_cancel_hours, autocheckout, autocheckin, selfcheckout, sub_type FROM {merci_resource_node} WHERE vid = %d", $node->vid));
@@ -1660,12 +1674,11 @@ function merci_node_type_save_submit($form, &$form_state) {
     variable_del($variable . $merci['type']);
   }
 
-  //FIX - grouping hardcoded to 1
   if ($form_state['clicked_button']['#value'] == t('Save content type')) {
-    db_query("UPDATE {merci_node_type} SET type_setting = '%s', max_hours_per_reservation = %d, allow_overnight = %d, allow_weekends = %d, late_fee_per_hour = %f, rate_per_hour = %f, fee_free_hours = %d, status = %d, spare_items = %d, min_cancel_hours = %d, autocheckout = %d, autocheckin = %d, selfcheckout = %d, grouping = '1' WHERE type = '%s'", $merci['merci_type_setting'], $merci['merci_max_hours_per_reservation'], $merci['merci_allow_overnight'], $merci['merci_allow_weekends'], $merci['merci_late_fee_per_hour'], $merci['merci_rate_per_hour'], $merci['merci_fee_free_hours'], $merci['merci_status'], $merci['merci_spare_items'], $merci['merci_min_cancel_hours'], $merci['merci_autocheckout'], $merci['merci_autocheckin'], $merci['merci_selfcheckout'], $merci['type'], $merci['grouping']);
+    db_query("UPDATE {merci_node_type} SET type_setting = '%s', max_hours_per_reservation = %d, allow_overnight = %d, allow_weekends = %d, late_fee_per_hour = %f, rate_per_hour = %f, fee_free_hours = %d, status = %d, spare_items = %d, min_cancel_hours = %d, autocheckout = %d, autocheckin = %d, selfcheckout = %d, grouping = %d WHERE type = '%s'", $merci['merci_type_setting'], $merci['merci_max_hours_per_reservation'], $merci['merci_allow_overnight'], $merci['merci_allow_weekends'], $merci['merci_late_fee_per_hour'], $merci['merci_rate_per_hour'], $merci['merci_fee_free_hours'], $merci['merci_status'], $merci['merci_spare_items'], $merci['merci_min_cancel_hours'], $merci['merci_autocheckout'], $merci['merci_autocheckin'], $merci['merci_selfcheckout'], $merci['merci_grouping'], $merci['type']);
     
     if (!db_affected_rows()) {
-      db_query("INSERT INTO {merci_node_type} (type, type_setting, max_hours_per_reservation, allow_overnight, allow_weekends, late_fee_per_hour, rate_per_hour, fee_free_hours, status, spare_items, min_cancel_hours, autocheckout, autocheckin, selfcheckout, grouping) VALUES ('%s', '%s', %d, %d, %d, %d, %f, %f, %d, %d, %d, %d, %d, %d, 1)", $merci['type'], $merci['merci_type_setting'], $merci['merci_max_hours_per_reservation'], $merci['merci_allow_overnight'], $merci['merci_allow_weekends'], $merci['merci_late_fee_per_hour'], $merci['merci_rate_per_hour'], $merci{'merci_fee_free_hours'}, $merci['merci_status'], $merci['merci_spare_items'], $merci['merci_min_cancel_hours'], $merci['merci_autocheckout'], $merci['merci_autocheckin'], $merci['merci_selfcheckout'], $merci['merci_grouping']);
+      db_query("INSERT INTO {merci_node_type} (type, type_setting, max_hours_per_reservation, allow_overnight, allow_weekends, late_fee_per_hour, rate_per_hour, fee_free_hours, status, spare_items, min_cancel_hours, autocheckout, autocheckin, selfcheckout, grouping) VALUES ('%s', '%s', %d, %d, %d, %d, %f, %f, %d, %d, %d, %d, %d, %d, %d)", $merci['type'], $merci['merci_type_setting'], $merci['merci_max_hours_per_reservation'], $merci['merci_allow_overnight'], $merci['merci_allow_weekends'], $merci['merci_late_fee_per_hour'], $merci['merci_rate_per_hour'], $merci{'merci_fee_free_hours'}, $merci['merci_status'], $merci['merci_spare_items'], $merci['merci_min_cancel_hours'], $merci['merci_autocheckout'], $merci['merci_autocheckin'], $merci['merci_selfcheckout'], $merci['merci_grouping']);
     }
   }
 }

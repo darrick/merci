@@ -324,6 +324,10 @@ function merci_uninstall() {
 
   // Remove tables.
   drupal_uninstall_schema('merci');
+  
+   // Delete the vocabulary.
+  $vid = variable_get('merci_equipment_grouping_vid', '');
+  taxonomy_del_vocabulary($vid);
 }
 
 /**
@@ -595,7 +599,7 @@ function merci_schema() {
       'sub_type' => array(
         'type' => 'int',
         'not null' => TRUE,
-        'default' => MERCI_SUB_TYPE_ITEM,
+        'default' => 0,
         'description' => t("The subtype of bucket node, either item or reservation."),
       ),
     ),
@@ -672,7 +676,7 @@ function merci_schema() {
       'sub_type' => array(
         'type' => 'int',
         'not null' => TRUE,
-        'default' => MERCI_SUB_TYPE_ITEM,
+        'default' => 0,
         'description' => t("The subtype of resource node, either item or reservation."),
       ),
     ),
