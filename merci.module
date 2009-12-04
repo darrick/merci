@@ -110,7 +110,10 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           }
 
         }
-
+        
+       
+        
+       
         // New nodes are always sub type item.
         $form['merci_sub_type'] = array(
           '#type' => 'value',
@@ -248,6 +251,11 @@ function merci_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     // Add check availability button inside date selector.
     case 'merci_reservation_node_form':
+    
+     //Hide member cost and commerical cost.  These are only here to make Views easier.
+        
+        unset($form['field_merci_member_cost']);
+        unset($form['field_merci_commercial_cost']);
 
     if (user_access('suspend MERCI access') && !user_access('administer MERCI')) {
       form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
@@ -1029,7 +1037,8 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
 
   } // whiel
 
-  $options['options'][t('Buckets')] = $bucket_options;
+  // FIX - NEED TO CHANGE FORMATTING HERE
+  $options['options'][t(' -- Buckets--')] = $bucket_options;
   $options['flat_options'] = array_keys($bucket_options);
 
   // Resources.
@@ -1235,22 +1244,23 @@ function merci_load_content_type_settings($content_type) {
  */
 function merci_load_merci_type_settings($merci_type) {
 
-  //$sql = "SELECT nt.type, nt.name, m.status, m.spare_items
-  //FROM {node_type} nt
-  //INNER JOIN {merci_node_type} m
-  //  ON nt.type = m.type
-  //WHERE m.type_setting = '%s'
-  //ORDER BY nt.name";
-  
-  $sql = "SELECT nt.type, nt.name, m.status, m.spare_items, m.grouping, td.name
-  FROM node_type nt
-  INNER JOIN merci_node_type m
-    ON nt.type = m.type
-  LEFT JOIN term_data td
-    ON m.grouping = td.tid
-  WHERE m.type_setting = 'bucket'
-  ORDER BY td.name, nt.name";
-
+  if($merci_type == 'resource'){
+     $sql = "SELECT nt.type, nt.name, m.status, m.spare_items
+     FROM {node_type} nt
+     INNER JOIN {merci_node_type} m
+       ON nt.type = m.type
+     WHERE m.type_setting = '%s'
+     ORDER BY nt.name";
+  } else {
+     $sql = "SELECT nt.type, nt.name, m.status, m.spare_items, m.grouping, td.name AS group_name
+     FROM node_type nt
+     INNER JOIN merci_node_type m
+       ON nt.type = m.type
+     LEFT JOIN term_data td
+       ON m.grouping = td.tid
+     WHERE m.type_setting = 'bucket'
+     ORDER BY td.name, nt.name";
+  }
   return db_query($sql, $merci_type);
 
 } // merci_load_merci_type_settings
