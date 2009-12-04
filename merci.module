@@ -347,12 +347,18 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         );
       }
       
-      //$groupings = taxonomy_vocabulary_load(variable_get('merci_equipment_grouping_vid', 0));
-       
-       $groupings = array('4', '5', '6');
-       //print_r($groupings);
+      
+     
+      
+ 
+      $items = array();
+      $terms = taxonomy_get_tree(variable_get('merci_equipment_grouping_vid', 0));
+      foreach ( $terms as $term ) {
+         $groupings[$term->tid] = $term->name;
+      } 
+    
       $form['merci']['merci_grouping'] = array(
-        '#type' => 'radios',
+        '#type' => 'select',
         '#title' => t('Grouping'),
         '#default_value' => $settings ? $settings->grouping : 1,
         '#options' => $groupings,
