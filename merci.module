@@ -2926,7 +2926,7 @@ function merci_taxonomy_json( $node_id ) {
 } // merci_taxonomy_json
 
 function merci_printable_contract( $node_id ) {
-
+  $node = node_load( $node_id );
 
   $user = user_load( $node->uid );
   $username = $user->name;
@@ -2997,7 +2997,7 @@ function merci_printable_contract( $node_id ) {
 
           $even_odd = 'even';
 
-          $node = node_load( $node_id );
+          
           $items = $node -> merci['reservation_items'];
 
           foreach ( $items as $item ) {
