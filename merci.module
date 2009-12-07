@@ -58,6 +58,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
   if (isset($form['type']) && isset($form['#node'])) {
     $type = $form['type']['#value'];
     if ("{$type}_node_form" == $form_id && $form_id != 'merci_reservation_node_form') {
+      
       $merci_settings = merci_load_content_type_settings($type);
       // Only active MERCI node types get processed.
       if ($merci_settings->type_setting != 'disabled') {
@@ -256,6 +257,12 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         
         unset($form['field_merci_member_cost']);
         unset($form['field_merci_commercial_cost']);
+       
+        //Users without administer MERCI permission can only alter Unconfirmed Reservations.
+        if(!user_access('administer MERCI') && $form['merci']['merci_status']['#default_value']){
+          unset($form['buttons']['preview']);
+          unset($form['buttons']['submit']);
+        }
 
     if (user_access('suspend MERCI access') && !user_access('administer MERCI')) {
       form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
@@ -1038,7 +1045,7 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
   } // whiel
 
   // FIX - NEED TO CHANGE FORMATTING HERE
-  $options['options'][t(' -- Buckets--')] = $bucket_options;
+  $options['options'][t('Buckets')] = $bucket_options;
   $options['flat_options'] = array_keys($bucket_options);
 
   // Resources.
@@ -2926,7 +2933,7 @@ function merci_taxonomy_json( $node_id ) {
 } // merci_taxonomy_json
 
 function merci_printable_contract( $node_id ) {
-  $node = node_load( $node_id );
+
 
   $user = user_load( $node->uid );
   $username = $user->name;
@@ -2997,7 +3004,7 @@ function merci_printable_contract( $node_id ) {
 
           $even_odd = 'even';
 
-          
+          $node = node_load( $node_id );
           $items = $node -> merci['reservation_items'];
 
           foreach ( $items as $item ) {
