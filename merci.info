@@ -6,6 +6,7 @@ description = "Managed Equipment Reservation Checkout and Inventory"
 core = 6.x
 
 dependencies[] = content
+dependencies[] = number 
 dependencies[] = date
 dependencies[] = date_api
 dependencies[] = date_popup

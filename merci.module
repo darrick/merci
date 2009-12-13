@@ -302,6 +302,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#collapsed' => TRUE,
       );
 
+      drupal_set_message("type is : $type");
       // If any nodes have already been created, lock the type setting.
       if (merci_check_existing_bucket_items($type)) {
         $form['merci']['merci_type_setting'] = array(
