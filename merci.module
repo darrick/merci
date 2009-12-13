@@ -2196,17 +2196,18 @@ function merci_node_validate($form, &$form_state) {
    
 	   
 	   
-	   //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restrictions
-	   if (!user_access('administer MERCI')) { 
-         // Reservation start date cannot exceed the max advance
-         if($max_days){
-            $max_date = date('m-d-Y', mktime(0, 0, 0, date("m"), date("d")+$max_days, date("Y")));
-			if ( $start_date > $max_date ) {
-			 form_set_error('merci_status', t('You cannot make a Reservation more than %days days in advance. Start the Reservation before %date.', array('%days' => $max_days, '%date' => $max_date)));
-			}
-		  }
-         
-		 // Can't start or end a reservation on days that are
+     //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restrictions
+     if (!user_access('administer MERCI')) { 
+       // Reservation start date cannot exceed the max advance
+       if($max_days){
+         $max_date = new DateTime("+$max_days day");
+         if ( $start_object > $max_date ) {
+           form_set_error('merci_status', t('You cannot make a Reservation more than %days days in advance. Start the Reservation before %date.', array('%days' => $max_days, '%date' => date_format($max_date,'m-d-Y'))));
+         }
+       }
+
+       // Can't start or end a reservation on days that are
+
 		 // closed dates.
 		 if (in_array($start_month_day, $hours_of_operation['closed_days'])) {
 		   $name = date_format($start_object, 'F jS');
@@ -2532,7 +2533,7 @@ function merci_load_reservations_for_type_in_timespan( $type , $start_date , $en
  *         'close' => Closing time (military).
  *     'closed_days' => An array of closed dates in mm-dd format.
  */
-function merci_load_hours_of_operation($content_type) {
+function merci_load_hours_of_operation($content_type='') {
 
   $days_of_the_week = array(
     'sun',
@@ -2544,7 +2545,9 @@ function merci_load_hours_of_operation($content_type) {
     'sat',
   );
 
+  if(!empty($content_type)){
   $rules = merci_content_type_rules($content_type);
+  }
 
   $hours_of_operation = array();
   foreach ($days_of_the_week as $num => $day) {
