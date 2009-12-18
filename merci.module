@@ -710,6 +710,15 @@ function merci_admin_settings() {
     '#default_value' => variable_get('merci_hours_sun', ''),
     '#description' => $hours_description,
   );
+  
+  $form['merci_general']['merci_hours_admin'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Admin hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_hours_admin', ''),
+    '#description' => t('This setting controls the hours shown on the conflict grid for users with Adminster MERCI permessions.  The conflict grid is normally limited to the days and hours the set above.  Because users with Admister MERCI rights can create Resevervations outside the normal hours of operation, they need to see conflicts during those times as well.'),
+  );
 
   $form['merci_general']['merci_closed_dates'] = array(
     '#type' => 'textarea',
@@ -755,6 +764,19 @@ function merci_admin_settings() {
     '#default_value' => variable_get('merci_contract_footer', ''),
     '#description' => t('Footer portion of printable contract. Normally includes signature lines. HTML allowed.'),
   );
+  
+  if (module_exists('token')) {
+    $form['merci_general']['token_help'] = array(
+    '#title' => t('Replacement patterns'),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    );
+
+    $form['merci_general']['token_help']['help'] = array(
+    '#value' => theme('token_help', 'node'),
+    );
+  }
 
   return system_settings_form($form);
 }
@@ -2374,6 +2396,13 @@ function merci_node_validate($form, &$form_state) {
          $date_timestamp = strtotime( $date );
          $hours_date = $hours[ date( 'w' , $date_timestamp ) ];
          
+         if(user_access('administer MERCI')){
+           $adminhours = explode('-', variable_get('merci_hours_admin', '07:00-23:00'));
+           
+           $hours_date['open'] = $adminhours[0];
+           $hours_date['close'] = $adminhours[1];
+         }
+         
          if ( isset( $hours_date['open'] ) ) {
    
            $message .= '<table class="merci-availability-schedule"><thead><tr>';
@@ -2882,7 +2911,7 @@ function merci_taxonomy_json( $node_id ) {
 } // merci_taxonomy_json
 
 function merci_printable_contract($node_id) {
-
+  global $base_path;
   $node = node_load( $node_id );
   $user = user_load( $node->uid );
   $username = $user->name;
@@ -2923,10 +2952,15 @@ function merci_printable_contract($node_id) {
       <div id="page">
         <div id="header">
         <?php if ($logo) { ?>
-           <img src="/<?php print $logo ?>">
+           <img src="<?php print $base_path ?><?php print $logo ?>">
         <?php } ?>
         <h2><?php print variable_get( 'site_name' , '' ); ?> Equipment Rental Contract</h2>
-        <?php print variable_get( 'merci_contract_header' , '' ); ?>
+        <?php if (module_exists('token')) {
+        print token_replace(variable_get('merci_contract_header', ''), 'node', $node);
+        } 
+        else {
+        print variable_get('merci_contract_header');
+        } ?>
         Start: <?php print date("F j, Y, g:i a", $starthour) . '<br />'; ?>
         Returned by: <?php print date("F j, Y, g:i a", $endhour) . '<br />'; ?>
         Name: <?php print($user->name) . '<br />'; ?>
@@ -2943,7 +2977,7 @@ function merci_printable_contract($node_id) {
           </thead>
           <tbody>
           <?php
-            $discount = variable_get( 'merci_membership_discount', 1 );
+          $discount = variable_get( 'merci_membership_discount', 1 );
           $commercial_cost_total = 0;
           $member_cost_total = 0;
         
@@ -3014,8 +3048,8 @@ function merci_printable_contract($node_id) {
             </tr>
           <tfoot>
         </table>
-        <div id="boilerplate"><?php echo variable_get( 'merci_contract_boilerplate' , '' ); ?></div>
-        <div id="footer"><?php echo variable_get( 'merci_contract_footer' , '' ); ?></div>
+        <div id="boilerplate"><?php if (module_exists('token')) {echo token_replace(variable_get('merci_contract_boilerplate', ''), 'node', $node);} else {echo variable_get('merci_contract_boilerplate');} ?></div>
+        <div id="footer"><?php if (module_exists('token')) {echo token_replace(variable_get('merci_contract_footer', ''), 'node', $node);} else {echo variable_get('merci_contract_footer');} ?></div>
       </div>
     </body>
   <?php
@@ -3080,3 +3114,55 @@ function merci_cron() {
 function merci_has_accessories($content_type) {
   return db_fetch_object(db_query("SELECT * FROM {vocabulary_node_types} WHERE type = '%s'", $content_type));
 }
+
+/**
+* Implementation of hook_token_list().
+*
+*/
+function merci_token_list($type = 'all') {
+  if ($type == 'node' || $type == 'all') {
+    //$tokens['node']['merci_resources'] = t('Reserved resource');
+    $tokens['node']['merci_commercial_cost'] = t('Commercial cost');
+    $tokens['node']['merci_member_cost'] = t('Member cost');
+    return $tokens;
+  }
+}
+
+/**
+* Implementation of hook_token_values().
+* @see {merci_token_list}
+*/
+function merci_token_values($type, $object = NULL, $options = array()) {
+  switch ($type) {
+    case 'node':
+      $node = $object;
+      $values['merci_resources'] = '';
+      $values['merci_commercial_cost'] = 0;
+      $values['merci_member_cost'] = 0;
+      $discount = variable_get( 'merci_membership_discount', 1 );
+      // We want these timestamps generated in UTC.
+      $old_timezone = date_default_timezone_get();
+      date_default_timezone_set('UTC');
+      $starthour = strtotime( $node -> field_merci_date[0]['value'] );
+      $endhour = strtotime( $node -> field_merci_date[0]['value2'] );
+      date_default_timezone_set($old_timezone);
+      $hours = round( ( $endhour - $starthour ) / 3600 , 2 );
+      $titles = array();
+      foreach ($node->merci['reservation_items'] as $item) {
+        $item_node = node_load( $item -> pnid );
+        $type = merci_load_content_type_settings( $item -> type );
+        $fee_hours = $hours - ( $type -> fee_free_hours );
+        $values['merci_commercial_cost'] += $type -> rate_per_hour * $hours;
+        $values['merci_member_cost'] += ( $fee_hours > 0 ) ? ($type -> rate_per_hour * $discount ) * $fee_hours : 0;
+        if ($item->ttitle != '') {
+          $titles[] = $item->ttitle;
+        } else {
+          $titles[] = $item->ptitle;
+        }
+      }
+      $values['merci_resources'] = check_plain(implode(", ",$titles));
+    return $values;
+    break;
+  }
+}
+?>
