@@ -538,7 +538,11 @@ function merci_update_4() {
 }
 
 function merci_update_5() {
+  if(module_exists("number")){
   add_cost_fields_and_group_taxonomy();
+  } else {
+    drupal_set_message(t("You need to install and enable the cck number module for this update."));
+  }
 }
 
 
