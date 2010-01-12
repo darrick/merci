@@ -40,7 +40,7 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
   'merci_type_setting' => 'disabled',
   'merci_status' => 1,
   'merci_spare_items' => 0,
-  'merci_grouping' => 1,
+  'merci_grouping' => 0,
   'merci_max_hours_per_reservation' => 0,
   'merci_allow_overnight' => 0,
   'merci_allow_weekends' => 0,
