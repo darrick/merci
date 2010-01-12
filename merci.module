@@ -2924,7 +2924,7 @@ function merci_printable_contract($node_id) {
   $username = $user->name;
   $email = $user->mail;
   if (module_exists('civicrm')) {
-  
+
      civicrm_initialize(TRUE);
      global $civicrm_root;
      include_once($civicrm_root . '/api/UFGroup.php');
@@ -2932,9 +2932,12 @@ function merci_printable_contract($node_id) {
      $cg = array('contact_id' => $userID);
      include_once($civicrm_root . '/api/v2/Contact.php');
      $ob = civicrm_contact_get($cg);
-   
-     $username = $ob['first_name'] . ' ' . $ob['middle_name'] . ' ' . $ob['last_name'];
-     $phone = $ob['phone'];
+     //print '<pre>';
+     //print_r($ob);
+     //print '</pre>';
+     $username = $ob[$userID]['display_name'];
+     //print $username;
+     $phone = $ob[$userID]['phone'];
   }
   
   $items = $node -> merci['reservation_items'];
@@ -2970,8 +2973,9 @@ function merci_printable_contract($node_id) {
         } ?>
         Start: <?php print date("F j, Y, g:i a", $starthour) . '<br />'; ?>
         Returned by: <?php print date("F j, Y, g:i a", $endhour) . '<br />'; ?>
-        Name: <?php print($user->name) . '<br />'; ?>
-        Email: <?php print($user->mail) . '<br />'; ?>
+        Name: <?php print $username ?><br />
+        Email: <?php print $email ?><br />
+        Phone: <?php print $phone ?><br />
         
         </div>
         <table id="cost">
@@ -3009,21 +3013,21 @@ function merci_printable_contract($node_id) {
                $ttitle = '<b>SPECIFIC ITEM NOT SELECTED FROM BUCKET</b>';
               }
             ?>
-            <tr class="<?php echo $even_odd; ?>">
+            <tr class="<?php print $even_odd; ?>">
               <td>
                 <div><?php print $ttitle; ?></div>
                 <?php
                 
-                if ( count( $item_node -> taxonomy ) > 0 ) {
+                if ( count( $item_node->taxonomy ) > 0 ) {
                 
                   ?>
                   <ul class="accessories">
                   <?php
                                         
-                  foreach ( $item_node -> taxonomy as $accessory ) {
+                  foreach ( $item_node->taxonomy as $accessory ) {
                   
                     ?>
-                    <li><?php echo $accessory -> name; ?></li>
+                    <li><?php print $accessory->name; ?></li>
                     <?php
                   
                   } // foreach
@@ -3155,6 +3159,19 @@ function merci_token_values($type, $object = NULL, $options = array()) {
       date_default_timezone_set($old_timezone);
       $hours = round( ( $endhour - $starthour ) / 3600 , 2 );
       $titles = array();
+     foreach ($node->merci['reservation_items'] as $item) {
+        $item_node = node_load( $item -> pnid );
+        $type = merci_load_content_type_settings( $item -> type );
+        $fee_hours = $hours - ( $type -> fee_free_hours );
+        $values['merci_commercial_cost'] += $type -> rate_per_hour * $hours;
+        $values['merci_member_cost'] += ( $fee_hours > 0 ) ? ($type -> rate_per_hour * $discount ) * $fee_hours : 0;
+        if ($item->ttitle != '') {
+          $titles[] = $item->ttitle;
+        } else {
+          $titles[] = $item->ptitle;
+        }
+      }
+      $values['merci_resources'] = check_plain(implode(", ",$titles));
     return $values;
     break;
   }
