@@ -3147,33 +3147,36 @@ function merci_token_values($type, $object = NULL, $options = array()) {
   switch ($type) {
     case 'node':
       $node = merci_load($object);
-      $values['merci_resources'] = '';
-      $values['merci_commercial_cost'] = 0;
-      $values['merci_member_cost'] = 0;
-      $discount = variable_get( 'merci_membership_discount', 1 );
-      // We want these timestamps generated in UTC.
-      $old_timezone = date_default_timezone_get();
-      date_default_timezone_set('UTC');
-      $starthour = strtotime( $node -> field_merci_date[0]['value'] );
-      $endhour = strtotime( $node -> field_merci_date[0]['value2'] );
-      date_default_timezone_set($old_timezone);
-      $hours = round( ( $endhour - $starthour ) / 3600 , 2 );
-      $titles = array();
-     foreach ($node->merci['reservation_items'] as $item) {
-        $item_node = node_load( $item -> pnid );
-        $type = merci_load_content_type_settings( $item -> type );
-        $fee_hours = $hours - ( $type -> fee_free_hours );
-        $values['merci_commercial_cost'] += $type -> rate_per_hour * $hours;
-        $values['merci_member_cost'] += ( $fee_hours > 0 ) ? ($type -> rate_per_hour * $discount ) * $fee_hours : 0;
-        if ($item->ttitle != '') {
-          $titles[] = $item->ttitle;
-        } else {
-          $titles[] = $item->ptitle;
+      if($node){
+        $values['merci_resources'] = '';
+        $values['merci_commercial_cost'] = 0;
+        $values['merci_member_cost'] = 0;
+        $discount = variable_get( 'merci_membership_discount', 1 );
+        // We want these timestamps generated in UTC.
+        $old_timezone = date_default_timezone_get();
+        date_default_timezone_set('UTC');
+        $starthour = strtotime( $node -> field_merci_date[0]['value'] );
+        $endhour = strtotime( $node -> field_merci_date[0]['value2'] );
+        date_default_timezone_set($old_timezone);
+        $hours = round( ( $endhour - $starthour ) / 3600 , 2 );
+        $titles = array();
+        foreach ($node->merci['reservation_items'] as $item) {
+          $item_node = node_load( $item -> pnid );
+          $type = merci_load_content_type_settings( $item -> type );
+          $fee_hours = $hours - ( $type -> fee_free_hours );
+          $values['merci_commercial_cost'] += $type -> rate_per_hour * $hours;
+          $values['merci_member_cost'] += ( $fee_hours > 0 ) ? ($type -> rate_per_hour * $discount ) * $fee_hours : 0;
+          if ($item->ttitle != '') {
+            $titles[] = $item->ttitle;
+          } else {
+            $titles[] = $item->ptitle;
+          }
         }
-      }
+      
       $values['merci_resources'] = check_plain(implode(", ",$titles));
-    return $values;
-    break;
+      return $values;
+      break;
+      }
   }
 }
 
