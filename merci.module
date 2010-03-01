@@ -198,7 +198,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
               '#type' => 'checkbox',
               '#title' => t('Auto checkin'),
               '#default_value' => $autocheckout,
-              '#description' => t('Automatically check this item in when the Reservation starts.'),
+              '#description' => t('Automatically check this item in when the Reservation ends.'),
             );
             $form['merci']['merci_selfcheckout'] = array(
               '#type' => 'checkbox',
