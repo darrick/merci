@@ -1363,8 +1363,18 @@ function theme_merci_choices($form) {
  * Implementation of hook_nodeapi().
  */
 function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
-  // Load MERCI node type settings.
-  $merci_node_type = db_fetch_array(db_query("SELECT * FROM {merci_node_type} WHERE type = '%s' AND type_setting <> 'disabled'", $node->type));
+  if ($cache = cache_get('merci_'.$node->type.'_data') && !empty($cache->data)) {
+    $merci_node_type = unserialize($cache->data);
+  }
+  else {
+    // Load MERCI node type settings.
+    $merci_node_type = db_fetch_array(db_query("SELECT * FROM {merci_node_type} WHERE type = '%s' AND type_setting <> 'disabled'", $node->type));
+    // Do your expensive calculations here, and populate $my_data
+    // with the correct stuff..
+    if($merci_node_type){
+      cache_set('merci_'.$node->type.'_data', 'cache', serialize($merci_node_type));
+    }
+  }
 
   // Process active MERCI node types and reservation nodes.
   if ($merci_node_type || $node->type == 'merci_reservation') {
@@ -1698,6 +1708,7 @@ function merci_node_type_save_submit($form, &$form_state) {
     
     }
   }
+  cache_clear_all('merci', 'cache', TRUE);
 }
 
 /**
