@@ -1176,8 +1176,10 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
   } // while
 
   // FIX - NEED TO CHANGE FORMATTING HERE
-  $options['options'][t('Buckets')] = $bucket_options;
-  $options['flat_options'] = array_keys($bucket_options);
+  if($bucket_options){
+    $options['options'][t('Buckets')] = $bucket_options;
+    $options['flat_options'] = array_keys($bucket_options);
+  }
 
   // Resources.
   $resources = merci_load_merci_type_settings('resource');
