@@ -250,11 +250,14 @@ function merci_form_alter(&$form, $form_state, $form_id) {
     // Add check availability button inside date selector.
     case 'merci_reservation_node_form':
     
-     //Hide member cost and commerical cost.  These are only here to make Views easier.
-        
-        unset($form['field_merci_member_cost']);
-        unset($form['field_merci_commercial_cost']);
-       
+     
+     //$form['field_merci_member_cost'][0]['#default_value']['value'] = '15.00';
+     //$form['field_merci_commercial_cost'][0]['#default_value']['value'] = '15.00';
+  
+     //Disable member cost and commerical cost.  These are only here to make Views easier.
+     $form['#after_build'][] = '_merci_after_build';   
+     
+     
         //Users without administer MERCI permission can only alter Unconfirmed Reservations.
         if (!user_access('administer MERCI') && $form['merci']['merci_status']['#default_value']) {
           unset($form['buttons']['preview']);
@@ -361,6 +364,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       
       //Grouping
       $items = array();
+      
       $terms = taxonomy_get_tree(variable_get('merci_equipment_grouping_vid', 37));
       
       $groupings[0] = 'None';
@@ -604,6 +608,29 @@ function merci_menu() {
  
 
   return $items;
+}
+
+
+/**
+ * om_navigation_om_navigation_items function.
+ * Sample implementation of hook_om_navigation_items
+ * @access public
+ * @param mixed $context
+ * @return void
+ */
+function merci_om_navigation_items($context) {
+	$items = array();
+	
+	 $items['normal'][0] = array(
+		'zone' => 'private',
+		'status' => 'merci_user_tab_access',
+		'value' => 'merci_user_tab',
+		'label' => 'My Reservation',
+		'path' => 'reservations',
+		'weight' => 10,
+	);
+	
+	return $items;
 }
 
 /**
@@ -1831,7 +1858,14 @@ function merci_update($node) {
  *   The reservation node.
  */
 function merci_add_reservation_items($node) {
+  
+  $member_total = 0;
+  $commercial_total = 0;
+  
+  $hours = round(strtotime($node->field_merci_date[0]['value2']) - strtotime($node->field_merci_date[0]['value']))/3600;
+  //print $hours . '<br / >';
 
+  
   // Update existing items.
   if (isset($node->existing_items['items'])) {
     foreach ($node->existing_items['items'] as $did => $item_nid) {
@@ -1849,11 +1883,22 @@ function merci_add_reservation_items($node) {
       else {
         db_query("UPDATE {merci_reservation_detail} SET item_nid = %d, item_status = %d WHERE did = %d", $item_nid, $item_status, $did);
       }
+      
+      $rate = merci_get_rate($node->existing_items['bucket_resource'][$did]);
+      $commercial_total = $commercial_total + ($hours * $rate->rate_per_hour);
     }
   }
 
+  //print 'subtotal: '.  $commercial_total . '<br />';
   // New items.
   foreach ($node->choice as $num => $choice) {
+  
+    //Add to commerical rate
+    //print '<pre>';
+    //print_r();
+    $rate = merci_get_rate($choice['item']);
+    $commercial_total = $commercial_total + ($hours * $rate->rate_per_hour);
+    
     // Resource.
     if (is_numeric($choice['item'])) {
       $item = db_fetch_object(db_query("SELECT type, title FROM {node} WHERE nid = %d", $choice['item']));
@@ -1870,10 +1915,12 @@ function merci_add_reservation_items($node) {
       $item_nid = 0;
       $item_node = FALSE;
       $item_status = MERCI_ITEM_STATUS_AVAILABLE;
+      
     }
     else {
       // Nothing selected -- move along...
       continue;
+      
     }
 
     // Build the item's placeholder node.
@@ -1891,6 +1938,7 @@ function merci_add_reservation_items($node) {
     $merci_settings = merci_load_content_type_settings($type);
     $reservation->merci_default_availability = MERCI_AVA_F;
     $reservation->merci_sub_type = MERCI_SUB_TYPE_RESERVATION;
+    
     // Use the item specific accounting data if an item is assigned,
     // otherwise fall back to the content type defaults.
     $reservation->merci_late_fee_per_hour = $item_node ? $item_node->merci['late_fee_per_hour'] : $merci_settings->late_fee_per_hour;
@@ -1905,6 +1953,9 @@ function merci_add_reservation_items($node) {
     node_save($reservation);
 
     db_query("INSERT INTO {merci_reservation_detail} (nid, vid, placeholder_nid, item_nid, item_status) VALUES (%d, %d, %d, %d, %d)", $node->nid, $node->vid, $reservation->nid, $item_nid, $item_status);
+    
+    
+
   }
 
   // Update the state of all items with associations.
@@ -1924,7 +1975,16 @@ function merci_add_reservation_items($node) {
       $item_status = MERCI_ITEM_STATUS_AVAILABLE;
       break;
   }
+  
+
   db_query("UPDATE {merci_reservation_detail} SET item_status = %d WHERE vid = %d AND item_nid <> 0", $item_status, $node->vid);
+  
+  //update commercial value
+    //db_query("UPDATE {content_field_merci_commercial_cost} SET field_merci_commercial_cost_value = %d WHERE vid = %d", $commercial_total, $node->vid);
+    
+    db_query("UPDATE {content_type_merci_reservation} SET field_merci_member_cost_value = %d WHERE vid = %d", $commercial_total, $node->vid);
+  //print 'UPDATE {content_type_merci_reservation} SET field_merci_member_cost_value = '.$commercial_total . ' WHERE vid = ' . $node->vid;
+ // die;
 }
 
 /**
@@ -3313,8 +3373,8 @@ function merci_manage_inventory(){
 
 function merci_manage_reservations(){
 
-  $view = views_get_view('merci_reservations','default');
-  $view->override_path = $_GET['q'];
+  $view = views_get_view('merci_reservations2','default');
+  $view->override_path = implode("/", arg());
   $output = $view->preview();
 
   print theme('page', $output);
@@ -3324,14 +3384,29 @@ function merci_manage_reservations(){
 function merci_user_tab($user){
   
   $view = views_get_view('merci_my_reservations','default');
-  $view->override_path = $_GET['q'];
+  $view->override_path = implode("/", arg());
   $output = $view->preview();
 
   print theme('page', $output);
 }
 
 function merci_user_tab_access($context){
-  return TRUE;
+  global $user;
+  
+    
+    if($context->uid==$user->uid) {
+      //watchdog('merci', 'this is the me!');
+      if(!user_access('create reservations')){
+       return FALSE;
+      } else {
+       //watchdog('merci', 'I can create reservations too!');
+       return TRUE;
+      }
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  
 }
 
 function merci_list_reservations_access($node){
@@ -3340,7 +3415,7 @@ function merci_list_reservations_access($node){
   
   if($merci_settings->type_setting == 'bucket' || $merci_settings->type_setting == 'resource'){
     global $user;
-    if( $user->uid == 1 || user_access('manage MERCI') || user_access('administer MERCI') ){
+    if( user_access('manage MERCI') || user_access('administer MERCI') ){
      
        return TRUE;
        
@@ -3392,3 +3467,42 @@ function merci_list_reservations($node, $start, $end){
    print theme('page', $output);
 }
 
+/**
+* Custom after_build callback handler.
+*/
+function _merci_after_build($form, &$form_state) {
+  // Use this one if the field is placed on top of the form.
+  //_merci_fix_disabled($form['field_merci_member_cost']);
+  
+  // Use this one if the field is placed inside a fieldgroup.
+  _merci_fix_disabled($form['group_merci_internal']['field_merci_member_cost']);
+  _merci_fix_disabled($form['group_merci_internal']['field_merci_commercial_cost']);
+  
+  
+  return $form;
+}
+
+/**
+* Recursively set the disabled attribute of a CCK field
+* and all its dependent FAPI elements.
+*/
+function _merci_fix_disabled(&$elements) {
+  foreach (element_children($elements) as $key) {
+    if (isset($elements[$key]) && $elements[$key]) {
+
+      // Recurse through all children elements.
+      _merci_fix_disabled($elements[$key]);
+    }
+  }
+
+  if (!isset($elements['#attributes'])) {
+    $elements['#attributes'] = array();
+  }
+  $elements['#attributes']['disabled'] = 'disabled';
+}
+
+function merci_get_rate($content_type){
+
+  return db_fetch_object(db_query("SELECT rate_per_hour FROM {merci_node_type} WHERE type = '%s'", $content_type));
+
+}

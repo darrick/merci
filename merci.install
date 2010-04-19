@@ -161,12 +161,250 @@ function merci_enable() {
       'module' => 'date',
     ),
   );
+    
+    $member_cost_field = array (
+    'label' => 'Member Cost',
+    'field_name' => 'field_merci_member_cost',
+    'type_name' => 'merci_reservation',
+    'type' => 'number_integer',
+    'widget_type' => 'number',
+    'change' => 'Change basic information',
+    'weight' => 0,
+    'locked' => '1',
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'value' => '',
+        '_error_element' => 'default_value_widget][field_merci_member_cost][0][value',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => NULL,
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '',
+    'max' => '',
+    'prefix' => '',
+    'suffix' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'number',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => 0,
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 1,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 1,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  );  
+
   
-  // Need to load the CCK include file where content_field_instance_create() is defined.
+  $commerical_cost_field = array (
+    'label' => 'Commercial Cost',
+    'field_name' => 'field_merci_commercial_cost',
+    'type_name' => 'merci_reservation',
+    'type' => 'number_integer',
+    'widget_type' => 'number',
+    'change' => 'Change basic information',
+    'weight' => '1',
+    'locked' => '1',
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'value' => '',
+        '_error_element' => 'default_value_widget][field_merci_commercial_cost][0][value',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => NULL,
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '',
+    'max' => '',
+    'prefix' => '',
+    'suffix' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'number',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '1',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 1,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 1,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  );    
+  
+  $commerical_rental_field = array (
+  0 => 
+  array (
+    'label' => 'Commercial Rental',
+    'field_name' => 'field_merci_commercial_rental',
+    'type' => 'number_integer',
+    'widget_type' => 'optionwidgets_onoff',
+    'change' => 'Change basic information',
+    'weight' => '1',
+    'locked' => '1',
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'value' => NULL,
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => NULL,
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '',
+    'max' => '',
+    'prefix' => '',
+    'suffix' => '',
+    'allowed_values' => '0
+1|Charge Commercial Rate',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'optionwidgets',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '1',
+      'parent' => 'group_merci_internal',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 1,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 1,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+);
+
+  
+  // Need to load the CCK include file where content_field_instance_create() is defined
   module_load_include('inc', 'content', 'includes/content.crud');
-  // Create the field.
   
+  // Create the fields
   content_field_instance_create($date_field);
+  content_field_instance_create($commercial_rental_field);
+  content_field_instance_create($commerical_cost_field);
+  content_field_instance_create($member_cost_field);
   
   add_cost_fields_and_group_taxonomy();
   
@@ -560,7 +798,7 @@ function add_cost_fields_and_group_taxonomy() {
     'label' => 'Member Cost',
     'field_name' => 'field_merci_member_cost',
     'type_name' => 'merci_reservation',
-    'type' => 'number_integer',
+    'type' => 'number_decimal',
     'widget_type' => 'number',
     'change' => 'Change basic information',
     'weight' => 0,
@@ -633,7 +871,7 @@ function add_cost_fields_and_group_taxonomy() {
     'label' => 'Commercial Cost',
     'field_name' => 'field_merci_commercial_cost',
     'type_name' => 'merci_reservation',
-    'type' => 'number_integer',
+    'type' => 'number_decimal',
     'widget_type' => 'number',
     'change' => 'Change basic information',
     'weight' => '1',
