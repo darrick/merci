@@ -564,23 +564,6 @@ function merci_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
   
-  $items['admin/merci/manage/reservations'] = array(
-    'title' => 'Manage Reservations',
-    'description' => 'Dashboard of options to Manage MERCI',
-    'page callback' => 'merci_manage_reservations',
-    'access arguments' => array('manage MERCI'),
-    'type' => MENU_LOCAL_TASK,
-  );
-  
-  $items['admin/merci/manage/inventory'] = array(
-    'title' => 'Manage Inventory',
-    'description' => 'Dashboard of options to Manage MERCI',
-    'page arguments' => array(3),
-    'page callback' => 'merci_manage_inventory',
-    'access arguments' => array('manage MERCI'),
-    'type' => MENU_LOCAL_TASK,
-  );
-  
   $items['node/%node/reservations'] = array(
     'title' => 'Reservations',
     'description' => 'Takes node and returns list of upcoming and/or past Reservations',
@@ -3361,26 +3344,6 @@ function merci_format_time($hours_minutes) {
 function merci_manage(){
   $output = 'Nothing to see here... yet';
   print theme('page', $output);
-}
-
-function merci_manage_inventory(){
-
-  $view = views_get_view('merci_inventory','default');
-  $view->override_path = $_GET['q'];
-  $output = $view->preview();
-
-  print theme('page', $output);
-  
-}
-
-function merci_manage_reservations(){
-
-  $view = views_get_view('merci_reservations2','default');
-  $view->override_path = implode("/", arg());
-  $output = $view->preview();
-
-  print theme('page', $output);
-  
 }
 
 function merci_user_tab($user){

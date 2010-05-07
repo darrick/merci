@@ -203,6 +203,57 @@ function merci_views_data() {
     ),
   );
 
+  // merci_reservation_detail
+  $data['merci_reservation_detail']['table']['group'] = t('MERCI');
+  $data['merci_reservation_detail']['table']['join']['node'] = array(
+    'left_field' => 'vid',
+    'field' => 'vid',
+    'type' => 'INNER',
+  );
+  $data['merci_reservation_detail']['placeholder_nid'] = array(
+    'title' => t('Reserved placeholder nid'),
+    'help' => t('The node id of the reserved placeholder item.'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => TRUE,
+      'skip base' => array('node'),
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_in_operator',
+    ),
+    'relationship' => array(
+      'base' => 'node',
+      'field' => 'nid',
+      'label' => t('Reserved placeholder item node id'),
+    ),
+  );
+
+
+  $data['merci_reservation_detail']['item_nid'] = array(
+    'title' => t('Reserved item nid'),
+    'help' => t('The node id of the reserved item.'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => TRUE,
+      'skip base' => array('node'),
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_in_operator',
+    ),
+    'relationship' => array(
+      'base' => 'node',
+      'field' => 'nid',
+      'label' => t('Reserved item node id'),
+    ),
+  );
+
+
   // merci_bucket_node
   $data['merci_bucket_node']['table']['group'] = t('MERCI');
   $data['merci_bucket_node']['table']['join']['node'] = array(
