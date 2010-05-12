@@ -2224,9 +2224,25 @@ function merci_get_available_bucket_count($content_type, $start, $end, $reservat
   }
 
   // Pull reserved bucket items for the period of the reservation.
-  $reserved_items = (int) db_result(db_query("SELECT COUNT(md.nid) FROM {". $table ."} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {merci_bucket_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} ctn ON ct.vid = ctn.vid INNER JOIN {node} mn ON m.vid = mn.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s')) AND mn.type = '%s' AND NOT (md.item_status <= %d)$where", $args));
-
-  return $total_items - $reserved_items;
+  $reserved_nodes = db_query("SELECT ct.nid,field_merci_date_value,field_merci_date_value2  FROM {". $table ."} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {merci_bucket_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} ctn ON ct.vid = ctn.vid INNER JOIN {node} mn ON m.vid = mn.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s')) AND mn.type = '%s' AND NOT (md.item_status <= %d)$where", $args);
+  $reserved_items = array();
+  while ($node = db_fetch_object($reserved_nodes)) {
+    // Eat up a bucket item for this node.
+    $found = false;
+    foreach($reserved_items as $key => $item){
+      foreach($item as $oldnode){
+        if(date_create($node->field_merci_date_value) >= date_create($oldnode->field_merci_date_value2)){
+          $reserved_items[$key] = array_merge($item,array($node));
+          $found = true;
+          break;
+        }
+      }
+    }
+    if(!$found){
+      $reserved_items[] = array($node);
+    }
+  }
+  return $total_items - sizeof($reserved_items);
 }
 
 /**
