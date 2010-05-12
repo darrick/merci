@@ -2208,9 +2208,13 @@ function merci_get_available_bucket_count($content_type, $start, $end, $reservat
   $column_start_date = $db_info['columns']['value']['column'];
   $column_end_date = $db_info['columns']['value2']['column'];
 
-  // Pull all active items for this bucket.
-  $total_items = (int) db_result(db_query("SELECT COUNT(n.nid) FROM {node} n INNER JOIN {merci_bucket_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.sub_type = %d AND m.default_availability IN (%d, %d)", $content_type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_S));
+  // Get all assignable nodes for this bucket item.
+  $total_items_nodes = db_query("SELECT n.nid FROM {node} n INNER JOIN {merci_bucket_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.sub_type = %d AND m.default_availability IN (%d, %d)", $content_type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_S);
+  $total_items_array = array();
+  while($ctnodes = db_fetch_array($total_items_nodes)){
+    $total_items_array[$ctnodes['nid']] = array();
 
+  }
   $args = array($start, $end, $start, $end, $start, $end, $content_type, MERCI_ITEM_STATUS_CHECKED_IN);
 
   // If we're checking an existing reservation, exclude it from the
@@ -2223,26 +2227,61 @@ function merci_get_available_bucket_count($content_type, $start, $end, $reservat
     $where = '';
   }
 
-  // Pull reserved bucket items for the period of the reservation.
-  $reserved_nodes = db_query("SELECT ct.nid,field_merci_date_value,field_merci_date_value2  FROM {". $table ."} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {merci_bucket_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} ctn ON ct.vid = ctn.vid INNER JOIN {node} mn ON m.vid = mn.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s')) AND mn.type = '%s' AND NOT (md.item_status <= %d)$where", $args);
-  $reserved_items = array();
+  // pull reservations without assigned nodes
+  $reserved_nodes = db_query("select ct.nid,field_merci_date_value,field_merci_date_value2,md.item_nid  from {". $table ."} ct inner join {merci_reservation_detail} md on ct.vid = md.vid inner join {merci_bucket_node} m on md.placeholder_nid = m.nid inner join {node} ctn on ct.vid = ctn.vid inner join {node} mn on m.vid = mn.vid where (($column_start_date >= '%s' and $column_start_date <= '%s') or ($column_end_date >= '%s' and $column_end_date <= '%s') or ($column_start_date <= '%s' and $column_end_date >= '%s')) and mn.type = '%s' and md.item_nid !=0 and not (md.item_status <= %d)$where", $args);
+
+  // Use up items for assigned nodes.
+  while ($node = db_fetch_object($reserved_nodes)) {
+    // If item is assigned then item is in use by this node.
+    $total_items_array[$node->item_nid][] = $node;
+  }
+
+  // pull reservations without assigned nodes
+  $reserved_nodes = db_query("select ct.nid,field_merci_date_value,field_merci_date_value2,md.item_nid  from {". $table ."} ct inner join {merci_reservation_detail} md on ct.vid = md.vid inner join {merci_bucket_node} m on md.placeholder_nid = m.nid inner join {node} ctn on ct.vid = ctn.vid inner join {node} mn on m.vid = mn.vid where (($column_start_date >= '%s' and $column_start_date <= '%s') or ($column_end_date >= '%s' and $column_end_date <= '%s') or ($column_start_date <= '%s' and $column_end_date >= '%s')) and mn.type = '%s' and md.item_nid = 0 and not (md.item_status <= %d)$where", $args);
+
+  // Temporarily assign an item for these nodes.
   while ($node = db_fetch_object($reserved_nodes)) {
     // Eat up a bucket item for this node.
-    $found = false;
-    foreach($reserved_items as $key => $item){
-      foreach($item as $oldnode){
-        if(date_create($node->field_merci_date_value) >= date_create($oldnode->field_merci_date_value2)){
-          $reserved_items[$key] = array_merge($item,array($node));
-          $found = true;
+    // If item is not assigned then temporarily add one.
+    foreach($total_items_array as $item_nid => $reservations){
+      $willitfit = true;
+      foreach($reservations as $oldnode){
+        // Does the start date overlap this reservation.
+        if(
+          (
+            date_create($node->field_merci_date_value) > date_create($oldnode->field_merci_date_value) and
+            date_create($node->field_merci_date_value) < date_create($oldnode->field_merci_date_value2) 
+          ) or 
+          // Does the end date overlap this reservation.
+          (
+            date_create($node->field_merci_date_value2) > date_create($oldnode->field_merci_date_value) and
+            date_create($node->field_merci_date_value2) < date_create($oldnode->field_merci_date_value2) 
+          ) or
+          // Does the start and end date overlap this reservation.
+          (
+            date_create($node->field_merci_date_value) < date_create($oldnode->field_merci_date_value) and 
+            date_create($node->field_merci_date_value2) > date_create($oldnode->field_merci_date_value2) 
+          )
+        )
+        {
+          // Can't use this item for this reservation. So try another.
+          $willitfit = false;
           break;
         }
+
+      }
+      if($willitfit){
+        $total_items_array[$item_nid][] = $node;
+        break;
       }
     }
-    if(!$found){
-      $reserved_items[] = array($node);
-    }
   }
-  return $total_items - sizeof($reserved_items);
+
+  foreach($total_items_array as $item_nid => $reservations){
+    if(!empty($reservations)){ $reserved_items++;}
+  }
+
+  return sizeof($total_items_array) - $reserved_items;
 }
 
 /**
