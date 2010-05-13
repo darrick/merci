@@ -46,7 +46,7 @@ function merci_init() {
  * Implementation of hook_perm().
  */
 function merci_perm() {
-  return array('create reservations', 'create confirmed reservations', 'membership discount', 'suspend MERCI access', 'administer MERCI', 'create reservations outside hours of operation', 'manage MERCI');
+  return array('create reservations', 'create confirmed reservations', 'membership discount', 'suspend MERCI access', 'administer MERCI', 'create reservations outside hours of operation', 'manage MERCI','override max hours over closed days');
 }
 
 /**
@@ -742,12 +742,12 @@ function merci_admin_settings() {
   $form['merci_general']['merci_thursday_is_weekend'] = array(
     '#type' => 'checkbox',
     '#title' => t('Thursday is considered a weekend'),
-    '#default_value' => variable_get('merci_thrusday_is_weekend', 0),
+    '#default_value' => variable_get('merci_thursday_is_weekend', 0),
   );
   $form['merci_general']['merci_friday_is_weekend'] = array(
     '#type' => 'checkbox',
     '#title' => t('Firday is a considered weekend'),
-    '#default_value' => variable_get('merci_firday_is_weekend', 0),
+    '#default_value' => variable_get('merci_friday_is_weekend', 0),
   );
 
   // Hours of operation
@@ -1270,7 +1270,57 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
 
     // Make sure max hours aren't exceeded.
     if ($type_settings->max_hours_per_reservation && $reserved_hours > $type_settings->max_hours_per_reservation) {
-      $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
+
+      // Override max_hours_per_reservation if we can reserve this over the weekend
+
+      // Validate allow_weekend.
+      if(user_access('override max hours over closed days') || $type_settings->allow_weekends){
+        $closed_days = array();
+        // Do we allow extending this reservation over days checked as a weekend in addition to days we are closed?
+        if($type_settings->allow_weekends){
+          $i = 0;
+          foreach(array('sunday','monday','tuesday','wednesday','thursday','friday','saturday') as $day){
+            if(variable_get('merci_'.$day.'_is_weekend',0)){
+              $closed_days[$i] = true;
+            }
+            $i++;
+          }
+        }
+        // Do we allow extending a reservtion over days we are closed?
+        if(user_access('override max hours over closed days')){
+          for($i = 1; $i <= 6; $i++){
+            if(empty($hours_of_operation[$i])){
+              $closed_days[$i] = true;
+            }
+          }
+        }
+
+        // Only extend if the following day is closed/weekend.
+        // TODO check that the end time is not the same day and within the hours of being open.
+        if(!$closed_days[date('w',$start_timestamp + 86400)]){
+          $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
+        }
+
+        // Only extend the max time if the default max time falls on a weekend.
+        if($closed_days[date('w',$start_timestamp + $type_settings->max_hours_per_reservation * 60 * 60)]){
+
+          //Find the next day we are open.
+          for($i = 1; $i <= 6; $i++){
+            if(!$closed_days[date('w',$start_timestamp + $i * 86400)]){
+
+              // Does the end_day fall here?
+              // TODO force time to be exactly when open.
+              if($end_day_of_week != date('w',$start_timestamp + $i * 86400)){
+                $return[] = t('%name cannot be reserved more then one day after a weekend.', array('%hours' => $type_settings->max_hours_per_reservation));
+              }
+              break;
+            }
+          }
+        }
+      }
+      else {
+        $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->max_hours_per_reservation));
+      }
     }
 
     // Validate allow_overnight.
@@ -1282,32 +1332,6 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
       }
     }
 
-  // Validate allow_weekend.
-  if (!$type_settings->allow_weekends) {
-    $on_weekend = FALSE;
-    // Check the start and end dates for the reservation first.
-    if (in_array($start_day_of_week, array('6', '0')) || in_array($end_day_of_week, array('6', '0'))) {
-    $on_weekend = TRUE;
-    }
-    // Check all dates between the start and end dates for the reservation next.
-    if (!$on_weekend) {
-    $day = 60 * 60 * 24;
-    $counter = $start_timestamp + $day;
-    while ($counter <= $end_timestamp) {
-      $utc_datetime = gmdate('Y-m-d H:i:s', $counter);
-      $local_date = merci_create_local_date_object($utc_datetime);
-      $day_of_week = date_format($local_date, 'w');
-      if (in_array($day_of_week, array('6', '0'))) {
-      $on_weekend = TRUE;
-      break;
-      }
-      $counter += $day;
-    }
-    }
-    if ($on_weekend) {
-    $return[] = t('%name cannot be reserved on weekends.');
-    }
-  }
   }
   return $return;
 
