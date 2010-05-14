@@ -2207,7 +2207,8 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
   $column_start_date = $db_info['columns']['value']['column'];
   $column_end_date = $db_info['columns']['value2']['column'];
 
-  $args = array(MERCI_AVA_F, MERCI_AVA_S, $content_type, MERCI_SUB_TYPE_ITEM, $start, $end, $start, $end, $start, $end, MERCI_ITEM_STATUS_AVAILABLE);
+  $args = array(MERCI_AVA_F, MERCI_AVA_S, $content_type, MERCI_SUB_TYPE_ITEM, $start, $end, $start, $end, $start, $end,MERCI_ITEM_STATUS_AVAILABLE);
+  $args2 = array($end, $content_type, MERCI_ITEM_STATUS_CHECKED_OUT);
 
   // If there's an already selected bucket item, then we need to make sure we
   // include it in the list of available items.
@@ -2215,16 +2216,23 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
   $inner_where = '';
   if ($reservation_nid) {
     $inner_where = ' AND md2.nid <> %d';
+    $where = ' AND md3.nid <> %d';
     $args[] = $reservation_nid;
+    $args2[] = $reservation_nid;
   }
+  $args = array_merge($args,$args2);
 
+  // pull reservations in the past which are still checked out. 
+  /*
+  $other_inner_where = db_query("select md3.item_nid  from {". $table ."} ct3 inner join {merci_reservation_detail} md3 on ct3.vid = md3.vid inner join {merci_bucket_node} m3 on md3.placeholder_nid = m3.nid inner join {node} ctn3 on ct3.vid = ctn3.vid inner join {node} mn3 on m3.vid = mn3.vid where ($column_end_date <= '%s') and mn3.type = '%s' and md3.item_nid !=0 and not (md3.item_status = %d)$where", $args2);
+   */
   // Pull reservable items.  This query takes the following into consideration:
   //   1. Pulls all all item nodes of the content type that are in an available state,
   //   2. Excludes all item nodes that have associated reservations in the date range
   //      of the this reservation where the item is in an already reserved state.
   //   3. Allows a reservation to be excluded from the exclusions if necessary (this
   //      is usually used to allow an already assigned item to not conflict with itself.
-  $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_{$merci_type}_node} m ON n.vid = m.vid WHERE (m.default_availability IN (%d, %d) AND n.type = '%s' AND m.sub_type = %d AND n.nid NOT IN (SELECT md2.item_nid FROM {".$table."} ct INNER JOIN {merci_reservation_detail} md2 ON ct.vid = md2.vid INNER JOIN {merci_{$merci_type}_node} m2 ON md2.item_nid = m2.nid INNER JOIN {node} ctn ON ctn.vid = ct.vid INNER JOIN {node} m2n ON m2.vid = m2n.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s')) AND NOT (md2.item_status <= %d)$inner_where)) ORDER BY n.title", $args);
+  $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_{$merci_type}_node} m ON n.vid = m.vid WHERE (m.default_availability IN (%d, %d) AND n.type = '%s' AND m.sub_type = %d  AND (n.nid NOT IN (SELECT md2.item_nid FROM {".$table."} ct INNER JOIN {merci_reservation_detail} md2 ON ct.vid = md2.vid INNER JOIN {merci_{$merci_type}_node} m2 ON md2.item_nid = m2.nid INNER JOIN {node} ctn ON ctn.vid = ct.vid INNER JOIN {node} m2n ON m2.vid = m2n.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s')  AND NOT (md2.item_status <= %d) $inner_where) OR n.nid NOT IN (select mn3.nid  from {". $table ."} ct3 inner join {merci_reservation_detail} md3 on ct3.vid = md3.vid inner join {merci_{$merci_type}_node} m3 on md3.placeholder_nid = m3.nid inner join {node} ctn3 on ct3.vid = ctn3.vid inner join {node} mn3 on m3.vid = mn3.vid where ($column_end_date <= '%s') and mn3.type = '%s' and md3.item_nid !=0 and (md3.item_status = %d) $where )) )) ORDER BY n.title", $args);
 
   $options = array();
   while ($item = db_fetch_object($items)) {
@@ -2265,19 +2273,30 @@ function merci_get_available_bucket_count($content_type, $start, $end, $reservat
 
   }
   $args = array($start, $end, $start, $end, $start, $end, $content_type, MERCI_ITEM_STATUS_CHECKED_IN);
+  $args2 = array($end, $content_type, MERCI_ITEM_STATUS_CHECKED_OUT);
 
   // If we're checking an existing reservation, exclude it from the
   // reserved items.
   if (isset($reservation)) {
     $where = ' AND ct.nid <> %d';
     $args[] = $reservation;
+    $args2[] = $reservation;
   }
   else {
     $where = '';
   }
 
-  // pull reservations without assigned nodes
+  // pull reservations with assigned nodes
   $reserved_nodes = db_query("select ct.nid,field_merci_date_value,field_merci_date_value2,md.item_nid  from {". $table ."} ct inner join {merci_reservation_detail} md on ct.vid = md.vid inner join {merci_bucket_node} m on md.placeholder_nid = m.nid inner join {node} ctn on ct.vid = ctn.vid inner join {node} mn on m.vid = mn.vid where (($column_start_date >= '%s' and $column_start_date <= '%s') or ($column_end_date >= '%s' and $column_end_date <= '%s') or ($column_start_date <= '%s' and $column_end_date >= '%s')) and mn.type = '%s' and md.item_nid !=0 and not (md.item_status <= %d)$where", $args);
+
+  // Use up items for assigned nodes.
+  while ($node = db_fetch_object($reserved_nodes)) {
+    // If item is assigned then item is in use by this node.
+    $total_items_array[$node->item_nid][] = $node;
+  }
+
+  // pull reservations in the past which are still checked out. 
+  $reserved_nodes = db_query("select mn.title,ct.nid,field_merci_date_value,field_merci_date_value2,md.item_nid  from {". $table ."} ct inner join {merci_reservation_detail} md on ct.vid = md.vid inner join {merci_bucket_node} m on md.placeholder_nid = m.nid inner join {node} ctn on ct.vid = ctn.vid inner join {node} mn on m.vid = mn.vid where ($column_end_date <= '%s') and mn.type = '%s' and md.item_nid !=0 and not (md.item_status = %d)$where", $args2);
 
   // Use up items for assigned nodes.
   while ($node = db_fetch_object($reserved_nodes)) {
