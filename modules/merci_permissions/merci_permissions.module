@@ -58,7 +58,7 @@ function theme_merci_permissions_form($form) {
       $row = array();
       // Module name
       if (is_numeric($key)) {
-        $row[] = array('data' => t('Reservation permissions'), 'class' => 'module', 'id' => 'module-'. $form['permission'][$key]['#value'], 'colspan' => count($form['role_names']) + 1);
+        $row[] = array('data' => t('@module', array('@module' => drupal_render($form['permission'][$key]))), 'class' => 'module', 'id' => 'module-'. $form['permission'][$key]['#value'], 'colspan' => count($form['role_names']) + 1);
       }
       else {
         $row[] = array('data' => drupal_render($form['permission'][$key]), 'class' => 'permission');
@@ -93,7 +93,6 @@ function merci_permissions_form_alter(&$form, $form_state, $form_id) {
       $perms[] = "delete any $key content";
       $perms[] = "edit own $key content";
       $perms[] = "edit any $key content";
-      $perms[] = "create $key content";
     }
     foreach (element_children($form['checkboxes']) as $rid) {
       if (is_array($form['checkboxes'][$rid])) {
@@ -142,15 +141,29 @@ function merci_permissions_add_form(&$form){
     $merci_types = merci_permissions_load_merci_type_settings();
     $options = array();
     $admin = array();
+    $form['permission'][] = array('#value' => t("General Permissions"));
     $form['permission']['admin all reservations'] = array('#value' => t('Admin all reservations'));
     $options['admin all reservations'] = '';
+    $merci_perms = merci_perm();
+
+    foreach($merci_perms as $perm){
+      $options[$perm] = '';
+      $form['permission'][$perm] = array('#value' => t($perm));
+      foreach ($role_names as $rid => $name) {
+        // Builds arrays for checked boxes for each role
+        if ( strpos($role_permissions[$rid],  $perm.',') !== FALSE) {
+          $status[$rid][] = $perm;
+        }
+      }
+    }
+    $form['permission'][] = array('#value' => "Bucket and Resource Permissions",);
     foreach($merci_types as $type => $name){
       $perm = "reserve $type";
       $options[$perm] = '';
       $form['permission'][$perm] = array('#value' => t($name));
       foreach ($role_names as $rid => $name) {
         // Builds arrays for checked boxes for each role
-        if (strpos($role_permissions[$rid],  'create '.$type.' content,') !== FALSE &&
+        if (
           strpos($role_permissions[$rid],  'delete own '.$type.' content,') !== FALSE &&
           strpos($role_permissions[$rid],  'edit own '.$type.' content,') !== FALSE
         ) {
@@ -163,7 +176,7 @@ function merci_permissions_add_form(&$form){
             $admin[$rid] = 'true';
           }
         }
-        else
+       else
         {
           $admin[$rid] = 'false';
         }
@@ -204,6 +217,7 @@ function merci_permissions_settings_form_submit($form, &$form_state) {
 
   $result = db_query('SELECT * FROM {role}');
   $merci_types = merci_permissions_load_merci_type_settings();
+  $merci_perms = merci_perm();
   while ($role = db_fetch_object($result)) {
     if (isset($form_state['values'][$role->rid])) {
 
@@ -214,7 +228,6 @@ function merci_permissions_settings_form_submit($form, &$form_state) {
 
         $perms = array();
         if(array_key_exists($type,$merci_types)){
-          $perms[] = "create $type content";
           $perms[] = "edit own $type content";
           $perms[] = "delete own $type content";
           if($value){
@@ -226,7 +239,6 @@ function merci_permissions_settings_form_submit($form, &$form_state) {
         }
         else if (strstr('admin all reservations',$key)){
           foreach($merci_types as $type => $name){
-            $perms[] = "create $type content";
             $perms[] = "edit own $type content";
             $perms[] = "delete own $type content";
             $perms[] = "delete any $type content";
@@ -237,6 +249,12 @@ function merci_permissions_settings_form_submit($form, &$form_state) {
           }
           else {
             $revoke_perms = array_merge($perms, $revoke_perms);
+          }
+        } else if (in_array($key,$merci_perms)){
+          if($value){
+            $add_perms[] = $key; 
+          } else {
+            $revoke_perms[] = $key;
           }
         }
       }
