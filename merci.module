@@ -1119,6 +1119,8 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
   $buckets = merci_load_merci_type_settings('bucket');
   $bucket_options = array();
 
+  // This array holds all reservable items the user may reserve.
+  $total_flat_options = array();
   // Loop through each bucket type.
   while ($bucket = db_fetch_object($buckets)) {
 
@@ -1144,10 +1146,15 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
         if (empty($restrictions)) {
 
           // Check for available items in the bucket.
-          $available_bucket_items = merci_get_available_bucket_count($bucket->type, $start, $end, $reservation_nid) > $bucket->spare_items;
+          $available_bucket_items = merci_get_available_bucket_count($bucket->type, $start, $end, $reservation_nid) - $bucket->spare_items;
 
           if ($available_bucket_items) {
             $bucket_options[$bucket->type] = $bucket->name;
+            // Start building the array for all reservable items.
+            while($available_bucket_items>0){
+              $total_flat_options[] = $bucket->type;
+              $available_bucket_items--;
+            }
           } // if
 
         } // if
@@ -1163,6 +1170,7 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
     $options['options'][t('Buckets')] = $bucket_options;
     $options['flat_options'] = array_keys($bucket_options);
   }
+  $options['total_flat_options'] = $total_flat_options;
 
   // Resources.
   $resources = merci_load_merci_type_settings('resource');
@@ -1205,6 +1213,7 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
       } else {
         $options['flat_options'] = array_merge($options['flat_options'], array_keys($item_options));
       }
+      $options['total_flat_options'] = array_merge($options['total_flat_options'], array_keys($item_options));
     } // if
 
   } // while
@@ -2571,9 +2580,30 @@ function merci_node_validate($form, &$form_state) {
      }
    
      // Check each new item.
+
+     $choice_count = array();
+     // Buckets.
+     $buckets = merci_load_merci_type_settings('bucket');
+     // Loop through each bucket type.
+     while ($bucket = db_fetch_object($buckets)) {
+       // Pull all active items for this bucket.
+       $total_item_counts[$bucket->type] = (int) db_result(db_query("SELECT COUNT(n.nid) FROM {node} n INNER JOIN {merci_bucket_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.sub_type = %d AND m.default_availability IN (%d, %d)", $bucket->type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_S)) - $bucket->spare_items;
+     }
+
+     // Resources.
+     $resources = merci_load_merci_type_settings('resource');
+     // Loop through each resource type.
+     while ($resource = db_fetch_object($resources)) {
+       $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.sub_type = %d ORDER BY n.title", $resource->type, 1, MERCI_SUB_TYPE_ITEM);
+       while ($item = db_fetch_object($items)) {
+         $total_item_counts[$item->nid] = 1;
+       }
+     }
+     $total_flat_options = $options['total_flat_options'];
+
      foreach ($node->choice as $num => $choice) {
        // The item is no longer reservable, so figure out why.
-       if ($choice['item'] && !in_array($choice['item'], $flat_options)) {
+       if ($choice['item'] && !in_array($choice['item'], $total_flat_options)) {
          // Resource.
          if (is_numeric($choice['item'])) {
            $new_item = db_fetch_object(db_query("SELECT title, type FROM {node} WHERE nid = %d", $choice['item']));
@@ -2593,6 +2623,9 @@ function merci_node_validate($form, &$form_state) {
              $message .= '<div>'. strtr($restriction, array('%name' => theme('placeholder', $title))) .'</div>';
            }
          }
+         else if($choice_count[$choice['item']] == $total_item_counts[$choice['item']]){
+           $message = '<div> ' . t("You've selected too many %name's.  We have only %amount.", array('%name' => $title,'%amount'=>$total_item_counts[$choice['item']])) . '</div>';
+         }  
          // Either a date conflict, or the content type has been deactivated.
          else {
 
@@ -2689,6 +2722,17 @@ function merci_node_validate($form, &$form_state) {
          }
          form_set_error("choice][$num][item", $message);
        }
+       $choice_count[$choice['item']] = $choice_count[$choice['item']] + 1;
+       $temp = array();
+       $found = 0;
+       foreach($total_flat_options as $key => $value){
+         if($value == $choice['item'] && !$found){
+           $found = 1;
+           continue;
+         }
+         $temp[] = $value;
+       }
+       $total_flat_options = $temp;
 
      }
 
