@@ -1556,10 +1556,10 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         else {
           switch ($type) {
             case 'bucket':
-              db_query("UPDATE {merci_bucket_node} SET default_availability = %d, late_fee_per_hour = %d, rate_per_hour = %d, fee_free_hours = %d, autocheckout = %d, autocheckin = %d, selfcheckout = %d WHERE vid = %d", $node->merci_default_availability, $node->merci_late_fee_per_hour, $node->merci_rate_per_hour, $node->merci_fee_free_hours, $node->merci_min_cancel_hours, $node->merci_autocheckout, $node->merci_autocheckin, $node->merci_selfcheckout, $node->vid);
+              db_query("UPDATE {merci_bucket_node} SET default_availability = %d, late_fee_per_hour = %d, rate_per_hour = %d, fee_free_hours = %d, min_cancel_hours = %d, autocheckout = %d, autocheckin = %d, selfcheckout = %d WHERE vid = %d", $node->merci_default_availability, $node->merci_late_fee_per_hour, $node->merci_rate_per_hour, $node->merci_fee_free_hours, $node->merci_min_cancel_hours, $node->merci_autocheckout, $node->merci_autocheckin, $node->merci_selfcheckout, $node->vid);
               break;
             case 'resource':
-              db_query("UPDATE {merci_resource_node} SET default_availability = %d, late_fee_per_hour = %d, rate_per_hour = %d, fee_free_hours = %d, autocheckout = %d, autocheckin = %d, selfcheckout = %d WHERE vid = %d", $node->merci_default_availability, $node->merci_late_fee_per_hour, $node->merci_rate_per_hour, $node->merci_fee_free_hours, $node->merci_min_cancel_hours, $node->merci_autocheckout, $node->merci_autocheckin, $node->merci_selfcheckout, $node->vid);
+              db_query("UPDATE {merci_resource_node} SET default_availability = %d, late_fee_per_hour = %d, rate_per_hour = %d, fee_free_hours = %d, min_cancel_hours = %d, autocheckout = %d, autocheckin = %d, selfcheckout = %d WHERE vid = %d", $node->merci_default_availability, $node->merci_late_fee_per_hour, $node->merci_rate_per_hour, $node->merci_fee_free_hours, $node->merci_min_cancel_hours, $node->merci_autocheckout, $node->merci_autocheckin, $node->merci_selfcheckout, $node->vid);
               break;
           }
         }
