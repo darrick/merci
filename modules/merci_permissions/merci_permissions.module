@@ -139,6 +139,10 @@ function merci_permissions_add_form(&$form){
     }
 
     $merci_types = merci_permissions_load_merci_type_settings();
+    if(empty($merci_types)){
+      drupal_set_message(t("You need to add some reservable content types to make this form usefull."));
+      return;
+    }
     $options = array();
     $admin = array();
     $form['permission'][] = array('#value' => t("General Permissions"));
