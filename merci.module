@@ -1246,14 +1246,10 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
     
     //DIFF?
     $type_settings = merci_content_type_rules($content_type);
-    $hours_of_operation = merci_load_hours_of_operation($content_type);
     $return = array();
 
     // Convert start/end dates to local time.
-    $start_object = merci_create_local_date_object($start);
-    $end_object = merci_create_local_date_object($end);
-
-    // Convert start/end dates to local time.
+    // TODO clean this up.
     $start_object = merci_create_local_date_object($start);
     $end_object = merci_create_local_date_object($end);
 
@@ -1288,6 +1284,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
         }
         // Do we allow extending a reservtion over days we are closed?
         if(user_access('override max hours over closed days')){
+          $hours_of_operation = merci_load_hours_of_operation($content_type);
           for($i = 1; $i <= 6; $i++){
             if(empty($hours_of_operation[$i])){
               $closed_days[$i] = true;
@@ -2807,9 +2804,11 @@ function merci_load_hours_of_operation($content_type='') {
     'sat',
   );
 
+  /* TODO: Why?
   if (!empty($content_type)) {
-  $rules = merci_content_type_rules($content_type);
+    $rules = merci_content_type_rules($content_type);
   }
+   */
 
   $hours_of_operation = array();
   foreach ($days_of_the_week as $num => $day) {
