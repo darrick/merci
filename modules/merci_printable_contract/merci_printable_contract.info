@@ -1,0 +1,8 @@
+name = MERCI Printable Contract
+package = MERCI
+description = "Adds a printable contract option to MERCI Reservations."
+
+core = 6.x
+
+dependencies[] = merci
+
