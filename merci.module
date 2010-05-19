@@ -392,7 +392,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'checkbox',
         '#title' => t('Allow overnight reservation'),
         '#default_value' => $settings ? $settings->allow_overnight : 0,
-        '#description' => t('Allow a reservation to continue over multiple days.') . $warning,
+        '#description' => t('Allow a reservation to continue over multiple days.  If this is not checked, items in this content type must be returned before the checkout closes.') . $warning,
       );
       $form['merci']['merci_allow_weekends'] = array(
         '#type' => 'checkbox',
@@ -432,7 +432,8 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#element_validate' => array('merci_is_numeric_validate'),
         '#description' => t('Minimum number of hours a user can cancel a reservation for the item.'),
       );
-      $form['merci']['merci_autocheckout'] = array(
+      /*
+$form['merci']['merci_autocheckout'] = array(
         '#type' => 'checkbox',
         '#title' => t('Automatic Checkout'),
         '#default_value' => $settings ? $settings->autocheckout : 0,
@@ -450,6 +451,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#default_value' => $settings ? $settings->selfcheckout : 0,
         '#description' => t('The checkout and checkin process for this resource is managed with additional software (ie. lab computer where login process can by linked to checkout status).') . $warning,
       );
+*/
 
       break;
     case 'node_delete_confirm':
@@ -564,57 +566,9 @@ function merci_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
   
-  $items['node/%node/reservations'] = array(
-    'title' => 'Reservations',
-    'description' => 'Takes node and returns list of upcoming and/or past Reservations',
-    'page callback' => 'merci_list_reservations',
-    'page arguments' => array(1,3,4),
-    'access callback' => 'merci_list_reservations_access',
-    'access arguments' => array(1),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 9,
-  );
-  
-  //user tab
-  
-  $items['user/%user/reservations'] = array(
-    'title' => 'My Reservations',
-    'description' => 'Takes user object and returns Reservations',
-    'page callback' => 'merci_user_tab',
-    'page arguments' => array(1),
-    'access callback' => 'merci_user_tab_access',
-    'access arguments' => array(1),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 15,
-  );
-  
- 
-
   return $items;
 }
 
-
-/**
- * om_navigation_om_navigation_items function.
- * Sample implementation of hook_om_navigation_items
- * @access public
- * @param mixed $context
- * @return void
- */
-function merci_om_navigation_items($context) {
-	$items = array();
-	
-	 $items['normal'][0] = array(
-		'zone' => 'private',
-		'status' => 'merci_user_tab_access',
-		'value' => 'merci_user_tab',
-		'label' => 'My Reservation',
-		'path' => 'reservations',
-		'weight' => 10,
-	);
-	
-	return $items;
-}
 
 /**
  * Builds the MERCI admininstration settings form.
@@ -3517,93 +3471,9 @@ function merci_manage(){
   print theme('page', $output);
 }
 
-function merci_user_tab($user){
-  
-  $view = views_get_view('merci_my_reservations','default');
-  $view->override_path = implode("/", arg());
-  $output = $view->preview();
 
-  print theme('page', $output);
-}
 
-function merci_user_tab_access($context){
-  global $user;
-  
-    
-    if($context->uid==$user->uid) {
-      //watchdog('merci', 'this is the me!');
-      if(!user_access('create reservations')){
-       return FALSE;
-      } else {
-       //watchdog('merci', 'I can create reservations too!');
-       return TRUE;
-      }
-      return TRUE;
-    } else {
-      return FALSE;
-    }
-  
-}
 
-function merci_list_reservations_access($node){
-  
-  $merci_settings = merci_load_content_type_settings($node->type);
-  
-  if($merci_settings->type_setting == 'bucket' || $merci_settings->type_setting == 'resource'){
-    global $user;
-    if( user_access('manage MERCI') || user_access('administer MERCI') ){
-     
-       return TRUE;
-       
-     } else {
-     
-        return FALSE;
-        
-     }
-     
-  } else {
-  
-     return FALSE;
-  
-  } //end if node is not a bucket or resource
-
-}
-
-function merci_list_reservations($node, $start, $end){
- 
-  date_default_timezone_set('UTC');
-  if($start and $end){
-      
-    $start_mysql = date('Y-m-d', $start);
-      $end_mysql = date('Y-m-d' ,$end);
-      $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' AND field_merci_date_value > '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql, $end_mysql);
-    
-    $output .= '<b><a href="/node/' . $node->nid .'/reservations/">' . t('Upcoming Reservations') . '</a>|' . t('Previous Reservations') . '</b><br />';
-  } else if($start){
-    $start_mysql = date('Y-m-d', $start);
-    $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql);
-    
-    $output .= '<b><a href="/node/' . $node->nid .'/reservations/">' . t('Upcoming Reservations') . '</a>|' . t('Previous Reservations') . '</b><br />';
-    
-    } else {
-      $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value > NOW() ORDER BY field_merci_date_value", $node->nid);
-
-    $output .= '<b>'. t('Upcoming Reservations') . '|<a href="/node/' . $node->nid .'/reservations/' . strtotime('now') . '/' . strtotime('- 3 months') . '">' . t('Previous Reservations') . '</a></b><br />';
-  }
-
-  while ($reservationnode = db_fetch_object($result)) {
-    
-    $output .= '<a href="/node/' . $reservationnode->nid . '">' . $reservationnode->title . ' reserved from ' .  
-    format_date(strtotime($reservationnode->field_merci_date_value), $type = 'medium') . ' ' . format_date(strtotime($reservationnode->field_merci_date_value2), $type = 'medium') . '</a><br />';
-    $count++;
-   } 
-   
-   if($count==0){
-     $output .= 'No reservations have been made for this item.';
-   }
-   
-   print theme('page', $output);
-}
 
 /**
 * Custom after_build callback handler.
@@ -3643,4 +3513,23 @@ function merci_get_rate($content_type){
 
   return db_fetch_object(db_query("SELECT rate_per_hour FROM {merci_node_type} WHERE type = '%s'", $content_type));
 
+}
+
+/**
+* Pass type as user/project and uid/nid
+* returns total hours
+*/
+function merci_total_usage($id, $type = 'user') {
+   if($type == 'project'){
+     $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN og_ancestry ON og_ancestry.nid = node.nid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE group_nid = %d", $id);
+   } else {
+     $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE uid = %d", $id);
+   }
+   
+   while ($reservationnode = db_fetch_object($result)) {
+      
+      $hours = $hours + ((strtotime($reservationnode->field_merci_date_value2) - strtotime($reservationnode->field_merci_date_value)) / 360);
+   }
+   
+   return round($hours);
 }
