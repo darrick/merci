@@ -2167,7 +2167,16 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
   $column_end_date = $db_info['columns']['value2']['column'];
 
   $args = array(MERCI_AVA_F, MERCI_AVA_S, $content_type, MERCI_SUB_TYPE_ITEM, $start, $end, $start, $end, $start, $end,MERCI_ITEM_STATUS_AVAILABLE);
-  $args2 = array($start, $content_type, MERCI_ITEM_STATUS_CHECKED_OUT);
+  $start2 = date_create($start,timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
+  /*
+  $timestart = date_create($start,timezone_open("UTC"));
+  $timenow = date_create("now");
+  print date_format($timestart,"c")."\n";
+  print date_format($timenow,"c")."\n";
+  print $start . "\n";
+  print $start2 . "\n";
+   */
+  $args2 = array($start2, $content_type, MERCI_ITEM_STATUS_CHECKED_OUT);
 
   // If there's an already selected bucket item, then we need to make sure we
   // include it in the list of available items.
@@ -2191,7 +2200,35 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
   //      of the this reservation where the item is in an already reserved state.
   //   3. Allows a reservation to be excluded from the exclusions if necessary (this
   //      is usually used to allow an already assigned item to not conflict with itself.
-  $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_{$merci_type}_node} m ON n.vid = m.vid WHERE (m.default_availability IN (%d, %d) AND n.type = '%s' AND m.sub_type = %d  AND (n.nid NOT IN (SELECT md2.item_nid FROM {".$table."} ct INNER JOIN {merci_reservation_detail} md2 ON ct.vid = md2.vid INNER JOIN {merci_{$merci_type}_node} m2 ON md2.item_nid = m2.nid INNER JOIN {node} ctn ON ctn.vid = ct.vid INNER JOIN {node} m2n ON m2.vid = m2n.vid WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') OR ($column_end_date >= '%s' AND $column_end_date <= '%s') OR ($column_start_date <= '%s' AND $column_end_date >= '%s'))  AND NOT (md2.item_status <= %d) $inner_where) AND n.nid NOT IN (select mn3.nid  from {". $table ."} ct3 inner join {merci_reservation_detail} md3 on ct3.vid = md3.vid inner join {merci_{$merci_type}_node} m3 on md3.placeholder_nid = m3.nid inner join {node} ctn3 on ct3.vid = ctn3.vid inner join {node} mn3 on m3.vid = mn3.vid where ($column_end_date <= '%s') and mn3.type = '%s' and md3.item_nid !=0 and md3.item_status = %d $where )) ) ORDER BY n.title", $args);
+  $items = db_query("SELECT n.nid, n.title FROM {node} n 
+    INNER JOIN {merci_{$merci_type}_node} m ON n.vid = m.vid 
+      WHERE (m.default_availability IN (%d, %d) 
+        AND n.type = '%s' AND m.sub_type = %d  
+        AND (n.nid NOT IN 
+          (SELECT md2.item_nid FROM {".$table."} ct 
+            INNER JOIN {merci_reservation_detail} md2 ON ct.vid = md2.vid 
+            INNER JOIN {merci_{$merci_type}_node} m2 ON md2.item_nid = m2.nid 
+            INNER JOIN {node} ctn ON ctn.vid = ct.vid 
+            INNER JOIN {node} m2n ON m2.vid = m2n.vid 
+              WHERE (($column_start_date >= '%s' AND $column_start_date <= '%s') 
+                  OR ($column_end_date >= '%s' AND $column_end_date <= '%s') 
+                  OR ($column_start_date <= '%s' AND $column_end_date >= '%s'))  
+                  AND NOT (md2.item_status <= %d) $inner_where
+          ) 
+          AND n.nid NOT IN 
+            (SELECT mn3.nid  FROM {". $table ."} ct3 
+              INNER JOIN {merci_reservation_detail} md3 on ct3.vid = md3.vid 
+              INNER JOIN {merci_{$merci_type}_node} m3 on md3.placeholder_nid = m3.nid 
+              INNER JOIN {node} ctn3 on ct3.vid = ctn3.vid 
+              INNER JOIN {node} mn3 on m3.vid = mn3.vid 
+                WHERE ($column_end_date <= '%s') 
+                  AND mn3.type = '%s' 
+                  AND md3.item_nid !=0 
+                  AND md3.item_status = %d $where 
+            )
+        ) 
+      ) 
+    ORDER BY n.title", $args);
 
   $options = array();
   while ($item = db_fetch_object($items)) {
