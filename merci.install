@@ -68,6 +68,7 @@ function merci_uninstall() {
   content_field_instance_delete('field_merci_date', 'merci_reservation');
   content_field_instance_delete('field_merci_commercial_cost', 'merci_reservation');
   content_field_instance_delete('field_merci_member_cost', 'merci_reservation');
+  content_field_instance_delete('field_merci_commercial_rental', 'merci_reservation');
 
   // Remove tables.
   drupal_uninstall_schema('merci');
@@ -403,8 +404,8 @@ function merci_enable() {
   // Create the fields
   content_field_instance_create($date_field);
   content_field_instance_create($commercial_rental_field);
-  content_field_instance_create($commerical_cost_field);
-  content_field_instance_create($member_cost_field);
+  //content_field_instance_create($commerical_cost_field);
+  //content_field_instance_create($member_cost_field);
   
   add_cost_fields_and_group_taxonomy();
   
