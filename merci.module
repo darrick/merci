@@ -569,7 +569,6 @@ function merci_menu() {
   return $items;
 }
 
-
 /**
  * Builds the MERCI admininstration settings form.
  */
@@ -2589,11 +2588,13 @@ function merci_node_validate($form, &$form_state) {
   }
   $flat_options = $options['flat_options'];
 
+  $total_flat_options = $options['total_flat_options'];
+
   if (isset($node->existing_items)) {
     // Check each reserved item.
     foreach ($node->existing_items['bucket_resource'] as $did => $value) {
       // The item is no longer reservable, so figure out why.
-      if (!in_array($value, $flat_options)) {
+      if ($value and empty($total_flat_options[$value])) {
         // Resource.
         if (is_numeric($value)) {
           $new_item = db_fetch_object(db_query("SELECT title, type FROM {node} WHERE nid = %d", $value));
@@ -2634,7 +2635,7 @@ function merci_node_validate($form, &$form_state) {
 
   // Tests for new items.
   if (isset($node->nid)) { // Only need to rebuild this again for existing nodes.
-    $options = merci_build_reservable_items($node, $form_state,$node->nid);
+    $options = merci_build_reservable_items($node, $form_state);
     $flat_options = $options['flat_options'];
   }
 
@@ -2662,7 +2663,7 @@ function merci_node_validate($form, &$form_state) {
           $message .= '<div>'. strtr($restriction, array('%name' => theme('placeholder', $title))) .'</div>';
         }
       }
-      else if (in_array($choice['item'], $options['total_flat_options'])) {
+      else if ($options['total_flat_options'][$choice['item']]) {
         $message = '<div> ' . t("You've selected too many %name's.  We have only %amount.", array('%name' => $title,'%amount'=>$options['total_flat_options'][$choice['item']])) . '</div>';
       }  
       // Either a date conflict, or the content type has been deactivated.
