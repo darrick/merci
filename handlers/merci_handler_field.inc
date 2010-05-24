@@ -49,7 +49,7 @@ class merci_handler_field_merci_node_type_status extends views_handler_field {
 
   function render($values) {
     parent::render($values);
-    $statuses = merci_item_status();
+    $statuses = merci_node_type_status();
     $status = $values->{$this->aliases['status']};
     return $statuses[$status];
   }

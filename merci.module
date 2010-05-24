@@ -1723,6 +1723,19 @@ function merci_theme() {
   );
 }
 
+function merci_node_type_status($code = NULL) {
+  $statuses = array(
+    MERCI_STATUS_ACTIVE => t('Active'),
+    MERCI_STATUS_INACTIVE => t('Inactive'),
+  );
+  if (isset($code)) {
+    return $statuses[$code];
+  }
+  else {
+    return $statuses;
+  }
+}
+
 /**
  * Return the name of a type code.
  *
