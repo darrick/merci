@@ -298,7 +298,7 @@ function merci_views_data() {
   $data['merci_bucket_node']['table']['join']['node'] = array(
     'left_field' => 'vid',
     'field' => 'vid',
-    'type' => 'INNER',
+    'type' => 'LEFT',
   );
   $data['merci_bucket_node']['default_availability'] = array(
     'title' => t('Default booking availability -- bucket'),
@@ -344,7 +344,7 @@ function merci_views_data() {
   $data['merci_resource_node']['table']['join']['node'] = array(
     'left_field' => 'vid',
     'field' => 'vid',
-    'type' => 'INNER',
+    'type' => 'LEFT',
   );
   $data['merci_resource_node']['default_availability'] = array(
     'title' => t('Default booking availability -- resource'),
