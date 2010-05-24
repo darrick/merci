@@ -2644,6 +2644,7 @@ function merci_node_validate($form, &$form_state) {
   foreach ($node->choice as $num => $choice) {
     // The item is no longer reservable, so figure out why.
     if ($choice['item'] and empty($total_flat_options[$choice['item']])) {
+      $message = "";
       // Resource.
       if (is_numeric($choice['item'])) {
         $new_item = db_fetch_object(db_query("SELECT title, type FROM {node} WHERE nid = %d", $choice['item']));
@@ -3389,45 +3390,80 @@ print 'nothing here yet';
  */
 function merci_cron() {
 
-  //print('merci cron running<br />');
-  //find all autocheckouts that have started and set their stauts to checked out
-  //only change status for unconfirmed and pending reservations
+  return;
+  $time = gmdate('Y-m-j H:m:s'); //2009-05-22 20:45:00
   
-  $old_timezone = date_default_timezone_get();
-  date_default_timezone_set('UTC');
-  $time = date('Y-m-j H:m:s'); //2009-05-22 20:45:00
-  date_default_timezone_set($old_timezone);
-  
-  //print('localized time: ' . $time . '<br />');
-  //print('set to checked out <br />');
-  
-  // Reservation status options.
-  //define('MERCI_STATUS_UNCONFIRMED', 1);
-  //define('MERCI_STATUS_PENDING', 2);
-  //define('MERCI_STATUS_CHECKED_OUT', 3);
-  //define('MERCI_STATUS_CHECKED_IN', 4);
-  //define('MERCI_STATUS_CANCELLED', 5);
-  //define('MERCI_STATUS_DENIED', 6);
-  //define('MERCI_STATUS_NO_SHOW', 7);
+  // Determine CCK table and columns the date data is stored in.
+  $field = content_fields('field_merci_date');
+  $db_info = content_database_info($field);
+  $table = $db_info['table'];
+  $column_start_date = $db_info['columns']['value']['column'];
+  $column_end_date = $db_info['columns']['value2']['column'];
 
-  $reservations = db_query("SELECT ctmr.nid FROM {content_type_merci_reservation} ctmr JOIN {merci_reservation_detail} mrd ON ctmr.nid = mrd.nid JOIN {merci_reservation} mr ON ctmr.nid = mr.nid WHERE mr.status < 3 AND field_merci_date_value < '%s'", $time);
+  $args = array($time,$time,MERCI_STATUS_UNCONFIRMED,MERCI_STATUS_PENDING,$time,$time);
+  // Select reservation nodes where all reserved items and resources are autocheckout.
+  $reservations = db_query("SELECT blah,n.nid FROM {node} AS n 
+        INNER JOIN {". $table ."} ct ON ct.vid = n.vid
+        INNER JOIN { merci_reservation } AS mr ON n.vid = mr.vid
+          WHERE $column_start_date >= '%s' 
+            AND $column_end_date < '%s' 
+            AND mr.status IN (%d, %d) 
+            AND n.nid NOT IN ( 
+              SELECT ct.nid FROM content_type_merci_reservation ct 
+                INNER JOIN merci_reservation_detail md on ct.vid = md.vid 
+                LEFT JOIN node as n ON md.item_nid = n.nid
+                LEFT JOIN merci_node_type AS mt ON n.type = mt.type
+                  WHERE  $column_start_date >= '%s' 
+                    AND $column_end_date < '%s' 
+                    AND (autocheckout != 1 OR autocheckout IS NULL))
+          ",$args); 
 
-  while ($reservation = db_fetch_object($reservations)) {
-  //print($reservation->nid . '<br />');
+  while ($nid = db_fetch_array($reservations)) {
+    $node = node_load($nid['nid']);
+    print "Setting ". $node->title . "to checked out";
+    //$node->merci_status = MERCI_STATUS_CHECKED_OUT;
   }
   
-  //find all autocheckins that have ended and set their stauts to checkedin
-  //only change status for checked reservations
-  
-  //print('set to checked in <br />');
-  
-  $reservations = db_query("SELECT * FROM {content_type_merci_reservation} WHERE field_merci_date_value2 > '%s'", $time);
+  $args = array($time,MERCI_STATUS_CHECKED_OUT,$time);
+  // Select reservation nodes where all reserved items and resources are autocheckin.
+  $reservations = db_query("SELECT n.nid FROM {node} AS n 
+        INNER JOIN {". $table ."} ct ON ct.vid = n.vid
+        INNER JOIN { merci_reservation } AS mr ON n.vid = mr.vid
+          WHERE $column_end_date >= '%s' 
+            AND mr.status = %d 
+            AND n.nid NOT IN ( 
+              SELECT ct.nid FROM { ". $table ."} ct 
+                INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid 
+                LEFT JOIN {node} as n ON md.item_nid = n.nid
+                LEFT JOIN {merci_node_type} AS mt ON n.type = mt.type
+                  WHERE  $column_end_date <= '%s' 
+                    AND (autocheckin != 1 OR autocheckin IS NULL))
+          ",$args); 
 
-  while ($reservation = db_fetch_object($reservations)) {
-  //print($reservation->nid . '<br />');
+  while ($nid = db_fetch_array($reservations)) {
+    $node = node_load($nid['nid']);
+    print "Setting ". $node->title . "to checked in";
+    //$node->merci_status = MERCI_STATUS_CHECKED_IN;
   }
   
-   //find all unconfirmed and pending reservations that have started and set their stauts to no show
+  // Give no shows a one hour grace period.
+  // TODO: move grace period to admin option.
+  $time = gmdate('Y-m-j H:m:s',time()+3600); //2009-05-22 20:45:00
+  //find all unconfirmed and pending reservations that have started and set their stauts to no show
+  $args = array($time,MERCI_STATUS_UNCONFIRMED,MERCI_STATUS_PENDING);
+  // Select reservation nodes where all reserved items and resources are autocheckin.
+  $reservations = db_query("SELECT n.nid FROM {node} AS n 
+        INNER JOIN {". $table ."} ct ON ct.vid = n.vid
+        INNER JOIN { merci_reservation } AS mr ON n.vid = mr.vid
+          WHERE $column_end_date <= '%s' 
+            AND mr.status IN (%d,%d) 
+          ",$args); 
+
+  while ($nid = db_fetch_array($reservations)) {
+    $node = node_load($nid['nid']);
+    print "Setting ". $node->nid . " to no show\n";
+    //$node->merci_status = MERCI_STATUS_CHECKED_IN;
+  }
   
 }
 
