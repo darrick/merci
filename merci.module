@@ -2740,8 +2740,12 @@ function merci_conflict_grid($type,$title,$start,$end) {
       $time = $hours_date['open'];
 
       while ( $time < $hours_date['close'] ) {
-
-        $message .= '<th colspan="4">' . date( 'g:i a' , strtotime( $time ) ) . '</th>';
+        
+        $replace = array("am", "pm");
+        $smalltime = str_replace($replace, '', merci_format_time($time));
+        
+        $message .= '<th colspan="4">' . $smalltime . '</th>'; 
+        
 
         $time = date( 'H:i' , strtotime( $time . ' +1 hour' ) ); 
 
@@ -2758,13 +2762,18 @@ function merci_conflict_grid($type,$title,$start,$end) {
         $message .= '</th>';
 
         $time = $hours_date['open'];
-
+        
         while ( $time < $hours_date['close'] ) {
-
+          if(strstr($time,':45')){
+            $hourborder = ' hourborder';
+          }  else {
+            $hourborder = NULL;
+          }
           if ( $times[ $time . ':00' ] >= $i )
-            $message .= '<td class="unavailable"></td>';
+            
+            $message .= '<td class="unavailable ' . $hourborder . '"></td>';
           else
-            $message .= '<td class="available"></td>';
+            $message .= '<td class="available' . $hourborder . '"></td>';
 
           $time = date( 'H:i' , strtotime( $time . ' +15 minutes' ) ); 
 
@@ -3271,8 +3280,8 @@ function merci_printable_contract($node_id) {
         else {
         print variable_get('merci_contract_header');
         } ?>
-        Start: <?php print date("F j, Y, g:i a", $starthour) . '<br />'; ?>
-        Returned by: <?php print date("F j, Y, g:i a", $endhour) . '<br />'; ?>
+        Start: <?php print date("F j, Y", $starthour) . merci_format_time($starthour) . '<br />'; ?>
+        Returned by: <?php print date("F j, Y", $endhour) . merci_format_time($endhour) . '<br />'; ?>
         Name: <?php print $username ?><br />
         Email: <?php print $email ?><br />
         Phone: <?php print $phone ?><br />

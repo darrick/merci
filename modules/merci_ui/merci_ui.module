@@ -34,12 +34,23 @@ function merci_ui_menu() {
   
   //user tab
   
-  $items['user/%user/reservations'] = array(
+  $items['user/%user/my-reservations'] = array(
     'title' => 'My Reservations',
+    'description' => 'Takes user object and returns Reservations',
+    'page callback' => 'merci_ui_my_reservations_tab',
+    'page arguments' => array(1),
+    'access callback' => 'merci_ui_my_reservations_tab_access',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 15,
+  );
+  
+  $items['user/%user/reservations'] = array(
+    'title' => 'Reservations',
     'description' => 'Takes user object and returns Reservations',
     'page callback' => 'merci_ui_user_tab',
     'page arguments' => array(1),
-    'access callback' => 'merci_ui_user_tab_access',
+    'access callback' => 'merci_ui_user_reservations_tab_access',
     'access arguments' => array(1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 15,
@@ -72,25 +83,42 @@ function merci_ui_om_navigation_items($context) {
 	return $items;
 }
 
-function merci_ui_user_tab_access($context){
+function merci_ui_my_reservations_tab_access($context){
+  global $user; 
+  
+  if($context->uid==$user->uid && user_access('create reservations')) {
+    return TRUE;
+  } else {
+    return FALSE;
+  }
+  
+}
+
+function merci_ui_user_reservations_tab_access($context){
   global $user;
     
-    if($context->uid==$user->uid) {
-      //watchdog('merci', 'this is the me!');
-      if(!user_access('create reservations')){
-       return FALSE;
-      } else {
-       //watchdog('merci', 'I can create reservations too!');
-       return TRUE;
-      }
+  if($context->uid!=$user->uid){
+    if(user_access('administer MERCI') || user_access('manage MERCI')) {
       return TRUE;
     } else {
       return FALSE;
     }
+  } else {
+    return FALSE;
+  }
   
 }
 
-function merci_ui_user_tab($user){
+function merci_ui_my_reservations_tab($user){
+  
+  $view = views_get_view('merci_my_reservations','default');
+  $view->override_path = implode("/", arg());
+  $output = $view->preview();
+
+  print theme('page', $output);
+}
+
+function merci_ui_user_reservations_tab($user){
   
   $view = views_get_view('merci_my_reservations','default');
   $view->override_path = implode("/", arg());
