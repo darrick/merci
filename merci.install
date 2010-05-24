@@ -791,8 +791,13 @@ function merci_update_5() {
   } else {
     drupal_set_message(t("You need to install and enable the cck number module for this update."));
   }
-  return array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.');
+  return  array(array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.'));
 }
+
+function merci_update_6200() {
+  return  array(array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.'));
+}
+
 
 
 function add_cost_fields_and_group_taxonomy() {
