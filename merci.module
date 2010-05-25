@@ -2245,7 +2245,17 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
  * @return
  *   The number of available bucket items.
  */
-function merci_get_available_bucket_count($content_type, $start, $end, $reservation = NULL) {
+function merci_get_available_bucket_count($content_type, $start = NULL, $end = NULL, $reservation = NULL) {
+  //if there are no dates, return the active total
+  if(!$start){
+   
+   $count = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM node LEFT JOIN merci_bucket_node ON node.vid = merci_bucket_node.vid LEFT JOIN merci_resource_node ON node.vid = merci_resource_node.vid WHERE type = '%s' and status = 1 AND merci_resource_node.default_availability = 1 OR type = '%s' and status = 1 AND merci_bucket_node.default_availability = 1", $content_type, $content_type));
+   
+   return $count->total;
+  
+  } else {
+  
+  
   // Determine CCK table and columns the date data is stored in.
   $field = content_fields('field_merci_date');
   $db_info = content_database_info($field);
@@ -2398,6 +2408,7 @@ function merci_get_available_bucket_count($content_type, $start, $end, $reservat
   }
 
   return sizeof($total_items_array) - $reserved_items;
+  } // if no start date
 }
 
 /**
@@ -2704,23 +2715,8 @@ function merci_node_validate($form, &$form_state) {
 }
 
 function merci_conflict_grid($type,$title,$start,$end) {
-  $count_sql = "SELECT COUNT(n.nid) 
-    FROM {node} n 
-    JOIN {merci_node_type} t
-    ON t.type = n.type
-    WHERE n.status = 1 AND
-    (
-      (
-        t.type_setting = 'bucket'
-        AND n.type = '%s'
-      ) OR
-      (
-        t.type_setting = 'resource'
-        AND n.title = '%s'
-      )
-    )";
-
-  $count = db_result( db_query( $count_sql , $type , $title ) );
+  
+  $count = merci_get_available_bucket_count($type);
 
   $start_mysql = date( 'Y-m-d' , strtotime( $start ) );
   $end_mysql = date( 'Y-m-d' , strtotime( $end . ' +1 day' ) );
@@ -3616,21 +3612,51 @@ function merci_get_rate($content_type){
 
 }
 
+
 /**
 * Pass type as user/project and uid/nid
 * returns total hours
 */
-function merci_total_usage($id, $type = 'user') {
+function merci_total_usage($id, $type = 'user', $date = NULL) {
+   
    if($type == 'project'){
      $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN og_ancestry ON og_ancestry.nid = node.nid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE group_nid = %d", $id);
    } else {
-     $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE uid = %d", $id);
+     if($date){
+        $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE uid = %d AND field_merci_date_value > '%s'", $id, $date);
+     } else {
+       $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE uid = %d", $id);
+     }
    }
    
+   //add the reservation total minutes for each item in the reservation
    while ($reservationnode = db_fetch_object($result)) {
       
-      $hours = $hours + ((strtotime($reservationnode->field_merci_date_value2) - strtotime($reservationnode->field_merci_date_value)) / 360);
+      $minutes = $minutes + ((strtotime($reservationnode->field_merci_date_value2) - strtotime($reservationnode->field_merci_date_value)));
    }
    
-   return round($hours);
+   return $minutes;
 }
+
+/**
+* returns the number of items currently checked out for each content type
+*/
+function merci_current_inventory() {
+   
+  $output .= '<b>type (currently out/total in MERCI/total should be available)</b><br />';
+  
+  $result = db_query("SELECT type FROM {merci_node_type} WHERE type_setting = 'resource' OR type_setting = 'bucket' ORDER BY type");
+   
+  while ($mercitype = db_fetch_object($result)) {
+      
+     $currentlyout = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM {node} JOIN merci_reservation_detail ON merci_reservation_detail.item_nid = node.nid WHERE type = '%s' and item_status = 2", $mercitype->type));
+      
+     $currentlyactive = merci_get_available_bucket_count($mercitype->type);
+     
+     $output .= l($mercitype->type, 'admin/merci/manage/inventory', array('html' => true, 'query' => 'type[0]=' . $mercitype->type)) . ' (' .  $currentlyout->total . '/' . $currentlyactive .'/' . ($currentlyactive - $currentlyout->total) . ')<br />';   
+     
+   }  //while
+   
+   print theme('page', $output);
+}
+
