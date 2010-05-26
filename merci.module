@@ -2258,7 +2258,11 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
   //if there are no dates, return the active total
   if(!$start){
    
-   $count = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM node LEFT JOIN merci_bucket_node ON node.vid = merci_bucket_node.vid WHERE type = '%s' and status = 1 AND merci_resource_node.default_availability = 1 OR type = '%s' and status = 1 AND merci_bucket_node.default_availability = 1", $content_type, $content_type));
+    $count = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM node 
+      LEFT JOIN merci_bucket_node ON node.vid = merci_bucket_node.vid 
+        WHERE type = '%s' and status = 1 
+          AND merci_bucket_node.default_availability = 1", 
+    $content_type, $content_type));
    
    return $count->total;
   
@@ -3662,18 +3666,28 @@ function merci_total_usage($id, $type = 'user', $date = NULL) {
 
 /**
 * returns the number of items currently checked out for each content type
+* TODO: change this to a views view.
 */
 function merci_current_inventory() {
    
   $output .= '<b>type (currently out/total in MERCI/total should be available)</b><br />';
   
-  $result = db_query("SELECT type FROM {merci_node_type} WHERE type_setting = 'resource' OR type_setting = 'bucket' ORDER BY type");
+  $result = db_query("SELECT type FROM {merci_node_type} 
+    WHERE type_setting = 'resource' OR type_setting = 'bucket' 
+    ORDER BY type");
    
   while ($mercitype = db_fetch_object($result)) {
       
-     $currentlyout = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM {node} JOIN merci_reservation_detail ON merci_reservation_detail.item_nid = node.nid WHERE type = '%s' and item_status = 2", $mercitype->type));
+    $currentlyout = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM {node} 
+      JOIN merci_reservation_detail ON merci_reservation_detail.item_nid = node.nid 
+      WHERE type = '%s' and item_status = 2", $mercitype->type));
       
-     $currentlyactive = merci_get_available_bucket_count($mercitype->type);
+    if($merci_settings->type_setting == 'bucket'){
+      $currentlyactive = merci_get_available_bucket_count($type);
+    } else {
+      // TOOD: Check if resource is available.
+      $currentlyactive = 1;
+    }
      
      $output .= l($mercitype->type, 'admin/merci/manage/inventory', array('html' => true, 'query' => 'type[0]=' . $mercitype->type)) . ' (' .  $currentlyout->total . '/' . $currentlyactive .'/' . ($currentlyactive - $currentlyout->total) . ')<br />';   
      
