@@ -29,10 +29,10 @@ define('MERCI_SUB_TYPE_ITEM', 1);
 define('MERCI_SUB_TYPE_RESERVATION', 2);
 
 // Item status for reservations.
+define('MERCI_ITEM_STATUS_CHECKED_IN', -1);
 define('MERCI_ITEM_STATUS_AVAILABLE', 0);
 define('MERCI_ITEM_STATUS_RESERVED', 1);
 define('MERCI_ITEM_STATUS_CHECKED_OUT', 2);
-define('MERCI_ITEM_STATUS_CHECKED_IN', -1);
 
 /**
  * Implementation of hook_init().
@@ -2200,11 +2200,12 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
   }
 
   // Pull reservable items.  This query takes the following into consideration:
-  //   1. Pulls all all item nodes of the content type that are in an available state,
+  //   1. Pulls all all item nodes of the content type that are in an available or checked in state,
   //   2. Excludes all item nodes that have associated reservations in the date range
-  //      of the this reservation where the item is in an already reserved state.
+  //      of the this reservation where the item is in an already reserved or checked out state.
   //   3. Allows a reservation to be excluded from the exclusions if necessary (this
   //      is usually used to allow an already assigned item to not conflict with itself.
+  //   4. Exclude items from past reservations where the item is in a checked out state. 
   $items = db_query("SELECT n.nid, n.title FROM {node} n 
     INNER JOIN {merci_{$merci_type}_node} m ON n.vid = m.vid 
       WHERE m.default_availability IN (%d, %d) 
@@ -2278,21 +2279,20 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
     $total_items_array[$ctnodes['nid']] = array();
 
   }
-  $args = array($start, $end, $start, $end, $start, $end, $content_type, MERCI_ITEM_STATUS_CHECKED_IN);
-  $args2 = array($end, $content_type, MERCI_ITEM_STATUS_CHECKED_OUT);
+
+  $args = array($start, $end, $start, $end, $start, $end, $content_type, MERCI_ITEM_STATUS_AVAILABLE);
 
   // If we're checking an existing reservation, exclude it from the
   // reserved items.
   if (isset($reservation)) {
     $where = ' AND ct.nid <> %d';
     $args[] = $reservation;
-    $args2[] = $reservation;
   }
   else {
     $where = '';
   }
 
-  // pull reservations with assigned nodes
+  // pull reservations with assigned nodes and status of MERCI_ITEM_STATUS_RESERVED or MERCI_ITEM_STATUS_CHECKED_OUT
   $reserved_nodes = db_query("
     SELECT ct.nid,field_merci_date_value,field_merci_date_value2,md.item_nid FROM {". $table ."} ct 
       INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid 
@@ -2317,7 +2317,7 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
   }
 
 
-  // pull reservations without assigned nodes
+  // pull reservations without assigned nodes and status of MERCI_ITEM_STATUS_RESERVED or MERCI_ITEM_STATUS_CHECKED_OUT
   $reserved_nodes = db_query("
     SELECT ct.nid,field_merci_date_value,field_merci_date_value2,md.item_nid  
       FROM {". $table ."} ct 
@@ -2332,7 +2332,7 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
             ) 
             AND mn.type = '%s' 
             AND md.item_nid = 0 
-            AND NOT (md.item_status <= %d)
+            AND NOT md.item_status <= %d
             $where", 
     $args);
 
