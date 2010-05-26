@@ -35,6 +35,7 @@ table.merci-availability-schedule {
 	
 	table.merci-availability-schedule td.available {
 		background: #cfc;
+		color: #cfc;
 		height: 1.2em;
 		width: 1.2em;
 		}
@@ -44,6 +45,10 @@ table.merci-availability-schedule {
 		height: 1.2em;
 		width: 1.2em;
 		}
+		
+  a.unavailable:link, a.unavailable:visited, a.unavailable:hover, a.unavailable:active {
+    color: #c99;
+  }
 		
 	div.merci-availability-key .unavailable {
 		background: #c99;
@@ -57,4 +62,8 @@ table.merci-availability-schedule {
 		display: inline-block;
 		height: 1.2em;
 		width: 1.2em;
+		}
+		
+ table.merci-availability-schedule td.hourborder {
+		border-right: #000 solid 1px;
 		}

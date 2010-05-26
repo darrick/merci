@@ -2793,9 +2793,15 @@ function merci_conflict_grid($type,$title,$start,$end) {
           }  else {
             $hourborder = NULL;
           }
-          if ( $times[ $time . ':00' ] >= $i )
+          if ( $times[ $time . ':00' ]['count'] >= $i )
             
-            $message .= '<td class="unavailable ' . $hourborder . '"></td>';
+            if(user_access('administer MERCI') || user_access('create reservations outside hours of operation')){
+     
+              $message .= '<td class="unavailable ' . $hourborder . '">' . l('x', 'node/' . $times[ $time . ':00' ]['nid'], array('attributes' => array('class' => 'unavailable'))) . '</td>';
+            } else {
+              $message .= '<td class="unavailable ' . $hourborder . '"></td>';
+            }
+            
           else
             $message .= '<td class="available' . $hourborder . '"></td>';
 
@@ -2835,7 +2841,7 @@ function merci_load_reservations_for_type_in_timespan( $type , $start_date , $en
     if ( ! isset( $reservation_counts[ $date ] ) )
       $reservation_counts[ $date ] = array();
 
-    $reservation_counts[ $date ][ $time ] = 0;
+    $reservation_counts[ $date ][ $time ] = array('count' => 0, 'nid' => NULL);
 
     $datetime = strtotime( $date .' '. $time .' +15 minutes' );
 
@@ -2845,7 +2851,7 @@ function merci_load_reservations_for_type_in_timespan( $type , $start_date , $en
 
   $reservation_times = array();
 
-  $sql = "SELECT r.field_merci_date_value AS start, r.field_merci_date_value2 AS end
+  $sql = "SELECT n.nid AS node, r.field_merci_date_value AS start, r.field_merci_date_value2 AS end
   FROM {merci_reservation_detail} d
   JOIN {node} n
     ON n.nid = d.placeholder_nid
@@ -2857,12 +2863,12 @@ function merci_load_reservations_for_type_in_timespan( $type , $start_date , $en
 
   $times = db_query( $sql , $type , $end_date , $start_date );
 
-    while ( $reservation_time = db_fetch_object( $times ) )
+  while ( $reservation_time = db_fetch_object( $times ) )
     $reservation_times[] = $reservation_time;
+    
+    // ! Update reservation count
 
-  // ! Update reservation count
-
-  foreach ( $reservation_times as $reservation_time ) {
+    foreach ( $reservation_times as $reservation_time ) {
 
     $datetime = $reservation_time -> start;
 
@@ -2872,11 +2878,12 @@ function merci_load_reservations_for_type_in_timespan( $type , $start_date , $en
 
       $time = date( 'H:i:s' , strtotime( $time ) + $timezone_offset );
 
-      if ( isset( $reservation_counts[ $date ][ $time ] ) )
-        $reservation_counts[ $date ][ $time ]++;
-
-      $datetime = date( 'Y-m-d H:i:s' , strtotime( $datetime .' +15 minutes' ) );
-
+      if ( isset( $reservation_counts[ $date ][ $time ] ) ){
+        $reservation_counts[ $date ][ $time ][ 'count' ]++;
+        $reservation_counts[ $date ][ $time ][ 'nid' ] = $reservation_time -> node;
+      }
+        $datetime = date( 'Y-m-d H:i:s' , strtotime( $datetime .' +15 minutes' ) );
+      
     } // while
 
   } // foreach
