@@ -23,6 +23,10 @@ function merci_install() {
  */
 function merci_uninstall() {
 
+   // Delete the vocabulary.
+  $vid = variable_get('merci_equipment_grouping_vid', '');
+  taxonomy_del_vocabulary($vid);
+
   // Remove all MERCI variables.
   $variables = db_query("SELECT name FROM {variable} WHERE name LIKE 'merci_%'");
   while ($variable = db_fetch_object($variables)) {
@@ -62,10 +66,6 @@ function merci_uninstall() {
 
   // Remove tables.
   drupal_uninstall_schema('merci');
-  
-   // Delete the vocabulary.
-  $vid = variable_get('merci_equipment_grouping_vid', '');
-  taxonomy_del_vocabulary($vid);
 }
 
 /**
