@@ -27,6 +27,16 @@ function merci_uninstall() {
   $vid = variable_get('merci_equipment_grouping_vid', '');
   taxonomy_del_vocabulary($vid);
 
+  // Need to load the CCK include file where content_field_instance_create() is defined.
+  module_load_include('inc', 'content', 'includes/content.crud');
+  $results = db_query("SELECT field_name,type_name FROM {". content_instance_tablename() ."} WHERE type_name = 'merci_reservation'");
+  while ($field = db_fetch_array($results)) {
+    content_field_instance_delete($field['field_name'], $field['type_name'], FALSE);
+  }
+  // Force the caches and static arrays to update to the new info.
+  content_clear_type_cache(TRUE);
+
+
   // Remove all MERCI variables.
   $variables = db_query("SELECT name FROM {variable} WHERE name LIKE 'merci_%'");
   while ($variable = db_fetch_object($variables)) {
@@ -57,13 +67,6 @@ function merci_uninstall() {
   node_types_rebuild();
   menu_rebuild();
 
-  // Remove field_merci_date.
-  module_load_include('inc', 'content', 'includes/content.crud');
-  content_field_instance_delete('field_merci_date', 'merci_reservation');
-  content_field_instance_delete('field_merci_commercial_cost', 'merci_reservation');
-  content_field_instance_delete('field_merci_member_cost', 'merci_reservation');
-  content_field_instance_delete('field_merci_commercial_rental', 'merci_reservation');
-
   // Remove tables.
   drupal_uninstall_schema('merci');
 }
@@ -72,98 +75,8 @@ function merci_uninstall() {
  * Implementation of hook_enable().
  */
 function merci_enable() {
-  // Create the date, commercial_total, and member_total fields for the reservation.
-  $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
-  $date_only_format = substr($short_date_format, 0, 5);
-  
-  // Create the date, commercial_total, and member_total fields for the reservation.
-  $date_field = array(
-    'field_name' => 'field_merci_date',
-    'type_name' => 'merci_reservation',
-    'display_settings' => array(
-      'label' => array(
-        'format' => 'above',
-        'exclude' => 0,
-      ),
-      'teaser' => array(
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-      'full' => array(
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-      4 => array(
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-    ),
-    'widget_active' => '1',
-    'type' => 'datetime',
-    'required' => '1',
-    'multiple' => '0',
-    'db_storage' => '1',
-    'module' => 'date',
-    'active' => '1',
-    'locked' => '1',
-    'columns' => array(
-      'value' => array(
-        'type' => 'datetime',
-        'not null' => FALSE,
-        'sortable' => TRUE,
-      ),
-      'value2' => array(
-        'type' => 'datetime',
-        'not null' => FALSE,
-        'sortable' => TRUE,
-      ),
-    ),
-    'granularity' => array(
-      'year' => 'year',
-      'month' => 'month',
-      'day' => 'day',
-      'hour' => 'hour',
-      'minute' => 'minute',
-    ),
-    'timezone_db' => 'UTC',
-    'tz_handling' => 'site',
-    'todate' => 'required',
-    'repeat' => 0,
-    'repeat_collapsed' => '',
-    'output_format_date' => $short_date_format,
-    'output_format_custom' => '',
-    'output_format_date_long' => $date_only_format,
-    'output_format_custom_long' => '',
-    'output_format_date_medium' => $date_only_format,
-    'output_format_custom_medium' => '',
-    'output_format_date_short' => $date_only_format,
-    'output_format_custom_short' => '',
-    'widget' => array(
-      'default_value' => 'blank',
-      'default_value_code' => '',
-      'default_value2' => 'same',
-      'default_value_code2' => '',
-      'input_format' => $short_date_format,
-      'input_format_custom' => '',
-      'increment' => '15',
-      'text_parts' => array(),
-      'year_range' => '-3:+3',
-      'label_position' => 'above',
-      'label' => 'Reservation',
-      'weight' => '-1',
-      'description' => 'Select the start and end times for your reservation.',
-      'type' => 'date_popup',
-      'module' => 'date',
-    ),
-  );
-    
-  // Need to load the CCK include file where content_field_instance_create() is defined
-  module_load_include('inc', 'content', 'includes/content.crud');
-  
-  // Create the fields
-  content_field_instance_create($date_field);
-  
-  add_cost_fields_and_group_taxonomy();
+  add_group_taxonomy();
+  create_cck_fields();
   
   // Add any node types to the MERCI tables that aren't already there.
   $existing_types = db_query("SELECT type FROM {merci_node_type}");
@@ -543,7 +456,8 @@ function merci_update_4() {
 
 function merci_update_5() {
   if(module_exists("number")){
-  add_cost_fields_and_group_taxonomy();
+  add_group_taxonomy();
+  create_cck_fields();
   } else {
     drupal_set_message(t("You need to install and enable the cck number module for this update."));
   }
@@ -553,269 +467,366 @@ function merci_update_5() {
 function merci_update_6200() {
   return  array(array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.'));
 }
+function merci_update_6201() {
+  create_cck_fields();
+  return  array(array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.'));
+}
 
-
-
-function add_cost_fields_and_group_taxonomy() {
-  $member_cost_field = array (
-    'label' => 'Member Cost',
-    'field_name' => 'field_merci_member_cost',
-    'type_name' => 'merci_reservation',
-    'type' => 'number_decimal',
-    'widget_type' => 'number',
-    'change' => 'Change basic information',
-    'weight' => 0,
-    'locked' => '1',
-    'description' => '',
-    'default_value' => 
-    array (
-      0 => 
-      array (
-        'value' => '',
-        '_error_element' => 'default_value_widget][field_merci_member_cost][0][value',
+function create_cck_fields() {
+  // Create the date, commercial_total, and member_total fields for the reservation.
+  $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
+  $date_only_format = substr($short_date_format, 0, 5);
+  
+  // Create the date, commercial_total, and member_total fields for the reservation.
+  $merci_reservation_fields = array (
+    array(
+      'field_name' => 'field_merci_date',
+      'type_name' => 'merci_reservation',
+      'display_settings' => array(
+        'label' => array(
+          'format' => 'above',
+          'exclude' => 0,
+        ),
+        'teaser' => array(
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'full' => array(
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        4 => array(
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+      ),
+      'widget_active' => '1',
+      'type' => 'datetime',
+      'required' => '1',
+      'multiple' => '0',
+      'db_storage' => '1',
+      'module' => 'date',
+      'active' => '1',
+      'locked' => '1',
+      'columns' => array(
+        'value' => array(
+          'type' => 'datetime',
+          'not null' => FALSE,
+          'sortable' => TRUE,
+        ),
+        'value2' => array(
+          'type' => 'datetime',
+          'not null' => FALSE,
+          'sortable' => TRUE,
+        ),
+      ),
+      'granularity' => array(
+        'year' => 'year',
+        'month' => 'month',
+        'day' => 'day',
+        'hour' => 'hour',
+        'minute' => 'minute',
+      ),
+      'timezone_db' => 'UTC',
+      'tz_handling' => 'site',
+      'todate' => 'required',
+      'repeat' => 0,
+      'repeat_collapsed' => '',
+      'output_format_date' => $short_date_format,
+      'output_format_custom' => '',
+      'output_format_date_long' => $date_only_format,
+      'output_format_custom_long' => '',
+      'output_format_date_medium' => $date_only_format,
+      'output_format_custom_medium' => '',
+      'output_format_date_short' => $date_only_format,
+      'output_format_custom_short' => '',
+      'widget' => array(
+        'default_value' => 'blank',
+        'default_value_code' => '',
+        'default_value2' => 'same',
+        'default_value_code2' => '',
+        'input_format' => $short_date_format,
+        'input_format_custom' => '',
+        'increment' => '15',
+        'text_parts' => array(),
+        'year_range' => '-3:+3',
+        'label_position' => 'above',
+        'label' => 'Reservation',
+        'weight' => '-1',
+        'description' => 'Select the start and end times for your reservation.',
+        'type' => 'date_popup',
+        'module' => 'date',
       ),
     ),
-    'default_value_php' => '',
-    'default_value_widget' => NULL,
-    'group' => false,
-    'required' => 0,
-    'multiple' => '0',
-    'min' => '',
-    'max' => '',
-    'precision' => '10',
-    'scale' => '2',
-    'decimal' => '.',
-    'prefix' => '',
-    'suffix' => '',
-    'allowed_values' => '',
-    'allowed_values_php' => '',
-    'op' => 'Save field settings',
-    'module' => 'number',
-    'widget_module' => 'number',
-    'columns' => 
 
     array (
-      'value' => 
-      array (
-        'type' => 'numeric',
-        'precision' => '10',
-        'scale' => '2',
-        'not null' => false,
-        'sortable' => true,
-      ),
-    ),
-    'display_settings' => 
-    array (
+      'label' => 'Member Cost',
+      'field_name' => 'field_merci_member_cost',
+      'type_name' => 'merci_reservation',
+      'type' => 'number_decimal',
+      'widget_type' => 'number',
+      'change' => 'Change basic information',
       'weight' => 0,
-      'parent' => '',
-      'label' => 
+      'locked' => '1',
+      'description' => '',
+      'default_value' => 
       array (
-        'format' => 'above',
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_merci_member_cost][0][value',
+        ),
       ),
-      'teaser' => 
-      array (
-        'format' => 'default',
-        'exclude' => 1,
-      ),
-      'full' => 
-      array (
-        'format' => 'default',
-        'exclude' => 1,
-      ),
-      4 => 
-      array (
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-      'token' => 
-      array (
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-    ),
-  );  
+      'default_value_php' => '',
+      'default_value_widget' => NULL,
+      'group' => false,
+      'required' => 0,
+      'multiple' => '0',
+      'min' => '',
+      'max' => '',
+      'precision' => '10',
+      'scale' => '2',
+      'decimal' => '.',
+      'prefix' => '',
+      'suffix' => '',
+      'allowed_values' => '',
+      'allowed_values_php' => '',
+      'op' => 'Save field settings',
+      'module' => 'number',
+      'widget_module' => 'number',
+      'columns' => 
 
-  
-  $commerical_cost_field = array (
-    'label' => 'Commercial Cost',
-    'field_name' => 'field_merci_commercial_cost',
-    'type_name' => 'merci_reservation',
-    'type' => 'number_decimal',
-    'widget_type' => 'number',
-    'change' => 'Change basic information',
-    'weight' => '1',
-    'locked' => '1',
-    'description' => '',
-    'default_value' => 
-    array (
-      0 => 
       array (
-        'value' => '',
-        '_error_element' => 'default_value_widget][field_merci_commercial_cost][0][value',
+        'value' => 
+        array (
+          'type' => 'numeric',
+          'precision' => '10',
+          'scale' => '2',
+          'not null' => false,
+          'sortable' => true,
+        ),
       ),
-    ),
-    'default_value_php' => '',
-    'default_value_widget' => NULL,
-    'group' => false,
-    'required' => 0,
-    'multiple' => '0',
-    'min' => '',
-    'max' => '',
-    'precision' => '10',
-    'scale' => '2',
-    'decimal' => '.',
-    'prefix' => '',
-    'suffix' => '',
-    'allowed_values' => '',
-    'allowed_values_php' => '',
-    'op' => 'Save field settings',
-    'module' => 'number',
-    'widget_module' => 'number',
-    'columns' => 
-    array (
-      'value' => 
+      'display_settings' => 
       array (
-        'type' => 'numeric',
-        'precision' => '10',
-        'scale' => '2',
-        'not null' => false,
-        'sortable' => true,
+        'weight' => 0,
+        'parent' => '',
+        'label' => 
+        array (
+          'format' => 'above',
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 1,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 1,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
       ),
-    ),
-    'display_settings' => 
+    ),  
+
+
     array (
+      'label' => 'Commercial Cost',
+      'field_name' => 'field_merci_commercial_cost',
+      'type_name' => 'merci_reservation',
+      'type' => 'number_decimal',
+      'widget_type' => 'number',
+      'change' => 'Change basic information',
       'weight' => '1',
-      'parent' => '',
-      'label' => 
+      'locked' => '1',
+      'description' => '',
+      'default_value' => 
       array (
-        'format' => 'above',
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_merci_commercial_cost][0][value',
+        ),
       ),
-      'teaser' => 
+      'default_value_php' => '',
+      'default_value_widget' => NULL,
+      'group' => false,
+      'required' => 0,
+      'multiple' => '0',
+      'min' => '',
+      'max' => '',
+      'precision' => '10',
+      'scale' => '2',
+      'decimal' => '.',
+      'prefix' => '',
+      'suffix' => '',
+      'allowed_values' => '',
+      'allowed_values_php' => '',
+      'op' => 'Save field settings',
+      'module' => 'number',
+      'widget_module' => 'number',
+      'columns' => 
       array (
-        'format' => 'default',
-        'exclude' => 1,
+        'value' => 
+        array (
+          'type' => 'numeric',
+          'precision' => '10',
+          'scale' => '2',
+          'not null' => false,
+          'sortable' => true,
+        ),
       ),
-      'full' => 
+      'display_settings' => 
       array (
-        'format' => 'default',
-        'exclude' => 1,
+        'weight' => '1',
+        'parent' => '',
+        'label' => 
+        array (
+          'format' => 'above',
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 1,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 1,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
       ),
-      4 => 
-      array (
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-      'token' => 
-      array (
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-    ),
-  );    
-  
-  /* Why is this here?
-  $commerical_rental_field = array (
-  0 => 
-  array (
-    'label' => 'Commercial Rental',
-    'field_name' => 'field_merci_commercial_rental',
-    'type' => 'number_integer',
-    'widget_type' => 'optionwidgets_onoff',
-    'change' => 'Change basic information',
-    'weight' => '1',
-    'locked' => '1',
-    'description' => '',
-    'default_value' => 
+    ),   
+
     array (
-      0 => 
-      array (
-        'value' => NULL,
-      ),
-    ),
-    'default_value_php' => '',
-    'default_value_widget' => NULL,
-    'group' => false,
-    'required' => 0,
-    'multiple' => '0',
-    'min' => '',
-    'max' => '',
-    'prefix' => '',
-    'suffix' => '',
-    'allowed_values' => '0
-1|Charge Commercial Rate',
-    'allowed_values_php' => '',
-    'op' => 'Save field settings',
-    'module' => 'number',
-    'widget_module' => 'optionwidgets',
-    'columns' => 
-    array (
-      'value' => 
-      array (
-        'type' => 'int',
-        'not null' => false,
-        'sortable' => true,
-      ),
-    ),
-    'display_settings' => 
-    array (
+      'label' => 'Commercial Rental',
+      'field_name' => 'field_merci_commercial_rental',
+      'type_name' => 'merci_reservation',
+      'type' => 'number_integer',
+      'widget_type' => 'optionwidgets_onoff',
+      'change' => 'Change basic information',
       'weight' => '1',
-      'parent' => 'group_merci_internal',
-      'label' => 
+      'locked' => '1',
+      'description' => '',
+      'default_value' => 
       array (
-        'format' => 'above',
+        0 => 
+        array (
+          'value' => NULL,
+        ),
       ),
-      'teaser' => 
+      'default_value_php' => '',
+      'default_value_widget' => NULL,
+      'group' => false,
+      'required' => 0,
+      'multiple' => '0',
+      'min' => '',
+      'max' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'allowed_values' => '0
+      1|Charge Commercial Rate',
+      'allowed_values_php' => '',
+      'op' => 'Save field settings',
+      'module' => 'number',
+      'widget_module' => 'optionwidgets',
+      'columns' => 
       array (
-        'format' => 'default',
-        'exclude' => 1,
+        'value' => 
+        array (
+          'type' => 'int',
+          'not null' => false,
+          'sortable' => true,
+        ),
       ),
-      'full' => 
+      'display_settings' => 
       array (
-        'format' => 'default',
-        'exclude' => 1,
-      ),
-      5 => 
-      array (
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-      4 => 
-      array (
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-      2 => 
-      array (
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-      3 => 
-      array (
-        'format' => 'default',
-        'exclude' => 0,
-      ),
-      'token' => 
-      array (
-        'format' => 'default',
-        'exclude' => 0,
+        'weight' => '1',
+        'parent' => 'group_merci_internal',
+        'label' => 
+        array (
+          'format' => 'above',
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 1,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 1,
+        ),
+        5 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
       ),
     ),
-  ),
-);
-   */
+  );
   // Need to load the CCK include file where content_field_instance_create() is defined.
   module_load_include('inc', 'content', 'includes/content.crud');
   // Create the field.
-  
-  content_field_instance_create($commerical_cost_field);
-  content_field_instance_create($member_cost_field);
-  //content_field_instance_create($commercial_rental_field);
-  
+
+  foreach($merci_reservation_fields as $field){
+    // Create the fields
+    if(!content_field_instance_read(array('field_name' => $field['field_name']),TRUE)){
+      content_field_instance_create($field,FALSE);
+    }
+  }
+  // Clear caches and rebuild menu.
+  content_clear_type_cache(TRUE);
+  menu_rebuild();
+}
+
+
+function add_group_taxonomy() {
   // borrowed from Forum module
-  
-    // Create the forum vocabulary if it does not exist. Assign the vocabulary
-    // a low weight so it will appear first in forum topic create and edit
-    // forms.
+
+  // Create the forum vocabulary if it does not exist. Assign the vocabulary
+  // a low weight so it will appear first in forum topic create and edit
+  // forms.
+  // Delete the vocabulary.
+  $vid = variable_get('merci_equipment_grouping_vid', '');
+  if(!taxonomy_vocabulary_load($vid)){
     $vocabulary = array(
       'name' => t('MERCI Equipment Grouping'),
       'multiple' => 0,
@@ -828,4 +839,5 @@ function add_cost_fields_and_group_taxonomy() {
     taxonomy_save_vocabulary($vocabulary);
 
     variable_set('merci_equipment_grouping_vid', $vocabulary['vid']);
+  }
 }
