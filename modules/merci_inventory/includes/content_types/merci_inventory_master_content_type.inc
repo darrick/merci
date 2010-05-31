@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * merci inventory content types installation 
+ */
+
 
 /**
  * function to create Open Media Timeslot Theme CCK content type

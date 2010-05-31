@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * merci views handlers 
+ */
+
 class views_handler_filter_datetime extends views_handler_filter_date {
   function op_simple($field) {
     $value = intval(strtotime($this->value['value'], 0));

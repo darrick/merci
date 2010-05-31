@@ -1,5 +1,10 @@
 <?php
-// $Id //
+// $Id$ //
+
+/**
+ * @file
+ * merci admin settings 
+ */
 
 /**
  * Builds the MERCI admininstration settings form.

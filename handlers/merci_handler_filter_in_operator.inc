@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * merci views handlers 
+ */
+
 
 /**
  * Filter by type_setting

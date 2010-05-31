@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * merci views handlers 
+ */
+
 
 /**
  * Type setting Bucket|Resource.

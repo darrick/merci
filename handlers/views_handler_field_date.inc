@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * merci views handlers 
+ */
+
 
 /**
  * Views assumes dates are always Unix timestamps, so convert our DATETIME-formatted columns.

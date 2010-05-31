@@ -1,5 +1,10 @@
 <?php
 // $Id$
+ 
+/**
+ * @file
+ * merci calendar view default views 
+ */
 
 
 /**

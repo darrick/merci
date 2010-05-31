@@ -2273,8 +2273,8 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
   //if there are no dates, return the active total
   if (!$start) {
 
-    $count = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM node 
-      LEFT JOIN merci_bucket_node ON node.vid = merci_bucket_node.vid 
+    $count = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM {node} 
+      LEFT JOIN {merci_bucket_node} ON node.vid = merci_bucket_node.vid 
         WHERE type = '%s' and status = 1 
           AND merci_bucket_node.default_availability = 1",
         $content_type, $content_type
@@ -3134,7 +3134,7 @@ function merci_views_handlers() {
  */
 function merci_check_existing_bucket_items($type, $status = FALSE) {
   $where = $status ? ' AND status = 1' : '';
-  $existing_items = db_result(db_query("SELECT nid FROM {node} WHERE type = '%s'$where", $type));
+  $existing_items = db_result(db_query("SELECT nid FROM {node} WHERE type = '%s'". $where, $type));
   return $existing_items;
 }
 
@@ -3304,10 +3304,10 @@ function merci_printable_contract($node_id) {
 
     civicrm_initialize(TRUE);
     global $civicrm_root;
-    include_once ($civicrm_root .'/api/UFGroup.php');
+    include_once($civicrm_root .'/api/UFGroup.php');
     $userID = crm_uf_get_match_id($user->uid);
     $cg = array('contact_id' => $userID);
-    include_once ($civicrm_root .'/api/v2/Contact.php');
+    include_once($civicrm_root .'/api/v2/Contact.php');
     $ob = civicrm_contact_get($cg);
     //print '<pre>';
     //print_r($ob);
@@ -3342,12 +3342,13 @@ function merci_printable_contract($node_id) {
            <img src="<?php print $base_path ?><?php print $logo ?>">
         <?php } ?>
         <h2><?php print variable_get('site_name', ''); ?> Equipment Rental Contract</h2>
-        <?php if (module_exists('token')) { print token_replace(variable_get('merci_contract_header', ''), 'node', $node);
-  }
-  else {
-    print variable_get('merci_contract_header');
-  }
-  ?>
+        <?php if (module_exists('token')) { 
+          print token_replace(variable_get('merci_contract_header', ''), 'node', $node);
+        }
+        else {
+          print variable_get('merci_contract_header');
+        }
+        ?>
         Start: <?php print date("F j, Y", $starthour) . merci_format_time($starthour) .'<br />'; ?>
         Returned by: <?php print date("F j, Y", $endhour) . merci_format_time($endhour) .'<br />'; ?>
         Name: <?php print $username ?><br />

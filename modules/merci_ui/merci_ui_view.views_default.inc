@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * merci ui default views 
+ */
+
 
 /**
  * Implementation of hook_views_default_views().

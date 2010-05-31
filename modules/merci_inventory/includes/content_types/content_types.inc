@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * merci inventory content types 
+ */
+
 
 /**
  * function to create CCK content types
