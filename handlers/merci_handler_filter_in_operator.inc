@@ -1,6 +1,7 @@
 <?php
 // $Id$
 
+
 /**
  * Filter by type_setting
  */
@@ -68,3 +69,4 @@ class merci_handler_filter_merci_bucket_resource_node_sub_type extends views_han
     }
   }
 }
+

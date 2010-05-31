@@ -25,15 +25,15 @@ function merci_ui_menu() {
     'title' => 'Reservations',
     'description' => 'Takes node and returns list of upcoming and/or past Reservations',
     'page callback' => 'merci_ui_list_reservations',
-    'page arguments' => array(1,3,4),
+    'page arguments' => array(1, 3, 4),
     'access callback' => 'merci_ui_list_reservations_access',
     'access arguments' => array(1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 9,
   );
-  
+
   //user tab
-  
+
   $items['user/%user/my-reservations'] = array(
     'title' => 'My Reservations',
     'description' => 'Takes user object and returns Reservations',
@@ -44,7 +44,7 @@ function merci_ui_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 15,
   );
-  
+
   $items['user/%user/reservations'] = array(
     'title' => 'Reservations',
     'description' => 'Takes user object and returns Reservations',
@@ -55,8 +55,8 @@ function merci_ui_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 15,
   );
-  
- 
+
+
 
   return $items;
 }
@@ -65,124 +65,126 @@ function merci_ui_menu() {
  * om_navigation_om_navigation_items function.
  * Sample implementation of hook_om_navigation_items
  * @access public
+ *
  * @param mixed $context
+ *
  * @return void
  */
 function merci_ui_om_navigation_items($context) {
-	$items = array();
-	
-	 $items['normal'][0] = array(
-		'zone' => 'private',
-		'status' => 'merci_ui_user_tab_access',
-		'value' => 'merci_ui_user_tab',
-		'label' => 'My Reservation',
-		'path' => 'reservations',
-		'weight' => 10,
-	);
-	
-	return $items;
+  $items = array();
+
+  $items['normal'][0] = array(
+    'zone' => 'private',
+    'status' => 'merci_ui_user_tab_access',
+    'value' => 'merci_ui_user_tab',
+    'label' => 'My Reservation',
+    'path' => 'reservations',
+    'weight' => 10,
+  );
+
+  return $items;
 }
 
-function merci_ui_my_reservations_tab_access($context){
-  global $user; 
-  
-  if($context->uid==$user->uid && user_access('create reservations')) {
+function merci_ui_my_reservations_tab_access($context) {
+  global $user;
+
+  if ($context->uid == $user->uid && user_access('create reservations')) {
     return TRUE;
-  } else {
+  }
+  else {
     return FALSE;
   }
-  
 }
 
-function merci_ui_user_reservations_tab_access($context){
+function merci_ui_user_reservations_tab_access($context) {
   global $user;
-    
-  if($context->uid!=$user->uid){
-    if(user_access('administer MERCI') || user_access('manage MERCI')) {
+
+  if ($context->uid != $user->uid) {
+    if (user_access('administer MERCI') || user_access('manage MERCI')) {
       return TRUE;
-    } else {
+    }
+    else {
       return FALSE;
     }
-  } else {
+  }
+  else {
     return FALSE;
   }
-  
 }
 
-function merci_ui_my_reservations_tab($user){
-  
-  $view = views_get_view('merci_my_reservations','default');
+function merci_ui_my_reservations_tab($user) {
+
+  $view                = views_get_view('merci_my_reservations', 'default');
   $view->override_path = implode("/", arg());
-  $output = $view->preview();
+  $output              = $view->preview();
 
   print theme('page', $output);
 }
 
-function merci_ui_user_reservations_tab($user){
-  
-  $view = views_get_view('merci_my_reservations','default');
+function merci_ui_user_reservations_tab($user) {
+
+  $view                = views_get_view('merci_my_reservations', 'default');
   $view->override_path = implode("/", arg());
-  $output = $view->preview();
+  $output              = $view->preview();
 
   print theme('page', $output);
 }
 
-function merci_ui_list_reservations_access($node){
-  
+function merci_ui_list_reservations_access($node) {
+
   $merci_settings = merci_load_content_type_settings($node->type);
-  
-  if($merci_settings->type_setting == 'bucket' || $merci_settings->type_setting == 'resource'){
-    global $user;
-    if( user_access('manage MERCI') || user_access('administer MERCI') ){
-     
-       return TRUE;
-       
-     } else {
-     
-        return FALSE;
-        
-     }
-     
-  } else {
-  
-     return FALSE;
-  
-  } //end if node is not a bucket or resource
 
+  if ($merci_settings->type_setting == 'bucket' || $merci_settings->type_setting == 'resource') {
+    global $user;
+    if (user_access('manage MERCI') || user_access('administer MERCI')) {
+
+      return TRUE;
+    }
+    else {
+
+      return FALSE;
+    }
+  }
+  else {
+
+    return FALSE;
+  }
+  //end if node is not a bucket or resource
 }
 
-function merci_ui_list_reservations($node, $start, $end){
- 
+function merci_ui_list_reservations($node, $start, $end) {
+
   date_default_timezone_set('UTC');
-  if($start and $end){
-      
+  if ($start and $end) {
+
     $start_mysql = date('Y-m-d', $start);
-      $end_mysql = date('Y-m-d' ,$end);
-      $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' AND field_merci_date_value > '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql, $end_mysql);
-    
-    $output .= '<b>' . l(t('Upcoming Reservations'), '/node/' . $node->nid .'/reservations/'). ' | ' . t('Previous Reservations') . '</b><br />';
-  } else if($start){
+    $end_mysql   = date('Y-m-d', $end);
+    $result      = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' AND field_merci_date_value > '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql, $end_mysql);
+
+    $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
+  }
+  else if ($start) {
     $start_mysql = date('Y-m-d', $start);
     $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql);
-    
-    $output .= '<b>' . l(t('Upcoming Reservations'), '/node/' . $node->nid .'/reservations/') . ' | ' . t('Previous Reservations') . '</b><br />';
-    
-    } else {
-      $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value > NOW() ORDER BY field_merci_date_value", $node->nid);
 
-    $output .= '<b>'. t('Upcoming Reservations') . ' | ' . l(t('Previous Reservations'), '/node/' . $node->nid .'/reservations/' . strtotime('now') . '/' . strtotime('- 3 months')) . '</b><br />';
+    $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
+  }
+  else {
+    $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value > NOW() ORDER BY field_merci_date_value", $node->nid);
+
+    $output .= '<b>'. t('Upcoming Reservations') .' | '. l(t('Previous Reservations'), '/node/'. $node->nid .'/reservations/'. strtotime('now') .'/'. strtotime('- 3 months')) .'</b><br />';
   }
 
   while ($reservationnode = db_fetch_object($result)) {
-    
-    $output .= l($reservationnode->title, '/node/' . $reservationnode->nid) . ' reserved from ' .  
-    format_date(strtotime($reservationnode->field_merci_date_value), $type = 'medium') . ' ' . format_date(strtotime($reservationnode->field_merci_date_value2), $type = 'medium') . '</a><br />';
+
+    $output .= l($reservationnode->title, '/node/'. $reservationnode->nid) .' reserved from '. format_date(strtotime($reservationnode->field_merci_date_value), $type = 'medium') .' '. format_date(strtotime($reservationnode->field_merci_date_value2), $type = 'medium') .'</a><br />';
     $count++;
-   } 
-   
-   if($count==0){
-     $output .= 'No reservations have been made for this item.';
-   }
-   
-   print theme('page', $output);
+  }
+
+  if ($count == 0) {
+    $output .= 'No reservations have been made for this item.';
+  }
+
+  print theme('page', $output);
 }
+

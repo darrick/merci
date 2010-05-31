@@ -6,14 +6,14 @@
  * merci_printable_contract functions
  */
 
-
 /**
  * Implementation of hook_menu().
  */
 function merci_printable_contract_menu() {
 
-  
- 
+
+
 
   return $items;
 }
+

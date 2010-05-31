@@ -1,6 +1,7 @@
 <?php
 // $Id$
 
+
 /**
  * Type setting Bucket|Resource.
  */
@@ -21,13 +22,12 @@ class merci_handler_field_merci_node_type_type_setting extends views_handler_fie
     switch ($type_setting) {
       case 'bucket':
         return t('Bucket');
-        break;
+
       case 'resource':
         return t('Resource');
-        break;
+
       default:
         return t('Disabled');
-        break;
     }
   }
 }
@@ -120,13 +120,13 @@ class merci_handler_field_merci_bucket_resource_node_sub_type extends views_hand
     switch ($sub_type) {
       case MERCI_SUB_TYPE_ITEM:
         return t('Item');
-        break;
+
       case MERCI_SUB_TYPE_RESERVATION:
         return t('Reservation placeholder');
-        break;
+
       default:
         return t('Unknown');
-        break;
     }
   }
 }
+

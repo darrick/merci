@@ -11,7 +11,7 @@ function merci_admin_settings() {
 
   $statuses[MERCI_STATUS_UNCONFIRMED] = t('Unconfirmed');
   $statuses[MERCI_STATUS_PENDING] = t('Pending');
-  $statuses[MERCI_STATUS_CHECKED_OUT] =  t('Checked Out');
+  $statuses[MERCI_STATUS_CHECKED_OUT] = t('Checked Out');
 
   $form['merci_content_types'] = array(
     '#type' => 'fieldset',
@@ -28,7 +28,8 @@ function merci_admin_settings() {
 
   while ($merci_type = db_fetch_object($merci_type_result)) {
     $merci_types[$merci_type->type] = $merci_type->type_setting;
-  } // while
+  }
+  // while
 
   foreach (node_get_types() as $type) {
 
@@ -37,26 +38,27 @@ function merci_admin_settings() {
     $usage = 'Not used by MERCI';
     if (isset($merci_types[$type->type])) {
       $usage = 'MERCI '. $merci_types[$type->type];
-    } // if
+    }
+    // if
 
     $operations = l(t('Edit'), 'admin/content/node-type/'. $type_url_str, array('query' => drupal_get_destination()));
 
     if (module_exists('merci_inventory') && merci_inventory_node_type_menu_access($type->type)) {
 
       $operations .= ' | '. l(t('Inventory Sync'), 'admin/content/node-type/'. $type_url_str .'/merci_inventory', array('query' => drupal_get_destination()));
-
-    } // if
+    }
+    // if
 
     $rows[] = array(
       $type->name,
       $usage,
       $operations,
     );
-
-  } // foreach
+  }
+  // foreach
 
   $form['merci_content_types']['content_types_table'] = array(
-    '#value' => theme('table', $header, $rows)
+    '#value' => theme('table', $header, $rows),
   );
 
   $form['merci_general'] = array(
@@ -98,6 +100,7 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#description' => t('Add link to change reservations from Unconfirmed to Confirmed'),
   );
 */
+
 
   // Weekend became push in 2.x
 
@@ -197,7 +200,7 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#default_value' => variable_get('merci_hours_sun', ''),
     '#description' => $hours_description,
   );
-  
+
   $form['merci_general']['merci_hours_admin'] = array(
     '#type' => 'textfield',
     '#title' => t('Admin hours'),
@@ -211,7 +214,8 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#type' => 'textarea',
     '#title' => t('Closed dates'),
     '#rows' => 10,
-    '#cols' => 5,  // TODO: this doesn't seem to work...
+    // TODO: this doesn't seem to work...
+    '#cols' => 5,
     '#default_value' => variable_get('merci_closed_dates', ''),
     '#description' => t('<div>Enter dates which are closed regardless of the day of the week, one date per line, in the format <em>mm-dd</em></div>ex. <em>07-04</em> would mean July 4th is always closed, regardless of what day of the week it falls on.'),
   );
@@ -229,7 +233,8 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#type' => 'textarea',
     '#title' => t('Contract header'),
     '#rows' => 10,
-    '#cols' => 5,  // TODO: this doesn't seem to work...
+    // TODO: this doesn't seem to work...
+    '#cols' => 5,
     '#default_value' => variable_get('merci_contract_header', ''),
     '#description' => t('Header portion of printable contract.  Allows HTML.'),
   );
@@ -238,7 +243,8 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#type' => 'textarea',
     '#title' => t('Contract boilerplate'),
     '#rows' => 10,
-    '#cols' => 5,  // TODO: this doesn't seem to work...
+    // TODO: this doesn't seem to work...
+    '#cols' => 5,
     '#default_value' => variable_get('merci_contract_boilerplate', ''),
     '#description' => t('Legalese that makes the contract legally binding.'),
   );
@@ -247,23 +253,25 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#type' => 'textarea',
     '#title' => t('Contract footer'),
     '#rows' => 10,
-    '#cols' => 5,  // TODO: this doesn't seem to work...
+    // TODO: this doesn't seem to work...
+    '#cols' => 5,
     '#default_value' => variable_get('merci_contract_footer', ''),
     '#description' => t('Footer portion of printable contract. Normally includes signature lines. HTML allowed.'),
   );
-  
+
   if (module_exists('token')) {
     $form['merci_general']['token_help'] = array(
-    '#title' => t('Replacement patterns'),
-    '#type' => 'fieldset',
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
+      '#title' => t('Replacement patterns'),
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
     );
 
     $form['merci_general']['token_help']['help'] = array(
-    '#value' => theme('token_help', 'node'),
+      '#value' => theme('token_help', 'node'),
     );
   }
 
   return system_settings_form($form);
 }
+

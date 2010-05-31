@@ -1,6 +1,7 @@
 <?php
 // $Id$
 
+
 /**
  * @file
  * merci_template functions
@@ -15,3 +16,4 @@ function merci_calendar_view_views_api() {
     'path' => drupal_get_path('module', 'merci_calendar_view'),
   );
 }
+

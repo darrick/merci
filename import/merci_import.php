@@ -1,6 +1,7 @@
 <?php
 // $Id$
 
+
 /**
  * @file
  * Administrative page for adding MERCI bucket/resource content types and
@@ -153,15 +154,15 @@ function merci_import_2() {
     if (count($data) == 7) {
 
       // Node data.
-      $item = new stdClass();
-      $item->type = $data[0];
-      $item->name = $user->name;
-      $item->uid = $user->uid;
-      $item->title = $data[1];
-      $item->body = $data[2];
-      $item->status = 1;
+      $item          = new stdClass();
+      $item->type    = $data[0];
+      $item->name    = $user->name;
+      $item->uid     = $user->uid;
+      $item->title   = $data[1];
+      $item->body    = $data[2];
+      $item->status  = 1;
       $item->promote = 0;
-      $item->sticky = 0;
+      $item->sticky  = 0;
 
       // MERCI specific data.
       $merci_settings = merci_load_content_type_settings($item->type);
@@ -376,7 +377,8 @@ function import_do_imports() {
     if ($import_finished == 1) {
       // Dequeue the completed import.
       unset($_SESSION['import_remaining'][key($_SESSION['import_remaining'])]);
-      $import_finished = 0; // Make sure this step isn't counted double
+      // Make sure this step isn't counted double
+      $import_finished = 0;
     }
     if (timer_read('page') > 1000) {
       break;
@@ -551,6 +553,7 @@ function import_access_denied_page() {
  * @param $modules
  *   An associative array of modules to check. Key is module name,
  *   value is human-readable name.
+ *
  * @return
  *   A string containing the error message, if any -- FALSE otherwise.
  */
@@ -635,3 +638,4 @@ else {
 if (isset($output)) {
   print theme('maintenance_page', $output);
 }
+

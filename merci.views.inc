@@ -1,5 +1,7 @@
 <?php
 // $Id$
+
+
 /**
  * @file
  * Expose MERCI information to Views.
@@ -211,15 +213,15 @@ function merci_views_data() {
     'type' => 'INNER',
     'table' => 'merci_reservation_detail',
   );
-   $data['merci_reservation_detail2']['date_argument'] = array(
-     'group' => t('Date'),
-     'title' => t('Date for reservation detail'),
-     'help' => t('Filter any Views date field by a date argument'),
-     'argument' => array(
-       'handler' => 'date_api_argument_handler',
-       'empty name field' => t('Undated'),
-     ),
-   );
+  $data['merci_reservation_detail2']['date_argument'] = array(
+    'group' => t('Date'),
+    'title' => t('Date for reservation detail'),
+    'help' => t('Filter any Views date field by a date argument'),
+    'argument' => array(
+      'handler' => 'date_api_argument_handler',
+      'empty name field' => t('Undated'),
+    ),
+  );
   $data['merci_reservation_detail2']['nid'] = array(
     'title' => t('Reservation nid'),
     'help' => t('The node id of the reservation for this placeholder item.'),
@@ -438,3 +440,4 @@ function merci_views_data() {
 
   return $data;
 }
+

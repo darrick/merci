@@ -20,8 +20,8 @@ function merci_template_node_info() {
       'description' => t("A reservation template pre-populates MERCI with the items reserved in a previous reservation."),
     ),
   );
-
-} // merci_template_node_info
+}
+// merci_template_node_info
 
 /**
  * Implementation of hook_form_alter().
@@ -29,7 +29,6 @@ function merci_template_node_info() {
 function merci_template_form_alter(&$form, $form_state, $form_id) {
 
   switch ($form_id) {
-
     case 'merci_reservation_template_node_form':
       unset($form['body_field']['format']);
       $form['body_field']['body'] = array(
@@ -39,15 +38,14 @@ function merci_template_form_alter(&$form, $form_state, $form_id) {
         '#default_value' => '',
       );
       break;
-      
-  } // switch
-
-} // merci_template_form_alter
+  }
+  // switch
+}
+// merci_template_form_alter
 
 /**
  * Get form API options for recent reservations
  */
-
 function merci_template_recent_reservations_options() {
 
   global $user;
@@ -57,13 +55,13 @@ function merci_template_recent_reservations_options() {
   if (user_access('administer MERCI')) {
 
     $reservations = db_query_range("SELECT n.title , n.nid FROM {content_type_merci_reservation} ctmr JOIN {merci_reservation_detail} mrd ON ctmr.nid = mrd.nid JOIN {merci_reservation} mr ON ctmr.nid = mr.nid JOIN {node} n ON n.nid = ctmr.nid ORDER BY n.changed DESC", 0, 20);
-
-  } // if
+  }
+  // if
   else {
 
     $reservations = db_query_range("SELECT n.title , n.nid FROM {content_type_merci_reservation} ctmr JOIN {merci_reservation_detail} mrd ON ctmr.nid = mrd.nid JOIN {merci_reservation} mr ON ctmr.nid = mr.nid JOIN {node} n ON n.nid = ctmr.nid WHERE n.uid = %d ORDER BY n.created DESC", $user->uid, 0, 20);
-
-  } // else
+  }
+  // else
 
   while ($reservation = db_fetch_object($reservations)) {
 
@@ -76,20 +74,21 @@ function merci_template_recent_reservations_options() {
       if ($placeholder->type_setting == 'bucket') {
 
         $items[] = $placeholder->type;
-
-      } // if
+      }
+      // if
       else {
 
         $items[] = $placeholder->item_nid;
-
-      } // else
-
-    } // while
+      }
+      // else
+    }
+    // while
 
     $options[implode(',', $items)] = $reservation->title .' (#'. $reservation->nid .')';
-
-  } // while
+  }
+  // while
 
   return $options;
+}
+// merci_template_recent_reservations_options
 
-} // merci_template_recent_reservations_options

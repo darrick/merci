@@ -1,8 +1,10 @@
 <?php
+// $Id$
+
 
 /**
-* function to create Open Media Timeslot Theme CCK content type
-*/
+ * function to create Open Media Timeslot Theme CCK content type
+ */
 function _merci_inventory_install_create_merci_inventory_master_content_type() {
 
   $result = _merci_inventory_install_import_content_type("\$content[type]  = array (
@@ -497,5 +499,6 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
 ");
 
   return;
-} // function _merci_inventory_install_create_merci_inventory_master_content_type 
+}
+// function _merci_inventory_install_create_merci_inventory_master_content_type
 

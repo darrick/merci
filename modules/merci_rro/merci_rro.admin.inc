@@ -1,6 +1,7 @@
 <?php
 // $Id$
 
+
 /**
  * @file
  * Admin section functions for MERCI Role Rule Override
@@ -14,8 +15,8 @@ function merci_rro_admin_page($type_name = NULL) {
   if ($_GET['delete'] != '') {
 
     $html .= drupal_get_form('merci_rro_override_delete', $type_name, $_GET['delete']);
-
-  } // if
+  }
+  // if
   else {
 
     $html .= '<h2>Active Overrides:</h2>';
@@ -25,29 +26,28 @@ function merci_rro_admin_page($type_name = NULL) {
 
     if (count($overrides)) {
 
-        foreach ($overrides as $override) {
+      foreach ($overrides as $override) {
 
-          $html .= theme('merci_rro_override', $override);
-          $exclude_roles[] = $override->rid;
-
-        } // foreach
-
-    } // if
+        $html .= theme('merci_rro_override', $override);
+        $exclude_roles[] = $override->rid;
+      }
+      // foreach
+    }
+    // if
     else {
 
       $html .= '<p><i>No active overrides.</i></p>';
-
-    } // else
+    }
+    // else
 
     $html .= '<h2>Add New Override</h2>';
     $html .= drupal_get_form('merci_rro_add_new_override', $type_name, $exclude_roles);
-
-  } // else
+  }
+  // else
 
   return $html;
-
-} // merci_rro_admin_page
-
+}
+// merci_rro_admin_page
 function merci_rro_override_delete(&$form_state, $type_name, $rid) {
 
   $role = merci_rro_role_name_from_rid($rid);
@@ -72,9 +72,8 @@ function merci_rro_override_delete(&$form_state, $type_name, $rid) {
   $form['#submit'] = array('merci_rro_delete_submit');
 
   return $form;
-
-} // merci_rro_override_delete
-
+}
+// merci_rro_override_delete
 function merci_rro_delete_submit($form_id, $form_values) {
 
   $values = $form_values['values'];
@@ -88,9 +87,8 @@ function merci_rro_delete_submit($form_id, $form_values) {
   $role = merci_rro_role_name_from_rid($values['merci_rro_roles']);
 
   drupal_set_message('Override deleted for '. merci_rro_role_name_from_rid($values['merci_rro_rid']));
-
-} // merci_rro_delete_submit
-
+}
+// merci_rro_delete_submit
 function merci_rro_add_new_override(&$form_state, $type_name, $exclude_roles) {
 
   $form = array();
@@ -99,8 +97,8 @@ function merci_rro_add_new_override(&$form_state, $type_name, $exclude_roles) {
   foreach ($exclude_roles as $role) {
 
     unset($roles[$role]);
-
-  } // foreach
+  }
+  // foreach
 
   $form['merci_rro_type'] = array(
     '#type' => 'hidden',
@@ -165,7 +163,7 @@ function merci_rro_add_new_override(&$form_state, $type_name, $exclude_roles) {
     '#element_validate' => array('merci_is_numeric_validate'),
     '#description' => t('Minimum number of hours a user can cancel a reservation for the item.'),
   );
-  
+
   $hours_description = t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.');
 
   $form['merci_hours_mon'] = array(
@@ -224,14 +222,13 @@ function merci_rro_add_new_override(&$form_state, $type_name, $exclude_roles) {
     '#default_value' => variable_get('merci_hours_sun', ''),
     '#description' => $hours_description,
   );
-  
+
   $form['merci_rro_submit'] = array('#type' => 'submit', '#value' => t('Add'));
   $form['#submit'] = array('merci_rro_new_submit');
 
   return $form;
-
-} // merci_rro_add_new_override
-
+}
+// merci_rro_add_new_override
 function merci_rro_new_submit($form_id, $form_values) {
 
   $values = $form_values['values'];
@@ -261,11 +258,12 @@ function merci_rro_new_submit($form_id, $form_values) {
     $values['merci_rro_late_fee_per_hour'], $values['merci_rro_fee_free_hours'], $values['merci_rro_min_cancel_hours'],
     $values['merci_hours_mon'], $values['merci_hours_tue'], $values['merci_hours_wed'],
     $values['merci_hours_thu'], $values['merci_hours_fri'], $values['merci_hours_sat'],
-    $values['merci_hours_sun']    
+    $values['merci_hours_sun']
   );
 
   $role = merci_rro_role_name_from_rid($values['merci_rro_roles']);
 
   drupal_set_message('Override added for '. $role);
+}
+// merci_rro_new_submit
 
-} // merci_rro_new_submit

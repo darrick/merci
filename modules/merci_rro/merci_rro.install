@@ -1,6 +1,7 @@
 <?php
 // $Id$
 
+
 /**
  * @file
  * Install, uninstall, and schema functions for MERCI Role Rule Override
@@ -9,27 +10,24 @@
 /**
  * Implementation of hook_install().
  */
-
 function merci_rro_install() {
 
   drupal_install_schema('merci_rro');
-
-} // merci_rro_install
+}
+// merci_rro_install
 
 /**
  * Implementation of hook_uninstall().
  */
-
 function merci_rro_uninstall() {
 
   drupal_uninstall_schema('merci_rro');
-
-} // merci_rro_uninstall
+}
+// merci_rro_uninstall
 
 /**
  * Implementation of hook_schema().
  */
-
 function merci_rro_schema() {
 
   $schema = array();
@@ -147,5 +145,6 @@ function merci_rro_schema() {
   );
 
   return $schema;
+}
+// merci_rro_schema
 
-} // merci_rro_schema

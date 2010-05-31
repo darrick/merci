@@ -1,6 +1,7 @@
 <?php
 // $Id$
 
+
 /**
  * @file
  * Hooks and utility functions for MERCI Role Rule Override
@@ -9,7 +10,6 @@
 /**
  * Implementation of hook_menu().
  */
-
 function merci_rro_menu() {
 
   $items = array();
@@ -28,13 +28,12 @@ function merci_rro_menu() {
       'weight' => 10,
       'file' => 'merci_rro.admin.inc',
     );
-
-  } // foreach
+  }
+  // foreach
 
   return $items;
-
-} // merci_rro_menu
-
+}
+// merci_rro_menu
 function merci_rro_node_type_menu_access($type_name) {
 
   $merci_settings = merci_load_content_type_settings($type_name);
@@ -42,23 +41,22 @@ function merci_rro_node_type_menu_access($type_name) {
   if ($merci_settings->type_setting != 'disabled' && user_access('administer MERCI')) {
 
     return TRUE;
-
-  } // if
+  }
+  // if
 
   return FALSE;
-
-} // merci_rro_node_type_menu_access
+}
+// merci_rro_node_type_menu_access
 
 /**
  * Returns list of overrides associated with a given content type
  */
-
 function merci_rro_content_type_overrides($content_type, $cache = TRUE) {
 
   global $user;
   static $overrides = array();
 
-  if (! isset($overrides[$content_type]) || ! $cache) {
+  if (!isset($overrides[$content_type]) || !$cache) {
 
     $overrides[$content_type] = array();
 
@@ -68,20 +66,20 @@ function merci_rro_content_type_overrides($content_type, $cache = TRUE) {
 
       if ($user->roles[$override->rid] != '') {
         $overrides[$content_type][] = $override;
-      } // if
-
-    } // while
-
-  } // if
+      }
+      // if
+    }
+    // while
+  }
+  // if
 
   return $overrides[$content_type];
-
-} // merci_rro_content_type_overrides
+}
+// merci_rro_content_type_overrides
 
 /**
  * Implementation of hook_theme().
  */
-
 function merci_rro_theme($existing, $type, $theme, $path) {
 
   return array(
@@ -89,13 +87,12 @@ function merci_rro_theme($existing, $type, $theme, $path) {
       'arguments' => array('override' => NULL),
     ),
   );
-
-} // merci_rro_theme
+}
+// merci_rro_theme
 
 /**
  * Theme an override object
  */
-
 function theme_merci_rro_override($override) {
 
   $role = merci_rro_role_name_from_rid($override->rid);
@@ -122,33 +119,31 @@ function theme_merci_rro_override($override) {
   if (user_access('administer MERCI')) {
 
     $html .= '<p><a href="'. base_path() .'admin/content/node-type/'. $override->type .'/merci_rro?delete='. $override->rid .'">Remove</a></p>';
-
-  } // if
+  }
+  // if
 
   $html .= '</div>';
 
   return $html;
-
-} // theme_merci_rro_override
-
+}
+// theme_merci_rro_override
 function merci_rro_role_name_from_rid($rid, $cache = TRUE) {
 
   static $roles;
 
-  if (! isset($roles) || ! $cache) {
+  if (!isset($roles) || !$cache) {
 
     $roles = user_roles();
-
-  } // if
+  }
+  // if
 
   return $roles[$rid];
-
-} // merci_rro_role_name_from_rid
+}
+// merci_rro_role_name_from_rid
 
 /**
  * Implementation of hook_merci_rules_alter().
  */
-
 function merci_rro_merci_rules_alter(&$rules) {
 
   $overrides = merci_rro_content_type_overrides($rules->type);
@@ -160,7 +155,7 @@ function merci_rro_merci_rules_alter(&$rules) {
     'rate_per_hour',
     'late_fee_per_hour',
     'fee_free_hours',
-    'min_cancel_hours', 
+    'min_cancel_hours',
     'hours_mon',
     'hours_tue',
     'hours_wed',
@@ -171,32 +166,36 @@ function merci_rro_merci_rules_alter(&$rules) {
   );
 
   // Get best value for every rule type in every override
-  
+
   foreach ($overrides as $override) {
     foreach ($rule_types as $rule_type) {
       $rules->{$rule_type} = merci_rro_determine_best_value($rule_type, $rules->{$rule_type}, $override->{$rule_type});
-    } // foreach
-  } // foreach
-
-} // merci_rro_merci_rules_alter
-
+    }
+    // foreach
+  }
+  // foreach
+}
+// merci_rro_merci_rules_alter
 function merci_rro_determine_best_value($rule_type, $a, $b) {
 
   switch ($rule_type) {
-  
+
     // Max value is best
+
     case 'allow_overnight':
     case 'allow_weekends':
     case 'fee_free_hours':
       return ($a > $b) ? $a : $b;
-      
+
     // Minimum value is best
+
     case 'min_cancel_hours':
     case 'rate_per_hour':
     case 'late_fee_per_hour':
       return ($a < $b) ? $a : $b;
-      
+
     // Longest hours is best
+
     case 'hours_mon':
     case 'hours_tue':
     case 'hours_wed':
@@ -205,21 +204,33 @@ function merci_rro_determine_best_value($rule_type, $a, $b) {
     case 'hours_sat':
     case 'hours_sun':
       $a_parts = merci_hours_str_to_array($a);
-      if (!$a_parts) return $b;
-      $b_parts = merci_hours_str_to_array($b);
-      if ($a_parts['open'] > $b_parts['open']) return $b;
-      if ($a_parts['close'] < $b_parts['close']) return $b;
-      return $a;
+      if (!$a_parts) {
+        return $b;
+      }
+    $b_parts = merci_hours_str_to_array($b);
+    if ($a_parts['open'] > $b_parts['open']) {
+      return $b;
+    }
+    if ($a_parts['close'] < $b_parts['close']) {
+      return $b;
+    }
+    return $a;
 
     // Other
+
     case 'max_hours_per_reservation':
-      if ($a == 0) return $a;
-      if ($b == 0) return $b;
-      return ($b > $a) ? $b : $a;
-    
+      if ($a == 0) {
+        return $a;
+      }
+    if ($b == 0) {
+      return $b;
+    }
+    return ($b > $a) ? $b : $a;
+
     default:
       return $a;
+  }
+  // switch
+}
+// merci_rro_determine_best_value
 
-  } // switch
-
-} // merci_rro_determine_best_value
