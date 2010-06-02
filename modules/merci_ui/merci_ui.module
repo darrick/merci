@@ -154,29 +154,48 @@ function merci_ui_list_reservations_access($node) {
 
 function merci_ui_list_reservations($node, $start, $end) {
 
+  // Determine CCK table and columns the date data is stored in.
+  $field             = content_fields('field_merci_date');
+  $db_info           = content_database_info($field);
+  $table             = $db_info['table'];
+  $column_start_date = $db_info['columns']['value']['column'];
+  $column_end_date   = $db_info['columns']['value2']['column'];
   date_default_timezone_set('UTC');
+
   if ($start and $end) {
 
     $start_mysql = date('Y-m-d', $start);
     $end_mysql   = date('Y-m-d', $end);
-    $result      = db_query("SELECT * FROM {merci_reservation_detail} JOIN {node} ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' AND field_merci_date_value > '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql, $end_mysql);
+    $result      = db_query("SELECT * FROM {merci_reservation_detail} 
+      JOIN {node} ON merci_reservation_detail.nid = node.nid 
+      JOIN {". $table ."} ct ON merci_reservation_detail.nid = ct.nid 
+      WHERE item_nid = %d AND $column_start_date < '%s' AND $column_start_date > '%s' 
+      ORDER BY $column_start_date DESC", $node->nid, $start_mysql, $end_mysql);
 
     $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
   }
   else if ($start) {
     $start_mysql = date('Y-m-d', $start);
-    $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN {node} ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql);
+    $result = db_query("SELECT * FROM {merci_reservation_detail} 
+      JOIN {node} ON merci_reservation_detail.nid = node.nid 
+      JOIN {". $table ."} ct ON merci_reservation_detail.nid = ct.nid 
+      WHERE item_nid = %d AND $column_start_date < '%s' 
+      ORDER BY $column_start_date DESC", $node->nid, $start_mysql);
 
     $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
   }
   else {
-    $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN {node} ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value > NOW() ORDER BY field_merci_date_value", $node->nid);
+    $result = db_query("SELECT * FROM {merci_reservation_detail} 
+      JOIN {node} ON merci_reservation_detail.nid = node.nid 
+      JOIN {". $table ."} ct ON merci_reservation_detail.nid = ct.nid 
+      WHERE item_nid = %d AND $column_start_date > NOW() ORDER BY $column_start_date", $node->nid);
 
     $output .= '<b>'. t('Upcoming Reservations') .' | '. l(t('Previous Reservations'), '/node/'. $node->nid .'/reservations/'. strtotime('now') .'/'. strtotime('- 3 months')) .'</b><br />';
   }
 
   while ($reservationnode = db_fetch_object($result)) {
 
+    // TODO use $column_start_date instead of field_merci_date_value
     $output .= l($reservationnode->title, '/node/'. $reservationnode->nid) .' reserved from '. format_date(strtotime($reservationnode->field_merci_date_value), $type = 'medium') .' '. format_date(strtotime($reservationnode->field_merci_date_value2), $type = 'medium') .'</a><br />';
     $count++;
   }
