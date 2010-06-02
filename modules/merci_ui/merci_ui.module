@@ -159,18 +159,18 @@ function merci_ui_list_reservations($node, $start, $end) {
 
     $start_mysql = date('Y-m-d', $start);
     $end_mysql   = date('Y-m-d', $end);
-    $result      = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' AND field_merci_date_value > '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql, $end_mysql);
+    $result      = db_query("SELECT * FROM {merci_reservation_detail} JOIN {node} ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' AND field_merci_date_value > '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql, $end_mysql);
 
     $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
   }
   else if ($start) {
     $start_mysql = date('Y-m-d', $start);
-    $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql);
+    $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN {node} ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value < '%s' ORDER BY field_merci_date_value DESC", $node->nid, $start_mysql);
 
     $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
   }
   else {
-    $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN node ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value > NOW() ORDER BY field_merci_date_value", $node->nid);
+    $result = db_query("SELECT * FROM {merci_reservation_detail} JOIN {node} ON merci_reservation_detail.nid = node.nid JOIN {content_type_merci_reservation} ON merci_reservation_detail.nid = content_type_merci_reservation.nid WHERE item_nid = %d AND field_merci_date_value > NOW() ORDER BY field_merci_date_value", $node->nid);
 
     $output .= '<b>'. t('Upcoming Reservations') .' | '. l(t('Previous Reservations'), '/node/'. $node->nid .'/reservations/'. strtotime('now') .'/'. strtotime('- 3 months')) .'</b><br />';
   }
