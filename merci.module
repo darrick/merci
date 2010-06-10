@@ -2426,7 +2426,7 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
   // Use up items for assigned nodes.
   while ($node = db_fetch_object($reserved_nodes)) {
     // If item is assigned then item is in use by this node.
-    if (user_access("administrate MERCI")) {
+    if (user_access("administer MERCI") || user_access("manage MERCI")) {
       drupal_set_message(t("Warning: ". $node->title ." checked out by ". l($node->reservation_title, '?q=node/'. $node->reservation_nid) ." which was due back ". $node->field_merci_date_value2));
     }
     $total_items_array[$node->item_nid][] = $node;
