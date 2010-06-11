@@ -2575,9 +2575,11 @@ function merci_node_validate($form, &$form_state) {
 
 
 
-  //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restrictions
+   //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restrictions
   if (user_access('administer MERCI') || user_access('create reservations outside hours of operation')) {
-    drupal_set_message(t('You may be making a Reservation outside the normal hours of operation.  This may impact access to the items you are reserving.'));
+    if(strtotime(date('G:i', strtotime($start))) < strtotime($start_hours['open']) || strtotime($start_hours['close']) > strtotime(date('G:i', strtotime($end))) ){
+      drupal_set_message(t('<b>You are making a Reservation outside the normal hours of operation.  This may impact access to the items you are reserving.</b>'));
+    }
   }
   else {
     // Reservation start date cannot exceed the max advance
