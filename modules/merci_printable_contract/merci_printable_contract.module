@@ -11,9 +11,168 @@
  */
 function merci_printable_contract_menu() {
 
-
+  $items['merci/contract'] = array(
+    'title' => 'Printable contract',
+    'description' => 'Takes a node ID and returns a printable contract',
+    'page arguments' => array(2),
+    'page callback' => 'merci_printable_contract',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
 
 
   return $items;
 }
+
+function merci_printable_contract($node_id) {
+  global $base_path;
+  setlocale(LC_MONETARY, 'en_US');
+  $node     = node_load($node_id);
+  $user     = user_load($node->uid);
+  $username = $user->name;
+  $email    = $user->mail;
+  if (module_exists('civicrm')) {
+
+    civicrm_initialize(TRUE);
+    global $civicrm_root;
+    include_once($civicrm_root .'/api/UFGroup.php');
+    $userID = crm_uf_get_match_id($user->uid);
+    $cg = array('contact_id' => $userID);
+    include_once($civicrm_root .'/api/v2/Contact.php');
+    $ob = civicrm_contact_get($cg);
+    //print '<pre>';
+    //print_r($ob);
+    //print '</pre>';
+    $username = $ob[$userID]['display_name'];
+    //print $username;
+    $phone = $ob[$userID]['phone'];
+  }
+
+  $items = $node->merci['reservation_items'];
+
+  // We want these timestamps generated in UTC.
+  $old_timezone = date_default_timezone_get();
+  date_default_timezone_set('UTC');
+  $starthour = strtotime($node->field_merci_date[0]['value']);
+  $endhour = strtotime($node->field_merci_date[0]['value2']);
+  date_default_timezone_set($old_timezone);
+
+  $hours = round(($endhour - $starthour) / 3600, 2);
+  $logo = theme_get_setting('logo_path', '');
+
+  ?>
+  <html>
+    <head>
+      <title>Contract</title>
+      <link type="text/css" rel="stylesheet" href="/<?php echo drupal_get_path('module', 'merci'); ?>/contract.css" />
+    </head>
+    <body>
+      <div id="page">
+        <div id="header">
+        <?php if ($logo) { ?>
+           <img src="<?php print $base_path ?><?php print $logo ?>">
+        <?php } ?>
+        <h2><?php print variable_get('site_name', ''); ?> Equipment Rental Contract</h2>
+        <?php if (module_exists('token')) { 
+          print token_replace(variable_get('merci_contract_header', ''), 'node', $node);
+        }
+        else {
+          print variable_get('merci_contract_header');
+        }
+        ?>
+        Start: <?php print date("F j, Y", $starthour) . ' ' . merci_format_time($starthour) .'<br />'; ?>
+        Returned by: <?php print date("F j, Y", $endhour) . ' ' . merci_format_time($endhour) .'<br />'; ?>
+        Name: <?php print $username ?><br />
+        Email: <?php print $email ?><br />
+        Phone: <?php print $phone ?><br />
+        
+        </div>
+        <table id="cost">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Commercial Cost</th>
+              <th>Member Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+          <?php
+  $discount = variable_get('merci_membership_discount', 1); 
+  $commercial_cost_total = 0;
+  $member_cost_total = 0;
+
+  $even_odd = 'even';
+
+  foreach ($items as $item) {
+
+    $item_node = node_load($item->pnid);
+
+    $type            = merci_load_content_type_settings($item->type);
+    $fee_hours       = $hours - ($type->fee_free_hours);
+    $commercial_cost = $type->rate_per_hour * $hours;
+    $member_cost     = ($fee_hours > 0) ? ($type->rate_per_hour * $discount) * $fee_hours : 0;
+    $day_rate     = ($type->rate_per_hour * 24);
+    
+    $commercial_cost_total += $commercial_cost;
+    $member_cost_total += $member_cost;
+
+    if ($item->ttitle) {
+      $ttitle = htmlspecialchars($item->ttitle);
+    }
+    else {
+      $ttitle = '<b>SPECIFIC ITEM NOT SELECTED FROM BUCKET</b>';
+    }
+    ?>
+            <tr class="<?php print $even_odd; ?>">
+              <td>
+                <div><?php print $ttitle; ?>(<?php print money_format('%(#10n', $day_rate); ?> per day)</div>
+                <?php
+    if (count($item_node->taxonomy) > 0) {
+
+      ?>
+                  <ul class="accessories">
+                  <?php
+      foreach ($item_node->taxonomy as $accessory) {
+
+        ?>
+                    <li><?php print $accessory->name; ?></li>
+                    <?php
+      }
+      // foreach
+
+      ?>
+                  </ul>
+                  <?php
+    }
+    // if
+
+    ?>
+              </td>
+              <td><?php echo money_format('%(#10n', $commercial_cost); ?></td>
+              <td><?php echo money_format('%(#10n', $member_cost); ?></td>
+            </tr>
+            <?php
+    $even_odd = ($even_odd == 'even') ? 'odd' : 'even';
+  }
+  // foreach
+
+  ?>
+          </tbody>
+          <tfoot>
+            <tr class="<?php echo $even_odd; ?>">
+              <th>Total</th>
+              <td><?php echo money_format('%(#10n', $commercial_cost_total) ?></td>
+              <td><?php echo money_format('%(#10n', $member_cost_total) ?></td>
+            </tr>
+          <tfoot>
+        </table>
+        <div id="boilerplate"><?php if (module_exists('token')) { echo token_replace(variable_get('merci_contract_boilerplate', ''), 'node', $node); }
+  else  { echo variable_get('merci_contract_boilerplate'); } ?></div>
+        <div id="footer"><?php if (module_exists('token')) { echo token_replace(variable_get('merci_contract_footer', ''), 'node', $node); }
+  else  { echo variable_get('merci_contract_footer'); } ?></div>
+      </div>
+    </body>
+  <?php
+}
+// merci_printable_contract
 
