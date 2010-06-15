@@ -1206,7 +1206,10 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
 
 
 function merci_check_content_type_restrictions($content_type, $start, $end) {
-
+  if (user_access("administer MERCI") || user_access("manage MERCI")) {
+    //$return[] = t('You are making a reservation as a user with permissions to Manage or Administer MERCI.  This allows you to override the normal content type restrictions.');
+  } else {
+  
     $type_settings = merci_content_type_rules($content_type);
     $return = array();
 
@@ -1290,7 +1293,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
         $return[] = t('%name cannot be reserved overnight.');
       }
     }
-  
+  }
   return $return;
 }
 // merci_check_content_type_restrictions
