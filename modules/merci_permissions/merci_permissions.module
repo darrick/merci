@@ -8,24 +8,10 @@
  */
 function merci_permissions_menu() {
 
-  //If other Open Media modules are installed
-  if (module_exists('om_project') || module_exists('om_show') || module_exists('om_support')) {
 
-    $items['admin/openmedia/settings/merci/permissions'] = array(
-      'title' => 'MERCI Permissions',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('merci_permissions_form'),
-      'access callback' => 'user_access',
-      'access arguments' => array('administer site configuration'),
-      'description' => t('Configure reservation permissions for MERCI.'),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => 3,
-    );
-  }
-  else {
     // Administration settings.
     $items['admin/settings/merci/permissions'] = array(
-      'title' => 'MERCI Permissions',
+      'title' => 'Permissions',
       'page callback' => 'drupal_get_form',
       'page arguments' => array('merci_permissions_form'),
       'access callback' => 'user_access',
@@ -34,7 +20,7 @@ function merci_permissions_menu() {
       'type' => MENU_LOCAL_TASK,
       'weight' => 3,
     );
-  }
+ 
   return $items;
 }
 

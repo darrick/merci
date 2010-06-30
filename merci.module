@@ -491,17 +491,18 @@ function merci_menu() {
 
   // Standard Administration settings.
   $items['admin/settings/merci'] = array(
-    'title' => 'MERCI',
+    'title' => 'MERCI Configuration',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('merci_admin_settings'),
     'access callback' => 'user_access',
     'access arguments' => $admin,
     'description' => t('Configure system settings for MERCI.'),
   );
-  $items[] = array(
-    'path' => 'admin/settings/merci/default',
-    'title' => 'MERCI',
+  
+  $items['admin/settings/merci/edit'] = array(
+    'title' => 'Edit',
     'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
   );
 
   $items['merci/taxonomy'] = array(
@@ -779,49 +780,7 @@ function merci_admin_settings() {
     '#description' => t('Percent comercial rate is reduced for users in a role with member discount permission. Enter as decimal.  60% would be .60.  An item with a commercial rate of $100 would cost a member $40 for any hours beyond the fee free hours for that reservation.'),
   );
 
-  $form['merci_general']['merci_contract_header'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Contract header'),
-    '#rows' => 10,
-    // TODO: this doesn't seem to work...
-    '#cols' => 5,
-    '#default_value' => variable_get('merci_contract_header', ''),
-    '#description' => t('Header portion of printable contract.  Allows HTML.'),
-  );
-
-  $form['merci_general']['merci_contract_boilerplate'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Contract boilerplate'),
-    '#rows' => 10,
-    // TODO: this doesn't seem to work...
-    '#cols' => 5,
-    '#default_value' => variable_get('merci_contract_boilerplate', ''),
-    '#description' => t('Legalese that makes the contract legally binding.'),
-  );
-
-  $form['merci_general']['merci_contract_footer'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Contract footer'),
-    '#rows' => 10,
-    // TODO: this doesn't seem to work...
-    '#cols' => 5,
-    '#default_value' => variable_get('merci_contract_footer', ''),
-    '#description' => t('Footer portion of printable contract. Normally includes signature lines. HTML allowed.'),
-  );
-
-  if (module_exists('token')) {
-    $form['merci_general']['token_help'] = array(
-      '#title' => t('Replacement patterns'),
-      '#type' => 'fieldset',
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-
-    $form['merci_general']['token_help']['help'] = array(
-      '#value' => theme('token_help', 'node'),
-    );
-  }
-
+  
   return system_settings_form($form);
 }
 

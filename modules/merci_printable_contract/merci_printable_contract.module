@@ -11,6 +11,8 @@
  */
 function merci_printable_contract_menu() {
 
+  $admin = array('administer MERCI');
+  
   $items['merci/contract'] = array(
     'title' => 'Printable contract',
     'description' => 'Takes a node ID and returns a printable contract',
@@ -19,9 +21,71 @@ function merci_printable_contract_menu() {
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
+  
+   // Standard Administration settings.
+  $items['admin/settings/merci/contract'] = array(
+    'title' => 'Printable Contract',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('merci_printable_contract_admin_settings'),
+    'access callback' => 'user_access',
+    'access arguments' => $admin,
+    'description' => t('Configure settings for MERCI\'s Printable Contract.'),
+    'type' => MENU_LOCAL_TASK,
+  );
 
 
   return $items;
+}
+
+/**
+ * Builds the admininstration settings form.
+ */
+function merci_printable_contract_admin_settings() {
+
+  $form['merci_contract_header'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Contract header'),
+    '#rows' => 10,
+    // TODO: this doesn't seem to work...
+    '#cols' => 5,
+    '#default_value' => variable_get('merci_contract_header', ''),
+    '#description' => t('Header portion of printable contract.  Allows HTML.'),
+  );
+
+  $form['merci_contract_boilerplate'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Contract boilerplate'),
+    '#rows' => 10,
+    // TODO: this doesn't seem to work...
+    '#cols' => 5,
+    '#default_value' => variable_get('merci_contract_boilerplate', ''),
+    '#description' => t('Legalese that makes the contract legally binding.'),
+  );
+
+  $form['merci_contract_footer'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Contract footer'),
+    '#rows' => 10,
+    // TODO: this doesn't seem to work...
+    '#cols' => 5,
+    '#default_value' => variable_get('merci_contract_footer', ''),
+    '#description' => t('Footer portion of printable contract. Normally includes signature lines. HTML allowed.'),
+  );
+
+  if (module_exists('token')) {
+    $form['token_help'] = array(
+      '#title' => t('Replacement patterns'),
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+
+    $form['token_help']['help'] = array(
+      '#value' => theme('token_help', 'node'),
+    );
+  }
+  
+  return system_settings_form($form);
 }
 
 function merci_printable_contract($node_id) {
