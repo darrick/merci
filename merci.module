@@ -618,7 +618,7 @@ function merci_admin_settings() {
     '#type' => 'fieldset',
     '#title' => t('General settings'),
     '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
+    '#collapsed' => FALSE,
   );
 
   $form['merci_general']['merci_default_reservation_status'] = array(
@@ -699,7 +699,7 @@ function merci_admin_settings() {
     '#title' => t('Monday hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_mon', ''),
+    '#default_value' => variable_get('merci_hours_mon', '09:00-17:00'),
     '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_tue'] = array(
@@ -707,7 +707,7 @@ function merci_admin_settings() {
     '#title' => t('Tuesday hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_tue', ''),
+    '#default_value' => variable_get('merci_hours_tue', '09:00-17:00'),
     '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_wed'] = array(
@@ -715,7 +715,7 @@ function merci_admin_settings() {
     '#title' => t('Wednesday hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_wed', ''),
+    '#default_value' => variable_get('merci_hours_wed', '09:00-17:00'),
     '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_thu'] = array(
@@ -723,7 +723,7 @@ function merci_admin_settings() {
     '#title' => t('Thursday hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_thu', ''),
+    '#default_value' => variable_get('merci_hours_thu', '09:00-17:00'),
     '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_fri'] = array(
@@ -731,7 +731,7 @@ function merci_admin_settings() {
     '#title' => t('Friday hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_fri', ''),
+    '#default_value' => variable_get('merci_hours_fri', '09:00-17:00'),
     '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_sat'] = array(
@@ -756,7 +756,7 @@ function merci_admin_settings() {
     '#title' => t('Admin hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_admin', ''),
+    '#default_value' => variable_get('merci_hours_admin', '07:00-22:00'),
     '#description' => t('This setting controls the hours shown on the conflict grid for users with Adminster MERCI permessions.  The conflict grid is normally limited to the days and hours the set above.  Because users with Admister MERCI rights can create Resevervations outside the normal hours of operation, they need to see conflicts during those times as well.'),
   );
 
@@ -2610,11 +2610,10 @@ function merci_node_validate($form, &$form_state) {
   $start_date         = date_format($start_object, 'm-d-Y');
   $max_days           = variable_get("merci_max_days_advance_reservation", '0');
 
-
-
   //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restrictions
   if (user_access('administer MERCI') || user_access('create reservations outside hours of operation')) {
-    if(strtotime(date('G:i', strtotime($start))) > strtotime($start_hours['open']) || strtotime($start_hours['close']) > strtotime(date('G:i', strtotime($end))) ){
+    if(strtotime(date('G:i', strtotime($start . ' UTC'))) < strtotime($start_hours['open']) || strtotime($start_hours['close']) < strtotime(date('G:i', strtotime($end . ' UTC'))) ){
+      //dsm(strtotime(date('G:i', strtotime($start . ' UTC'))) . ' < ' . strtotime($start_hours['open']) . ' or ' .  strtotime($start_hours['close']) . ' < ' . strtotime(date('G:i', strtotime($end . ' UTC'))));
       drupal_set_message(t('<b>You are making a Reservation outside the normal hours of operation.  This may impact access to the items you are reserving.</b>'));
     }
   }
@@ -2789,7 +2788,6 @@ function merci_node_validate($form, &$form_state) {
 
 function merci_conflict_grid($type, $title, $start, $end, $nid = NULL) {
 
-  
 
   $start_mysql = date('Y-m-d', strtotime($start));
   $end_mysql = date('Y-m-d', strtotime($end)) . '23:59:59';
@@ -2798,7 +2796,7 @@ function merci_conflict_grid($type, $title, $start, $end, $nid = NULL) {
   //$end_mysql = date('Y-m-d', strtotime($end .' +1 day'));
   
   $merci_settings = merci_load_content_type_settings($type);
-
+  
   if ($merci_settings->type_setting == 'bucket') {
     $count = merci_get_available_bucket_count($type);
     $reservations = merci_load_reservations_for_type_in_timespan($type, $start_mysql, $end_mysql);
