@@ -2323,7 +2323,7 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
             ) 
             AND mn.type = '%s' 
             AND md.item_nid = 0 
-            AND NOT md.item_status <= %d
+            AND NOT md.item_status < %d
             $where",
     $args
   );
