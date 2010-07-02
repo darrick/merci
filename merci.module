@@ -1438,6 +1438,7 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
     switch ($op) {
       case 'prepare':
       case 'load':
+        merci_check_default_timezone();
         if (isset($node->nid)) {
           switch ($type) {
             case 'bucket':
@@ -3099,6 +3100,12 @@ function merci_hours_str_to_array($str) {
 }
 // merci_hours_str_to_array
 
+function merci_check_default_timezone() {
+  $default = variable_get('date_default_timezone_name', '');
+  if(empty($default)){
+    drupal_set_message(t('No site wide default timezone configured.  Please <a href="@link">configure</a> one in order for the MERCI reservation system to operate correctly.',array('@link' => base_path() . 'admin/settings/date-time')));
+  }
+}
 /**
  * Creates a date object based on the site's local timezone.
  *

@@ -93,6 +93,7 @@ function merci_enable() {
   while ($new_type = db_fetch_object($new_types)) {
     db_query("INSERT INTO {merci_node_type} (type) VALUES ('%s')", $new_type->type);
   }
+  merci_check_default_timezone();
 }
 
 /**
