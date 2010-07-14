@@ -75,8 +75,8 @@ function merci_uninstall() {
  * Implementation of hook_enable().
  */
 function merci_enable() {
-  add_group_taxonomy();
-  create_cck_fields();
+  merci_add_group_taxonomy();
+  merci_create_cck_fields();
 
   // Add any node types to the MERCI tables that aren't already there.
   $existing_types = db_query("SELECT type FROM {merci_node_type}");
@@ -93,7 +93,7 @@ function merci_enable() {
   while ($new_type = db_fetch_object($new_types)) {
     db_query("INSERT INTO {merci_node_type} (type) VALUES ('%s')", $new_type->type);
   }
-  merci_check_default_timezone();
+  //merci_check_default_timezone();
 }
 
 /**
@@ -454,8 +454,8 @@ function merci_update_4() {
 
 function merci_update_5() {
   if (module_exists("number")) {
-    add_group_taxonomy();
-    create_cck_fields();
+    merci_add_group_taxonomy();
+    merci_create_cck_fields();
   }
   else {
     drupal_set_message(t("You need to install and enable the cck number module for this update."));
@@ -468,11 +468,11 @@ function merci_update_6200() {
 }
 
 function merci_update_6201() {
-  create_cck_fields();
+  merci_create_cck_fields();
   return array(array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.'));
 }
 
-function create_cck_fields() {
+function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
   $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
   $date_only_format = substr($short_date_format, 0, 5);
@@ -812,7 +812,7 @@ function create_cck_fields() {
   menu_rebuild();
 }
 
-function add_group_taxonomy() {
+function merci_add_group_taxonomy() {
   // borrowed from Forum module
 
   // Create the forum vocabulary if it does not exist. Assign the vocabulary
