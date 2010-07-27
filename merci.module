@@ -2618,7 +2618,11 @@ function merci_node_validate($form, &$form_state) {
 
   $total_flat_options = $options['total_flat_options'];
 
-  if (isset($node->existing_items)) {
+  // Only need to do this for nodes either Pending or Checked Out.  This allows changing 
+  // status of reservation to Checked in or canceled even if the reserved items may conflict with 
+  // with items not reuturned from a previous reservation.  We will still check for conflicts for items
+  // added at the same time as the status change.  See below.
+  if (isset($node->existing_items) && $node->merci_status <= MERCI_STATUS_CHECKED_OUT) {
     
     // Check each reserved item.
     foreach ($node->existing_items['bucket_resource'] as $did => $value) {
@@ -2672,6 +2676,7 @@ function merci_node_validate($form, &$form_state) {
 
   $total_flat_options = $options['total_flat_options'];
 
+  // Do this even for reservations with merci status of canceled and checked in.
   foreach ($node->choice as $num => $choice) {
     
     // The item is no longer reservable, so figure out why.
