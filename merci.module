@@ -431,7 +431,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#size' => 10,
         '#default_value' => $settings ? $settings->min_cancel_hours : 0,
         '#element_validate' => array('merci_is_numeric_validate'),
-        '#description' => t('Minimum number of hours a user can cancel a reservation for the item.'),
+        '#description' => t('Minimum number of hours before the start time a user may cancel a reservation for the item.'),
       );
       /*
 $form['merci']['merci_autocheckout'] = array(
