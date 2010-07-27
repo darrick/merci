@@ -145,7 +145,7 @@ function merci_permissions_add_form(&$form) {
       }
     }
   }
-  $form['permission'][] = array('#value' => "Bucket and Resource Permissions",
+  $form['permission'][] = array('#value' => t('Bucket and Resource Permissions'),
   );
   foreach ($merci_types as $type => $name) {
     $perm = "reserve $type";

@@ -40,7 +40,7 @@ function merci_admin_settings() {
 
     $type_url_str = str_replace('_', '-', $type->type);
 
-    $usage = 'Not used by MERCI';
+    $usage = t('Not used by MERCI');
     if (isset($merci_types[$type->type])) {
       $usage = 'MERCI '. $merci_types[$type->type];
     }

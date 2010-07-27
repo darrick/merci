@@ -368,7 +368,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
 
       $terms = taxonomy_get_tree(variable_get('merci_equipment_grouping_vid', 37));
 
-      $groupings[0] = 'None';
+      $groupings[0] = t('None');
       foreach ($terms as $term) {
         $groupings[$term->tid] = $term->name;
       }
@@ -589,7 +589,7 @@ function merci_admin_settings() {
 
     $type_url_str = str_replace('_', '-', $type->type);
 
-    $usage = 'Not used by MERCI';
+    $usage = t('Not used by MERCI');
     if (isset($merci_types[$type->type])) {
       $usage = 'MERCI '. $merci_types[$type->type];
     }
@@ -3559,7 +3559,7 @@ function merci_total_usage($id, $type = 'user', $date = NULL) {
  * TODO: change this to a views view.
  */
 function merci_current_inventory() {
-  $output .= '<b>type (currently out/total in MERCI/total should be available)</b><br />';
+  $output .= '<b>'.t('type (currently out/total in MERCI/total should be available)').'</b><br />';
 
   $result = db_query("SELECT type, type_setting FROM {merci_node_type} 
     WHERE type_setting = 'resource' OR type_setting = 'bucket' 
