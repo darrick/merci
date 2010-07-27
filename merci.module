@@ -777,7 +777,7 @@ function merci_admin_settings() {
     '#size' => 11,
     '#maxlength' => 11,
     '#default_value' => variable_get('merci_membership_discount', ''),
-    '#description' => t('Percent comercial rate is reduced for users in a role with member discount permission. Enter as decimal.  60% would be .60.  An item with a commercial rate of $100 would cost a member $40 for any hours beyond the fee free hours for that reservation.'),
+    '#description' => t('Fraction of commercial rate users in a role with member discount permission pays. Enter as decimal.  60% would be .60.  An item with a commercial rate of $100 would cost a member $60 for any hours beyond the fee free hours for that reservation.'),
   );
 
   
