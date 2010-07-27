@@ -3143,7 +3143,7 @@ function merci_views_handlers() {
  */
 function merci_check_existing_bucket_items($type, $status = FALSE) {
   $where = $status ? ' AND status = 1' : '';
-  $existing_items = db_result(db_query("SELECT nid FROM {node} WHERE type = '%s'". $where, $type));
+  $existing_items = db_result(db_query("SELECT n.nid FROM {node} AS n INNER JOIN {merci_bucket_node} AS mn ON n.vid=mn.vid WHERE type = '%s' AND default_availability IN (%d,%d)". $where, $type,MERCI_AVA_F,MERCI_AVA_S));
   return $existing_items;
 }
 
