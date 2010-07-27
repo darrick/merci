@@ -693,7 +693,7 @@ function merci_admin_settings() {
 
   // Hours of operation
 
-  $hours_description = t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.');
+  $hours_description = '<div>'.t('Enter military time for both opening and closing time, separated by a dash, in the format ').'<em>hh:mm-hh:mm</em></div>'.t('ex.').' <em>09:00-17:00</em> '.t(' would be open at 9AM, close at 5PM. Leave blank to indicate not being open.');
 
   $form['merci_general']['merci_hours_mon'] = array(
     '#type' => 'textfield',
@@ -768,7 +768,7 @@ function merci_admin_settings() {
     // TODO: this doesn't seem to work...
     '#cols' => 5,
     '#default_value' => variable_get('merci_closed_dates', ''),
-    '#description' => t('<div>Enter dates which are closed regardless of the day of the week, one date per line, in the format <em>mm-dd</em></div>ex. <em>07-04</em> would mean July 4th is always closed, regardless of what day of the week it falls on.'),
+    '#description' => '<div>'.t('Enter dates which are closed regardless of the day of the week, one date per line, in the format').' <em>mm-dd</em></div>'.t('ex.').' <em>07-04</em> '.t('would mean July 4th is always closed, regardless of what day of the week it falls on.'),
   );
 
   $form['merci_general']['merci_membership_discount'] = array(
