@@ -3587,3 +3587,19 @@ function merci_current_inventory() {
   print theme('page', $output);
 }
 
+/**
+* Implementation of hook_content_extra_fields.
+*/
+function merci_content_extra_fields() {
+  $extras['merci'] = array(
+    'label' => t('MERCI Settings'),
+    'description' => t('Allows user to select Reservation status.'),
+    'weight' => 100,
+  );
+  $extras['choice_wrapper'] = array(
+    'label' => t('MERCI Choices'),
+    'description' => t('Child items included in the Reservation.'),
+    'weight' => 20,
+  );
+  return $extras;
+}
