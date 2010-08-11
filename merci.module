@@ -3599,7 +3599,7 @@ function merci_content_extra_fields() {
   $extras['choice_wrapper'] = array(
     'label' => t('MERCI Choices'),
     'description' => t('Child items included in the Reservation.'),
-    'weight' => 20,
+    'weight' => 80,
   );
   return $extras;
 }
