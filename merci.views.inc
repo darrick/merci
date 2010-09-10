@@ -293,6 +293,15 @@ function merci_views_data() {
       'label' => t('Reserved item node id'),
     ),
   );
+  $data['merci_reservation_detail']['item_nid2'] = array(
+    'title' => t('Reserved items'),
+      'help' => t('Display all items reserved by this reservation.'),
+    'field' => array(
+      'title' => t('Reserved items'),
+      'help' => t('Display all items reserved by this reservation.'),
+      'handler' => 'views_handler_field_item_node_nid',
+    ),
+  );
 
 
   // merci_bucket_node

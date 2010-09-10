@@ -890,12 +890,12 @@ function merci_form(&$node, $form_state) {
     '#weight' => 1,
     // If no javascript action.
     '#submit' => array('merci_more_choices_submit'),
-    /*    '#ahah' => array(
+    '#ahah' => array(
       'path' => 'merci/js',
       'wrapper' => 'merci-choices',
       'method' => 'replace',
       'effect' => 'fade',
-    ),*/
+    ),
   );
 
   if (user_access('administer MERCI')) {
@@ -3086,6 +3086,10 @@ function merci_views_handlers() {
       'path' => drupal_get_path('module', 'merci') .'/handlers',
     ),
     'handlers' => array(
+      'views_handler_field_item_node_nid' => array(
+        'parent' => 'views_handler_field_prerender_list',
+        'file' => 'views_handler_field_item_node_nid.inc',
+      ),
       'merci_handler_field_merci_node_type_type_setting' => array(
         'parent' => 'views_handler_field',
         'file' => 'merci_handler_field.inc',
