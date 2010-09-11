@@ -472,6 +472,13 @@ function merci_update_6201() {
   return array(array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.'));
 }
 
+function merci_update_6202() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {merci_node_type} ADD auto_assign_bucket_item TINYINT NULL;");
+  return $ret;
+}
+
+
 function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
   $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
