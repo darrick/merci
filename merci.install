@@ -478,6 +478,11 @@ function merci_update_6202() {
   return $ret;
 }
 
+function merci_update_6203() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {merci_node_type} CHANGE `type` `type` VARCHAR(32) ;");
+  return $ret;
+}
 
 function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
