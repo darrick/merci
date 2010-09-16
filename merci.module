@@ -1953,13 +1953,14 @@ function merci_add_reservation_items($node) {
         $date_info = $node->field_merci_date[0];
         $start     = $date_info['value'];
         $end       = $date_info['value2'];
-        $item_nid = merci_get_suggested_bucket_item($type,$start,$end,$node->nid);
+        $item_nid = merci_get_suggested_bucket_item($type,$start,$end);
         $item_node = node_load($item_nid);
+        $item_status = MERCI_ITEM_STATUS_RESERVED;
       } else {
         $item_nid    = 0;
         $item_node   = FALSE;
+        $item_status = MERCI_ITEM_STATUS_AVAILABLE;
       }
-      $item_status = MERCI_ITEM_STATUS_AVAILABLE;
     }
     else {
       // Nothing selected -- move along...
@@ -2422,6 +2423,7 @@ function merci_get_suggested_bucket_item($content_type, $start = NULL, $end = NU
       }
     }
   }
+
   foreach($total_items_array as $item_nid => $node){
     if(empty($total_items_array[$item_nid])) {
       return $item_nid;
