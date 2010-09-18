@@ -120,9 +120,6 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
   }
   // else
 
-  $new_fields=array();
-  $update_fields=array();
-
   foreach ($values['merci_inventory_sync_to_types'] as $type => $value) {
 
     if ($value !== 0) {
@@ -138,9 +135,8 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
         if (count($field_exists) == 0) {
 
           // Sync field
-          $new_fields[] = $field;
 
-          //content_field_instance_create($field);
+          content_field_instance_create($field);
           drupal_set_message('<i>'. check_plain($field['field_name']) .'</i> '. t('was added to') .' <i>'. check_plain($type) .'</i>');
           $added++;
         }
@@ -150,30 +146,11 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
           // Update all weights (faster than checking for which weights need updating)
 
           $field_exists[0]['widget']['weight'] = $field['widget']['weight'] + 1000;
-          $update_fields[] = $field_exists[0];
-          //content_field_instance_update($field_exists[0]);
+          content_field_instance_update($field_exists[0]);
         }
         // else
       }
       // foreach
-    }
-  }
-  // Update several fields at a time.
-  foreach ($update_fields as $field) {
-    content_field_instance_update($field, FALSE);
-  }
-  // Create several fields at a time.
-  foreach ($new_fields as $field) {
-    content_field_instance_create($field, FALSE);
-  }
-
-  // Clear caches and rebuild menu.
-  content_clear_type_cache(TRUE);
-  menu_rebuild();
-
-  foreach ($values['merci_inventory_sync_to_types'] as $type => $value) {
-
-    if ($value !== 0) {
 
       if (module_exists('fieldgroup')) {
 
