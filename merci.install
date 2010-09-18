@@ -106,7 +106,7 @@ function merci_schema() {
     'fields' => array(
       'type' => array(
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 32,
         'not null' => TRUE,
         'default' => '',
         'description' => t("Foreign key for {node_type}.type."),
@@ -200,6 +200,12 @@ function merci_schema() {
         'size' => 'tiny',
         'not null' => FALSE,
         'description' => t("tid of MERCI Equiment Grouping vocabulary"),
+      ),
+      'auto_assign_bucket_item' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => FALSE,
+        'description' => t("TRUE if the bucket item is to be assigned automatically."),
       ),
     ),
     'primary key' => array('type'),
