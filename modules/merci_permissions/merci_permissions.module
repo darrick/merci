@@ -285,7 +285,9 @@ function merci_permissions_grant_permissions($role_name, $new_permissions) {
       }
       // rebuild the permission string
       $updated_permissions = join(', ', $permissions);
-      db_query("INSERT INTO {permission} (rid, perm, tid) VALUES(%d,'%s',%d)", $role->rid, $updated_permissions, 0);
+      if(!empty($updated_permissions)){
+        db_query("INSERT INTO {permission} (rid, perm, tid) VALUES(%d,'%s',%d)", $role->rid, $updated_permissions, 0);
+      }
     }
   }
   return;
