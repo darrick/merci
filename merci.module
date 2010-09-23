@@ -353,7 +353,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#size' => 10,
           '#default_value' => $settings ? $settings->spare_items : 0,
           '#element_validate' => array('merci_is_numeric_validate'),
-          '#description' => t("Set this to the number of items of this type that should always be available even when it's fully reserved.") . $warning,
+          '#description' => t("Set this to the number of items of this type that should always be unavailable and thus unreservable.  This way you'll still have enough items for future reservations in case something breaks.") . $warning,
         );
       }
       else {
