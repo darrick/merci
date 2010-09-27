@@ -577,7 +577,7 @@ function merci_menu() {
     $value = t('Core MERCI fields are currently unlocked.') . ' ' . l(t('Lock them.'), 'admin/merci/lock');
   }
     
-  $form['om_show_unlock'] = array(
+  $form['merci_unlock'] = array(
     '#type' => 'markup',
     '#title' => t('Unlock Fields'),
     '#value' => '<div>' . $message . $value . '</div>'
