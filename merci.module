@@ -564,6 +564,24 @@ function merci_menu() {
     'access arguments' => array('manage MERCI'),
     'type' => MENU_NORMAL_ITEM,
   );
+  
+  //check to see if the fields are locked
+  $result = db_query("SELECT locked FROM {content_node_field} WHERE field_name = '%s'", 'Delete  	field_merci_date');  
+  
+  $message = t('MERCI uses several CCK fields. These fields are locked by default when modules are installed.  Altering or deleting these locked fields could cause serious problems.  Always backup before altering these fields!') . '<br /><br />';
+  $field_state = db_fetch_object($result);
+  if($field_state->locked){
+    $value = t('Core MERCI fields are currently locked.') . ' ' . l(t('Unlock them.'), 'admin/merci/unlock');
+  } 
+  else {
+    $value = t('Core MERCI fields are currently unlocked.') . ' ' . l(t('Lock them.'), 'admin/merci/lock');
+  }
+    
+  $form['om_show_unlock'] = array(
+    '#type' => 'markup',
+    '#title' => t('Unlock Fields'),
+    '#value' => '<div>' . $message . $value . '</div>'
+  );
 
   return $items;
 }
@@ -3842,4 +3860,16 @@ function merci_content_extra_fields() {
     'weight' => 80,
   );
   return $extras;
+}
+
+function merci_unlock(){
+  db_query("UPDATE {content_node_field} SET locked = 0 WHERE field_name = 'Delete  	field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
+  
+  drupal_goto('admin/merci');
+}
+
+function merci_lock(){
+  db_query("UPDATE {content_node_field} SET locked = 1 WHERE field_name = 'Delete  	field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
+  
+  drupal_goto('admin/merci');
 }
