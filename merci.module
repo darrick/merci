@@ -3606,7 +3606,7 @@ function merci_cron() {
   $column_start_date = $db_info['columns']['value']['column'];
   $column_end_date   = $db_info['columns']['value2']['column'];
 
-  $args = array($time, MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING, $time);
+  $args = array($time, MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING);
   // Select reservation nodes where all reserved items and resources are autocheckout.
   $reservations = db_query("SELECT n.nid FROM {node} AS n 
         INNER JOIN {". $table ."} ct ON ct.vid = n.vid
@@ -3628,12 +3628,12 @@ function merci_cron() {
 	 while ($child = db_fetch_array($reservation_items)) {
 	   $settings = merci_load_content_type_settings($child['type']);
 	   if($settings->autocheckout != 1){
-	     $non_auto_item++;
+	     $non_autoout_item++;
 	   }
 	 }
     
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
-    if(!$non_auto_item){
+    if(!$non_autoout_item){
       watchdog('merci', "Setting node ". $nid['nid'] ." to checked out");
       $node = node_load($nid['nid']);
       $node->merci_status = MERCI_STATUS_CHECKED_OUT;
@@ -3641,30 +3641,43 @@ function merci_cron() {
     }
   }
 
-  return;
   
-  $args = array($time, MERCI_STATUS_CHECKED_OUT, $time);
+  $args = array($time, MERCI_STATUS_CHECKED_OUT);
   // Select reservation nodes where all reserved items and resources are autocheckin.
-  $reservations = db_query("SELECT n.nid FROM {node} AS n 
+  $reservations = $reservations = db_query("SELECT n.nid FROM {node} AS n 
         INNER JOIN {". $table ."} ct ON ct.vid = n.vid
         INNER JOIN { merci_reservation } AS mr ON n.vid = mr.vid
-          WHERE $column_end_date >= '%s' 
-            AND mr.status = %d 
-            AND n.nid NOT IN ( 
-              SELECT ct.nid FROM { ". $table ."} ct 
-                INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid 
-                LEFT JOIN {node} as n ON md.item_nid = n.nid
-                LEFT JOIN {merci_node_type} AS mt ON n.type = mt.type
-                  WHERE  $column_end_date <= '%s' 
-                    AND (autocheckin != 1 OR autocheckin IS NULL))
-          ", $args);
-
+          WHERE $column_end_date <= '%s'  
+            AND mr.status IN (%d) 
+            AND n.nid", $args);
   while ($nid = db_fetch_array($reservations)) {
-    $node = node_load($nid['nid']);
-    print "Setting ". $node->title ."to checked in";
-    //$node->merci_status = MERCI_STATUS_CHECKED_IN;
+    //$node = node_load($nid['nid']);
+    
+    $reservation_items = db_query("SELECT placeholder_nid, n.type FROM {merci_reservation_detail} mrd 
+        INNER JOIN {node} n ON mrd.placeholder_nid = n.nid
+        INNER JOIN {merci_node_type} mnt ON n.type = mnt.type
+        WHERE mrd.nid = %d", $nid['nid']);
+    
+	 //check child items of that reservations for autocheckin
+	    
+	 while ($child = db_fetch_array($reservation_items)) {
+	   $settings = merci_load_content_type_settings($child['type']);
+	   if($settings->autocheckin != 1){
+	     $non_autoin_item++;
+	   }
+	 }
+    
+    //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
+    if(!$non_autoin_item){
+      watchdog('merci', "Setting node ". $nid['nid'] ." to checked in");
+      $node = node_load($nid['nid']);
+      $node->merci_status = MERCI_STATUS_CHECKED_IN;
+      node_save($node);
+    }
   }
-
+  
+  return;
+  
   // Give no shows a one hour grace period.
   // TODO: move grace period to admin option.
   // 2009-05-22 20:45:00
