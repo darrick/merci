@@ -158,10 +158,12 @@ function merci_form_alter(&$form, $form_state, $form_id) {
               '#type' => 'value',
               '#value' => $autocheckin,
             );
+            /*
             $form['merci_selfcheckout'] = array(
               '#type' => 'value',
               '#value' => $selfcheckout,
             );
+            */
           }
           else {
             $form['merci']['merci_rate_per_hour'] = array(
@@ -200,12 +202,15 @@ function merci_form_alter(&$form, $form_state, $form_id) {
               '#default_value' => $autocheckout,
               '#description' => t('Automatically check this item in when the Reservation ends.'),
             );
+            /*
             $form['merci']['merci_selfcheckout'] = array(
               '#type' => 'checkbox',
               '#title' => t('Self checkout'),
               '#default_value' => $autocheckout,
               '#description' => t('Manage checkout with additional code.'),
             );
+            */
+            
           }
         }
         else {
@@ -446,8 +451,8 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#element_validate' => array('merci_is_numeric_validate'),
         '#description' => t('Minimum number of hours before the start time a user may cancel a reservation for the item.'),
       );
-      /*
-$form['merci']['merci_autocheckout'] = array(
+      
+      $form['merci']['merci_autocheckout'] = array(
         '#type' => 'checkbox',
         '#title' => t('Automatic Checkout'),
         '#default_value' => $settings ? $settings->autocheckout : 0,
@@ -459,13 +464,14 @@ $form['merci']['merci_autocheckout'] = array(
         '#default_value' => $settings ? $settings->autocheckin : 0,
         '#description' => t('Automatically check item in when reservation ends.  Use for resources like meetings rooms that a user does not actually return.') . $warning,
       );
+      /*
       $form['merci']['merci_selfcheckout'] = array(
         '#type' => 'checkbox',
         '#title' => t('Self Checkout'),
         '#default_value' => $settings ? $settings->selfcheckout : 0,
         '#description' => t('The checkout and checkin process for this resource is managed with additional software (ie. lab computer where login process can by linked to checkout status).') . $warning,
       );
-*/
+      */
       break;
 
     case 'node_delete_confirm':
@@ -3589,7 +3595,7 @@ function merci_confirm_reservation($node_id) {
  */
 function merci_cron() {
 
-  return;
+  
   // 2009-05-22 20:45:00
   $time = gmdate('Y-m-j H:m:s');
 
@@ -3600,30 +3606,43 @@ function merci_cron() {
   $column_start_date = $db_info['columns']['value']['column'];
   $column_end_date   = $db_info['columns']['value2']['column'];
 
-  $args = array($time, $time, MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING, $time, $time);
+  $args = array($time, MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING, $time);
   // Select reservation nodes where all reserved items and resources are autocheckout.
-  $reservations = db_query("SELECT blah,n.nid FROM {node} AS n 
+  $reservations = db_query("SELECT n.nid FROM {node} AS n 
         INNER JOIN {". $table ."} ct ON ct.vid = n.vid
         INNER JOIN { merci_reservation } AS mr ON n.vid = mr.vid
-          WHERE $column_start_date >= '%s' 
-            AND $column_end_date < '%s' 
+          WHERE $column_start_date <= '%s'  
             AND mr.status IN (%d, %d) 
-            AND n.nid NOT IN ( 
-              SELECT ct.nid FROM content_type_merci_reservation ct 
-                INNER JOIN merci_reservation_detail md on ct.vid = md.vid 
-                LEFT JOIN node as n ON md.item_nid = n.nid
-                LEFT JOIN merci_node_type AS mt ON n.type = mt.type
-                  WHERE  $column_start_date >= '%s' 
-                    AND $column_end_date < '%s' 
-                    AND (autocheckout != 1 OR autocheckout IS NULL))
-          ", $args);
-
+            AND n.nid", $args);
+                    
   while ($nid = db_fetch_array($reservations)) {
-    $node = node_load($nid['nid']);
-    print "Setting ". $node->title ."to checked out";
-    //$node->merci_status = MERCI_STATUS_CHECKED_OUT;
+    //$node = node_load($nid['nid']);
+    
+    $reservation_items = db_query("SELECT placeholder_nid, n.type FROM {merci_reservation_detail} mrd 
+        INNER JOIN {node} n ON mrd.placeholder_nid = n.nid
+        INNER JOIN {merci_node_type} mnt ON n.type = mnt.type
+        WHERE mrd.nid = %d", $nid['nid']);
+    
+	  //check child items of that reservations for autocheckout
+	    
+	 while ($child = db_fetch_array($reservation_items)) {
+	   $settings = merci_load_content_type_settings($child['type']);
+	   if($settings->autocheckout != 1){
+	     $non_auto_item++;
+	   }
+	 }
+    
+    //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
+    if(!$non_auto_item){
+      watchdog('merci', "Setting node ". $nid['nid'] ." to checked out");
+      $node = node_load($nid['nid']);
+      $node->merci_status = MERCI_STATUS_CHECKED_OUT;
+      node_save($node);
+    }
   }
 
+  return;
+  
   $args = array($time, MERCI_STATUS_CHECKED_OUT, $time);
   // Select reservation nodes where all reserved items and resources are autocheckin.
   $reservations = db_query("SELECT n.nid FROM {node} AS n 
@@ -3665,6 +3684,8 @@ function merci_cron() {
     print "Setting ". $node->nid ." to no show\n";
     //$node->merci_status = MERCI_STATUS_CHECKED_IN;
   }
+  
+  
 }
 
 function merci_has_accessories($content_type) {
