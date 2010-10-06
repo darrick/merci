@@ -276,7 +276,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
 
         $form['field_merci_date'][0]['merci_date_filter'] = array(
           '#type' => 'submit',
-          '#value' => t('Check availability'),
+          '#value' => t('Limit Lists to Available Items'),
           '#weight' => 10,
           '#submit' => array('merci_date_filter'),
         );
@@ -906,12 +906,13 @@ function merci_form(&$node, $form_state) {
     '#theme' => 'merci_choices',
   );
 
+  //dsm('template:' . $_GET['template']);
   if (isset($_GET['template'])) {
 
-    $templates = db_query_range("SELECT nr.body FROM {node_revisions} nr WHERE nid = %d ORDER BY vid DESC", 0, 1, intval($_GET['template']));
+    $templates = db_query("SELECT nr.body FROM {node_revisions} nr WHERE nid = %d ORDER BY vid DESC", intval($_GET['template']));
 
     while ($template_object = db_fetch_object($templates)) {
-
+      //dsm($template);
       $template = explode(',', $template_object->body);
     }
     // while
@@ -2711,7 +2712,7 @@ function theme_merci_build_reservation_table_form($form) {
     $output .= theme('table', $header, $rows);
     if(module_exists('merci_printable_contract')){
     if (user_access('administer MERCI') || user_access('manage MERCI')) {
-      $output .= '<div>' . l('Printable Contract', 'merci/contract/'. $node->nid) .' </div>';
+      $output .= '<div>' . l('Printable Contract', 'merci/contract/'. $node->nid, array('attributes' => array('target' => '_blank'))) .' </div>';
     }
     }
   }
@@ -2829,6 +2830,7 @@ function merci_node_validate($form, &$form_state) {
     // Reservation start date cannot exceed the max advance
     if ($max_days) {
       $max_date = new DateTime("+$max_days day");
+      //$max_date = date('m-d-Y', mktime(0, 0, 0, date("m"), date("d")+$max_days, date("Y")));
       if ($start_object > $max_date) {
         form_set_error('merci_status', t('You cannot make a Reservation more than %days days in advance. Start the Reservation before %date.', array('%days' => $max_days, '%date' => date_format($max_date, 'm-d-Y'))));
       }
@@ -3919,4 +3921,35 @@ function merci_lock(){
   db_query("UPDATE {content_node_field} SET locked = 1 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
   
   drupal_goto('admin/settings/merci');
+}
+
+/**
+ * Implementation of hook_node_operations().
+ */
+function merci_node_operations() {
+  $operations = array(
+    'merci_update' => array(
+      'label' => t('Confirm Reservation'),
+      'callback' => 'merci_operations_update',
+    ),
+  );
+  return $operations;
+}
+
+/**
+ * Callback function for updating node titles.
+ */
+function merci_operations_update($nodes) {
+  foreach ($nodes as $nid) {
+    $node = node_load($nid);
+
+    //only update if MERCI Status is Unconfirmed
+    if ($node->merci['status'] == MERCI_STATUS_UNCONFIRMED) {
+      $node->merci_status = MERCI_STATUS_PENDING;
+      //$node->choice = $node->merci['reservation_items'];
+      //dsm($node);
+      node_save($node);
+      
+    }
+  }
 }
