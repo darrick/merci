@@ -1,7 +1,6 @@
 <?php
 // $Id$
 
-
 /**
  * @file
  * MERCI - Managed Equipment Reservation Checkout and Inventory
@@ -413,7 +412,8 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#default_value' => $settings ? $settings->auto_assign_bucket_item : 0,
           '#description' => t('Automatically assign the best fit bucket item when reserving a new bucket item.'),
         );
-      } else {
+      } 
+      else {
         $form['merci']['merci_auto_assign_bucket_item'] = array(
           '#type' => 'value',
           '#value' => 0,
@@ -726,7 +726,7 @@ function merci_admin_settings() {
 
   // Hours of operation
 
-  $hours_description = '<div>'.t('Enter military time for both opening and closing time, separated by a dash, in the format ').'<em>hh:mm-hh:mm</em></div>'.t('ex.').' <em>09:00-17:00</em> '.t(' would be open at 9AM, close at 5PM. Leave blank to indicate not being open.');
+  $hours_description = '<div>' . t('Enter military time for both opening and closing time, separated by a dash, in the format ') . '<em>hh:mm-hh:mm</em></div>' . t('ex.') . ' <em>09:00-17:00</em> ' . t(' would be open at 9AM, close at 5PM. Leave blank to indicate not being open.');
 
   $form['merci_general']['merci_hours_mon'] = array(
     '#type' => 'textfield',
@@ -801,7 +801,7 @@ function merci_admin_settings() {
     // TODO: this doesn't seem to work...
     '#cols' => 5,
     '#default_value' => variable_get('merci_closed_dates', ''),
-    '#description' => '<div>'.t('Enter dates which are closed regardless of the day of the week, one date per line, in the format').' <em>mm-dd</em></div>'.t('ex.').' <em>07-04</em> '.t('would mean July 4th is always closed, regardless of what day of the week it falls on.'),
+    '#description' => '<div>' . t('Enter dates which are closed regardless of the day of the week, one date per line, in the format') . ' <em>mm-dd</em></div>' . t('ex.') . ' <em>07-04</em> ' . t('would mean July 4th is always closed, regardless of what day of the week it falls on.'),
   );
 
   $form['merci_general']['merci_membership_discount'] = array(
@@ -818,7 +818,7 @@ function merci_admin_settings() {
   
   $message = t('MERCI uses several CCK fields. These fields are locked by default when modules are installed.  Altering or deleting these locked fields could cause serious problems.  Always backup before altering these fields!') . '<br /><br />';
   $field_state = db_fetch_object($result);
-  if($field_state->locked){
+  if ($field_state->locked) {
     $value = t('Core MERCI fields are currently locked.') . ' ' . l(t('Unlock them.'), 'admin/merci/unlock');
   } 
   else {
@@ -1218,7 +1218,8 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
 function merci_check_content_type_restrictions($content_type, $start, $end) {
   if (user_access("administer MERCI") || user_access("manage MERCI")) {
     //$return[] = t('You are making a reservation as a user with permissions to Manage or Administer MERCI.  This allows you to override the normal content type restrictions.');
-  } else {
+  } 
+  else {
   
     $type_settings = merci_content_type_rules($content_type);
     $return = array();
@@ -1987,14 +1988,15 @@ function merci_add_reservation_items($node) {
       $type        = $choice['item'];
       $title       = db_result(db_query("SELECT name FROM {node_type} WHERE type = '%s'", $type));
       $settings = db_fetch_object(db_query("SELECT * FROM {merci_node_type} WHERE type = '%s'", $type));
-      if($settings->auto_assign_bucket_item){
+      if ($settings->auto_assign_bucket_item) {
         $date_info = $node->field_merci_date[0];
         $start     = $date_info['value'];
         $end       = $date_info['value2'];
-        $item_nid = merci_get_suggested_bucket_item($type,$start,$end);
+        $item_nid = merci_get_suggested_bucket_item($type, $start, $end);
         $item_node = node_load($item_nid);
         $item_status = MERCI_ITEM_STATUS_RESERVED;
-      } else {
+      } 
+      else {
         $item_nid    = 0;
         $item_node   = FALSE;
         $item_status = MERCI_ITEM_STATUS_AVAILABLE;
@@ -2462,8 +2464,8 @@ function merci_get_suggested_bucket_item($content_type, $start = NULL, $end = NU
     }
   }
 
-  foreach($total_items_array as $item_nid => $node){
-    if(empty($total_items_array[$item_nid])) {
+  foreach ($total_items_array as $item_nid => $node) {
+    if (empty($total_items_array[$item_nid])) {
       return $item_nid;
     }
 
@@ -2671,7 +2673,7 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
  */
 
 
-function merci_get_available_resource_count($content_type){
+function merci_get_available_resource_count($content_type) {
   if (!$start) {
 
     $count = db_fetch_object(
@@ -2710,7 +2712,7 @@ function theme_merci_build_reservation_table_form($form) {
     $table_caption = in_array((int) $node->merci['status'], array(MERCI_STATUS_CHECKED_OUT, MERCI_STATUS_CHECKED_IN)) ? t('Checked out items') : t('Currently reserved items');
     $output .= '<div class="existing-items-table-header">'. $table_caption .'</div>';
     $output .= theme('table', $header, $rows);
-    if(module_exists('merci_printable_contract')){
+    if (module_exists('merci_printable_contract')) {
     if (user_access('administer MERCI') || user_access('manage MERCI')) {
       $output .= '<div>' . l('Printable Contract', 'merci/contract/'. $node->nid, array('attributes' => array('target' => '_blank'))) .' </div>';
     }
@@ -2821,7 +2823,7 @@ function merci_node_validate($form, &$form_state) {
 
   //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restrictions
   if (user_access('administer MERCI') || user_access('create reservations outside hours of operation')) {
-    if(strtotime(date('G:i', strtotime($start . ' UTC'))) < strtotime($start_hours['open']) || strtotime($start_hours['close']) < strtotime(date('G:i', strtotime($end . ' UTC'))) ){
+    if (strtotime(date('G:i', strtotime($start . ' UTC'))) < strtotime($start_hours['open']) || strtotime($start_hours['close']) < strtotime(date('G:i', strtotime($end . ' UTC')))) {
       //dsm(strtotime(date('G:i', strtotime($start . ' UTC'))) . ' < ' . strtotime($start_hours['open']) . ' or ' .  strtotime($start_hours['close']) . ' < ' . strtotime(date('G:i', strtotime($end . ' UTC'))));
       drupal_set_message(t('<b>You are making a Reservation outside the normal hours of operation.  This may impact access to the items you are reserving.</b>'));
     }
@@ -3157,7 +3159,8 @@ function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, 
       WHERE n.type = '%s'
       AND r.field_merci_date_value < '%s'
       AND r.field_merci_date_value2 >= '%s'";
-  } else {
+  } 
+  else {
     $sql = "SELECT n.nid AS node, r.nid AS reservation, r.field_merci_date_value AS start, r.field_merci_date_value2 AS end
       FROM {merci_reservation_detail} d
       JOIN {node} n
@@ -3182,7 +3185,7 @@ function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, 
     while ($tz_start_date < $tz_end_date) {
 
       $time = date('H:i:s', $tz_start_date);
-      $date = date('Y-m-d',$tz_start_date);
+      $date = date('Y-m-d', $tz_start_date);
 
       if (isset($reservation_counts[$date][$time])) {
         $reservation_counts[$date][$time]['count']++;
@@ -3279,8 +3282,8 @@ function merci_hours_str_to_array($str) {
 
 function merci_check_default_timezone() {
   $default = variable_get('date_default_timezone_name', '');
-  if(empty($default)){
-    drupal_set_message(t('No site wide default timezone configured.  Please <a href="@link">configure</a> one in order for the MERCI reservation system to operate correctly.',array('@link' => base_path() . 'admin/settings/date-time')));
+  if (empty($default)) {
+    drupal_set_message(t('No site wide default timezone configured.  Please <a href="@link">configure</a> one in order for the MERCI reservation system to operate correctly.', array('@link' => base_path() . 'admin/settings/date-time')));
   }
 }
 /**
@@ -3422,7 +3425,7 @@ function merci_views_handlers() {
  */
 function merci_check_existing_bucket_items($type, $status = FALSE) {
   $where = $status ? ' AND status = 1' : '';
-  $existing_items = db_result(db_query("SELECT n.nid FROM {node} AS n INNER JOIN {merci_bucket_node} AS mn ON n.vid=mn.vid WHERE type = '%s' AND default_availability IN (%d,%d)". $where, $type,MERCI_AVA_F,MERCI_AVA_S));
+  $existing_items = db_result(db_query("SELECT n.nid FROM {node} AS n INNER JOIN {merci_bucket_node} AS mn ON n.vid=mn.vid WHERE type = '%s' AND default_availability IN (%d,%d)" . $where, $type, MERCI_AVA_F, MERCI_AVA_S));
   return $existing_items;
 }
 
@@ -3625,17 +3628,17 @@ function merci_cron() {
         INNER JOIN {merci_node_type} mnt ON n.type = mnt.type
         WHERE mrd.nid = %d", $nid['nid']);
     
-	  //check child items of that reservations for autocheckout
-	    
-	 while ($child = db_fetch_array($reservation_items)) {
-	   $settings = merci_load_content_type_settings($child['type']);
-	   if($settings->autocheckout != 1){
-	     $non_autoout_item++;
-	   }
-	 }
+    //check child items of that reservations for autocheckout
+    
+    while ($child = db_fetch_array($reservation_items)) {
+      $settings = merci_load_content_type_settings($child['type']);
+      if (!$settings->autocheckout) {
+        $non_autoout_item++;
+      }
+    }
     
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
-    if(!$non_autoout_item){
+    if (!$non_autoout_item) {
       watchdog('merci', "Setting node ". $nid['nid'] ." to checked out");
       $node = node_load($nid['nid']);
       $node->merci_status = MERCI_STATUS_CHECKED_OUT;
@@ -3660,17 +3663,17 @@ function merci_cron() {
         INNER JOIN {merci_node_type} mnt ON n.type = mnt.type
         WHERE mrd.nid = %d", $nid['nid']);
     
-	 //check child items of that reservations for autocheckin
-	    
-	 while ($child = db_fetch_array($reservation_items)) {
-	   $settings = merci_load_content_type_settings($child['type']);
-	   if($settings->autocheckin != 1){
-	     $non_autoin_item++;
-	   }
-	 }
+    //check child items of that reservations for autocheckin
+    
+    while ($child = db_fetch_array($reservation_items)) {
+    $settings = merci_load_content_type_settings($child['type']);
+      if (!$settings->autocheckin) {
+        $non_autoin_item++;
+      }
+    }
     
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
-    if(!$non_autoin_item){
+    if (!$non_autoin_item) {
       watchdog('merci', "Setting node ". $nid['nid'] ." to checked in");
       $node = node_load($nid['nid']);
       $node->merci_status = MERCI_STATUS_CHECKED_IN;
@@ -3866,7 +3869,7 @@ function merci_total_usage($id, $type = 'user', $date = NULL) {
  * TODO: change this to a views view.
  */
 function merci_current_inventory() {
-  $output .= '<b>'.t('type (currently out/total in MERCI/total should be available)').'</b><br />';
+  $output .= '<b>' . t('type (currently out/total in MERCI/total should be available)') . '</b><br />';
 
   $result = db_query("SELECT type, type_setting FROM {merci_node_type} 
     WHERE type_setting = 'resource' OR type_setting = 'bucket' 
@@ -3887,7 +3890,7 @@ function merci_current_inventory() {
       $currentlyactive = merci_get_available_resource_count($mercitype->type);
     }
 
-    $output .= l($mercitype->type, 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'type[0]='. $mercitype->type)) .' ('.$currentlyout->total.'/'. $currentlyactive .'/'. ($currentlyactive - $currentlyout->total) .')<br />';
+    $output .= l($mercitype->type, 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'type[0]=' . $mercitype->type)) . ' (' . $currentlyout->total . '/' . $currentlyactive . '/' . ($currentlyactive - $currentlyout->total) . ')<br />';
   }
   //while
 
@@ -3911,13 +3914,13 @@ function merci_content_extra_fields() {
   return $extras;
 }
 
-function merci_unlock(){
+function merci_unlock() {
   db_query("UPDATE {content_node_field} SET locked = 0 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
   
   drupal_goto('admin/settings/merci');
 }
 
-function merci_lock(){
+function merci_lock() {
   db_query("UPDATE {content_node_field} SET locked = 1 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
   
   drupal_goto('admin/settings/merci');
