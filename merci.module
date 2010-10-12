@@ -873,7 +873,6 @@ function merci_node_type($op, $info) {
  */
 function merci_form(&$node, $form_state) {
   $form = node_content_form($node, $form_state);
-  $template = array();
 
   // Build existing reserved items table on existing reservations.
   if (isset($node->nid)) {
@@ -906,28 +905,9 @@ function merci_form(&$node, $form_state) {
     '#theme' => 'merci_choices',
   );
 
-  //dsm('template:' . $_GET['template']);
-  if (isset($_GET['template'])) {
-
-    $templates = db_query("SELECT nr.body FROM {node_revisions} nr WHERE nid = %d ORDER BY vid DESC", intval($_GET['template']));
-
-    while ($template_object = db_fetch_object($templates)) {
-      //dsm($template);
-      $template = explode(',', $template_object->body);
-    }
-    // while
-  }
-  // if
-
   // Add the current choices to the form.
-  for ($delta = 0; $delta < $choice_count || $delta < count($template); $delta++) {
+  for ($delta = 0; $delta < $choice_count; $delta++) {
     $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
-
-    if ($default == '' && isset($template[$delta])) {
-
-      $default = $template[$delta];
-    }
-    // if
 
     $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default);
   }

@@ -7,88 +7,29 @@
  */
 
 /**
- * Implementation of hook_node_info().
- */
-function merci_template_node_info() {
-
-  return array(
-    // Reservation nodes.
-    'merci_reservation_template' => array(
-      'name' => t('Reservation Template'),
-      'module' => 'node',
-      'has_body' => TRUE,
-      'description' => t("A reservation template pre-populates MERCI with the items reserved in a previous reservation."),
-    ),
-  );
-}
-// merci_template_node_info
-
-/**
  * Implementation of hook_form_alter().
  */
-function merci_template_form_alter(&$form, $form_state, $form_id) {
+function merci_template_form_merci_reservation_node_form_alter(&$form, $form_state) {
 
-  switch ($form_id) {
-    case 'merci_reservation_template_node_form':
-      unset($form['body_field']['format']);
-      $form['body_field']['body'] = array(
-        '#type' => 'select',
-        '#title' => t('Copy Recent Reservation'),
-        '#options' => merci_template_recent_reservations_options(),
-        '#default_value' => '',
-      );
-      break;
+  drupal_add_js(drupal_get_path('module', 'merci_template') .'/merci_template.js');
+
+  if (isset($_GET['draft_id']) && is_numeric($_GET['draft_id'])) {
+    $draft_id = $_GET['draft_id'];
   }
-  // switch
+  $form['update_draft_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $draft_id,
+  );
 }
 // merci_template_form_alter
 
-/**
- * Get form API options for recent reservations
- */
-function merci_template_recent_reservations_options() {
-
-  global $user;
-
-  $options = array();
-
-  if (user_access('administer MERCI')) {
-
-    $reservations = db_query_range("SELECT n.title , n.nid FROM {content_type_merci_reservation} ctmr JOIN {merci_reservation_detail} mrd ON ctmr.nid = mrd.nid JOIN {merci_reservation} mr ON ctmr.nid = mr.nid JOIN {node} n ON n.nid = ctmr.nid ORDER BY n.changed DESC", 0, 20);
-  }
-  // if
-  else {
-
-    $reservations = db_query_range("SELECT n.title , n.nid FROM {content_type_merci_reservation} ctmr JOIN {merci_reservation_detail} mrd ON ctmr.nid = mrd.nid JOIN {merci_reservation} mr ON ctmr.nid = mr.nid JOIN {node} n ON n.nid = ctmr.nid WHERE n.uid = %d ORDER BY n.created DESC", $user->uid, 0, 20);
-  }
-  // else
-
-  while ($reservation = db_fetch_object($reservations)) {
-
-    $items = array();
-
-    $placeholders = db_query("SELECT n.type , mrd.item_nid , mnt.type_setting FROM {merci_reservation_detail} mrd JOIN {node} n ON n.nid = mrd.placeholder_nid JOIN {merci_node_type} mnt ON mnt.type = n.type WHERE mrd.nid = %d", $reservation->nid);
-
-    while ($placeholder = db_fetch_object($placeholders)) {
-
-      if ($placeholder->type_setting == 'bucket') {
-
-        $items[] = $placeholder->type;
+function merci_template_draft($op, $draft_id, $draft_data = array(), &$form) {
+  foreach($draft_data as $key => $item){
+    if(preg_match("/^choice\((\d{1,5})\)\(item\)$/",$key,$matches)){
+      $delta = $matches[1];
+      if($delta > 2){
+        $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta);
       }
-      // if
-      else {
-
-        $items[] = $placeholder->item_nid;
-      }
-      // else
     }
-    // while
-
-    $options[implode(',', $items)] = $reservation->title .' (#'. $reservation->nid .')';
   }
-  // while
-
-  return $options;
 }
-// merci_template_recent_reservations_options
-
