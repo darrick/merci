@@ -28,7 +28,7 @@ function merci_inventory_uninstall() {
 
 
   // delete any merci_inventory_master nodes... even though there really shouldn't be any
-  $result = db_query("SELECT nid FROM {node} WHERE type = 'merci_inventory_master'");
+  $result = db_query(db_rewrite_sql("SELECT nid FROM {node} n WHERE type = 'merci_inventory_master'"));
   while ($node = db_fetch_object($result)) {
     node_delete($node->nid);
   }

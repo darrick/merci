@@ -47,7 +47,7 @@ function merci_uninstall() {
   //No longer removes content types
   $content_types = db_query("SELECT type FROM {merci_node_type} WHERE type_setting <> 'disabled'");
   while ($content_type = db_fetch_object($content_types)) {
-    $nodes = db_query("SELECT nid FROM {node} WHERE type = '%s'", $content_type->type);
+    $nodes = db_query(db_rewrite_sql("SELECT nid FROM {node} n WHERE type = '%s'"), $content_type->type);
     while ($node = db_fetch_object($nodes)) {
       node_delete($node->nid);
     }
@@ -56,7 +56,7 @@ function merci_uninstall() {
 
   // Remove the programatically created reservation node type
   // and all associated nodes.
-  $nodes = db_query("SELECT nid FROM {node} WHERE type = 'merci_reservation'");
+  $nodes = db_query(db_rewrite_sql("SELECT nid FROM {node} n WHERE type = 'merci_reservation'"));
   while ($node = db_fetch_object($nodes)) {
     node_delete($node->nid);
   }
@@ -88,7 +88,7 @@ function merci_enable() {
     $new_types = db_query("SELECT type FROM {node_type}");
   }
   else {
-    $new_types = db_query("SELECT type FROM {node} WHERE type NOT IN (". db_placeholders($types, 'varchar') .")", $types);
+    $new_types = db_query(db_rewrite_sql("SELECT type FROM {node} n WHERE type NOT IN (". db_placeholders($types, 'varchar') .")"), $types);
   }
   while ($new_type = db_fetch_object($new_types)) {
     db_query("INSERT INTO {merci_node_type} (type) VALUES ('%s')", $new_type->type);

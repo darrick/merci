@@ -141,7 +141,7 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
           $new_fields[] = $field;
 
           //content_field_instance_create($field);
-          drupal_set_message('<i>'. check_plain($field['field_name']) .'</i> '. t('was added to') .' <i>'. check_plain($type) .'</i>');
+          drupal_set_message(t('%field_name was added to %type', array('%field_name' => $field['field_name'], '%type' => $type )));
           $added++;
         }
         // if
@@ -186,7 +186,7 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
             // Add group
 
             fieldgroup_save_group($type, $group);
-            drupal_set_message('<i>'. check_plain($group_name) .'</i> '. t('was added to') .' <i>'. check_plain($type) .'</i>');
+            drupal_set_message(t('%group_name was added to %type', array('%group_name' => $group_name, '%type' => $type) ));
             $added++;
 
             $existing_groups = fieldgroup_groups($type, FALSE, TRUE);
@@ -216,7 +216,7 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
 
               fieldgroup_update_fields($group_field_params);
 
-              drupal_set_message('<i>'. check_plain($field_name) .'</i> '. t('was moved into group') .' <i>'. check_plain($group_name) .'</i> '. t('of') .' <i>'. check_plain($type) .'</i>');
+            drupal_set_message(t('%field_name was moved into group %group_name of %type', array('%field_name' => $field_name, '%group_name' => $group_name, '%type' => $type )));
               $added++;
             }
             // if
@@ -232,7 +232,7 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
   // foreach
 
   if ($added == 0) {
-    drupal_set_message(t('No fields were synced, because all fields in') .' <i>'. check_plain($values['merci_inventory_type']) .'</i> '. t('are already synced in all selected types'));
+    drupal_set_message(t('No fields were synced, because all fields in %type are already synced in all selected types', array( '%type' => $values['merci_inventory_type'] )));
   }
   // if
 }

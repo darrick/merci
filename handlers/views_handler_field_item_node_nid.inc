@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * MERCI - Managed Equipment Reservation Checkout and Inventory
+ */
+
+/**
  * Field handler for terms.
  */
 class views_handler_field_item_node_nid extends views_handler_field_prerender_list {

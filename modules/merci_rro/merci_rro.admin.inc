@@ -84,9 +84,7 @@ function merci_rro_delete_submit($form_id, $form_values) {
 
   db_query($sql, $values['merci_rro_rid'], $values['merci_rro_type']);
 
-  $role = merci_rro_role_name_from_rid($values['merci_rro_roles']);
-
-  drupal_set_message('Override deleted for '. merci_rro_role_name_from_rid($values['merci_rro_rid']));
+  drupal_set_message(t('Override deleted for @role', array('@role' => merci_rro_role_name_from_rid($values['merci_rro_rid']))));
 }
 // merci_rro_delete_submit
 function merci_rro_add_new_override(&$form_state, $type_name, $exclude_roles) {
@@ -261,9 +259,7 @@ function merci_rro_new_submit($form_id, $form_values) {
     $values['merci_hours_sun']
   );
 
-  $role = merci_rro_role_name_from_rid($values['merci_rro_roles']);
-
-  drupal_set_message('Override added for '. $role);
+  drupal_set_message(t('Override added for @role', array('@role' => merci_rro_role_name_from_rid($values['merci_rro_rid']))));
 }
 // merci_rro_new_submit
 

@@ -24,10 +24,10 @@ function merci_template_form_merci_reservation_node_form_alter(&$form, $form_sta
 // merci_template_form_alter
 
 function merci_template_draft($op, $draft_id, $draft_data = array(), &$form) {
-  foreach($draft_data as $key => $item){
-    if(preg_match("/^choice\((\d{1,5})\)\(item\)$/",$key,$matches)){
+  foreach ($draft_data as $key => $item) {
+    if (preg_match("/^choice\((\d{1,5})\)\(item\)$/", $key, $matches)) {
       $delta = $matches[1];
-      if($delta > 2){
+      if ($delta > 2) {
         $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta);
       }
     }

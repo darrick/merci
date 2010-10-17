@@ -1,5 +1,5 @@
 <?php
-// $Id //
+// $Id$ 
 
 /**
  * @file
@@ -174,7 +174,7 @@ function merci_ui_list_reservations($node, $start, $end) {
 
     $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
   }
-  else if ($start) {
+  elseif ($start) {
     $start_mysql = date('Y-m-d', $start);
     $result = db_query("SELECT * FROM {merci_reservation_detail} 
       JOIN {node} ON merci_reservation_detail.nid = node.nid 

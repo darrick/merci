@@ -194,7 +194,7 @@ function merci_permissions_form() {
 }
 
 function merci_permissions_load_merci_type_settings() {
-  $result = db_query("SELECT nt.type,nt.name FROM {node_type} nt INNER JOIN {merci_node_type} m ON nt.type = m.type WHERE m.type_setting != 'disabled'");
+  $result = db_query("SELECT nt.type,nt.name FROM {node_type} nt INNER JOIN {merci_node_type} m ON nt.type = m.type WHERE m.type_setting <> 'disabled'");
   $merci_types = array();
   while ($merci_type = db_fetch_object($result)) {
     $merci_types[$merci_type->type] = $merci_type->name;
@@ -226,7 +226,7 @@ function merci_permissions_settings_form_submit($form, &$form_state) {
             $revoke_perms = array_merge($perms, $revoke_perms);
           }
         }
-        else if (strstr('admin all reservations', $key)) {
+        elseif (strstr('admin all reservations', $key)) {
           foreach ($merci_types as $type => $name) {
             $perms[] = "edit own $type content";
             $perms[] = "delete own $type content";
@@ -240,7 +240,7 @@ function merci_permissions_settings_form_submit($form, &$form_state) {
             $revoke_perms = array_merge($perms, $revoke_perms);
           }
         }
-        else if (in_array($key, $merci_perms)) {
+        elseif (in_array($key, $merci_perms)) {
           if ($value) {
             $add_perms[] = $key;
           }
@@ -285,7 +285,7 @@ function merci_permissions_grant_permissions($role_name, $new_permissions) {
       }
       // rebuild the permission string
       $updated_permissions = join(', ', $permissions);
-      if(!empty($updated_permissions)){
+      if (!empty($updated_permissions)) {
         db_query("INSERT INTO {permission} (rid, perm, tid) VALUES(%d,'%s',%d)", $role->rid, $updated_permissions, 0);
       }
     }
