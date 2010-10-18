@@ -3776,7 +3776,7 @@ function merci_format_time($hours_minutes) {
 
 function merci_manage() {
   $output = 'Nothing to see here... yet';
-  print theme('page', $output);
+  return $output;
 }
 
 /**
@@ -3875,7 +3875,7 @@ function merci_current_inventory() {
   }
   //while
 
-  print theme('page', $output);
+  return $output;
 }
 
 /**
