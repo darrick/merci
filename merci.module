@@ -3850,12 +3850,16 @@ function merci_current_inventory() {
       $currentlyactive = merci_get_available_bucket_count($mercitype->type);
     }
     else {
-      // TOOD: Check if resource is available.
+      // TODO: Check if resource is available.
       
       $currentlyactive = merci_get_available_resource_count($mercitype->type);
     }
-
-    $output .= l($mercitype->type, 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'type[0]=' . $mercitype->type)) . ' (' . $currentlyout->total . '/' . $currentlyactive . '/' . ($currentlyactive - $currentlyout->total) . ')<br />';
+    // TODO: Check if the View exists... not the module that normally creates it.
+    if (module_exists('merci_inventory')) {
+      $output .= l($mercitype->type, 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'type[0]=' . $mercitype->type)) . ' (' . $currentlyout->total . '/' . $currentlyactive . '/' . ($currentlyactive - $currentlyout->total) . ')<br />';
+    }  else {
+      $output .= $mercitype->type . ' (' . $currentlyout->total . '/' . $currentlyactive . '/' . ($currentlyactive - $currentlyout->total) . ')<br />';
+    }
   }
   //while
 
