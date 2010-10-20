@@ -9,12 +9,13 @@
 /**
  * Implementation of hook_views_api().
  */
-function merci_ui_view_views_api() {
+function merci_ui_views_api() {
   return array(
     'api' => 2,
-    'path' => drupal_get_path('module', 'merci_ui_view'),
+    'path' => drupal_get_path('module', 'merci_ui'),
   );
 }
+
 
 /**
  * Implementation of hook_menu().
