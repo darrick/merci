@@ -1071,40 +1071,23 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
     // can reserve.
     if ($bucket->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($bucket->type)) {
 
-      // No filtering for new reservations.
-      if (isset($is_new)) {
+      // Check for available items in the bucket.
+      $available_bucket_items = merci_get_available_bucket_count($bucket->type, $start, $end, $reservation_nid) - $bucket->spare_items;
 
-        // Only add the bucket if there is at least one published item.
-        if (merci_check_existing_bucket_items($bucket->type, TRUE)) {
-          $bucket_options[$bucket->type] = $bucket->name;
-        }
-        // if
-      }
-      // if
-      else {
-
+      if(empty($is_new)){
         // Check bucket restrictions.
         // DIFF??
         $restrictions = merci_check_content_type_restrictions($bucket->type, $start, $end);
-
-        if (empty($restrictions)) {
-
-          // Check for available items in the bucket.
-          $available_bucket_items = merci_get_available_bucket_count($bucket->type, $start, $end, $reservation_nid) - $bucket->spare_items;
-
-          if ($available_bucket_items) {
-            $bucket_options[$bucket->type] = $bucket->name;
-            // Start building the array for all reservable items.
-            while ($available_bucket_items > 0) {
-              $total_flat_options[$bucket->type]++;
-              $available_bucket_items--;
-            }
-          }
-          // if
-        }
-        // if
       }
-      // else
+      if (empty($restrictions) and  $available_bucket_items) {
+          $bucket_options[$bucket->type] = $bucket->name;
+          // Start building the array for all reservable items.
+          while ($available_bucket_items > 0) {
+            $total_flat_options[$bucket->type]++;
+            $available_bucket_items--;
+          }
+      }
+      // if
     }
     // if
   }
