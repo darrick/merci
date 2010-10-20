@@ -819,10 +819,11 @@ function merci_admin_settings() {
   $message = t('MERCI uses several CCK fields. These fields are locked by default when modules are installed.  Altering or deleting these locked fields could cause serious problems.  Always backup before altering these fields!') . '<br /><br />';
   $field_state = db_fetch_object($result);
   if ($field_state->locked) {
-    $value = t('Core MERCI fields are currently locked.') . ' ' . l(t('Unlock them.'), 'admin/merci/unlock');
+    $value = t('Core MERCI fields are currently locked.') . ' ' . l(t('Unlock them.'), 'admin/merci/unlock',  array('query' => drupal_get_destination()));
+    
   } 
   else {
-    $value = t('Core MERCI fields are currently unlocked.') . ' ' . l(t('Lock them.'), 'admin/merci/lock');
+    $value = t('Core MERCI fields are currently unlocked.') . ' ' . l(t('Lock them.'), 'admin/merci/lock',  array('query' => drupal_get_destination()));
   }
   
   $form['merci_general']['merci_unlock'] = array(
@@ -3880,23 +3881,29 @@ function merci_content_extra_fields() {
 
 function merci_unlock() {
   db_query("UPDATE {content_node_field} SET locked = 0 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
-  
-  drupal_goto('admin/settings/merci');
+  $return = $_GET["destination"];
+  if(!$return){
+    $return = 'admin/settings/merci';
+  }
+  drupal_goto($return);
 }
 
 function merci_lock() {
   db_query("UPDATE {content_node_field} SET locked = 1 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
-  
-  drupal_goto('admin/settings/merci');
+  $return = $_GET["destination"];
+  if(!$return){
+    $return = 'admin/settings/merci';
+  }
+  drupal_goto($return);
 }
 
 /**
  * Implementation of hook_node_operations().
  */
-function merci_node_operations() {
+function merci_node_operations($return) {
   $operations = array(
     'merci_update' => array(
-      'label' => t('Confirm Reservation'),
+      'label' => t('Confirm Reservation(s)'),
       'callback' => 'merci_operations_update',
     ),
   );
