@@ -554,14 +554,14 @@ function merci_menu() {
     'weight' => -19,
   );
 
-  $items['admin/merci/manage/default'] = array(
-    'title' => 'Overview',
-    'description' => 'Dashboard of options to Manage MERCI',
-    'page arguments' => array(2),
-    'page callback' => 'merci_manage',
-    'access arguments' => array('manage MERCI'),
-    'type' => MENU_NORMAL_ITEM,
-  );
+  // $items['admin/merci/manage/default'] = array(
+//     'title' => 'Overview',
+//     'description' => 'Dashboard of options to Manage MERCI',
+//     'page arguments' => array(2),
+//     'page callback' => 'merci_manage',
+//     'access arguments' => array('manage MERCI'),
+//     'type' => MENU_NORMAL_ITEM,
+//   );
 
   $items['admin/merci/manage/current-inventory'] = array(
     'title' => 'Current Inventory',
