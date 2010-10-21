@@ -1931,6 +1931,7 @@ function merci_add_reservation_items($node) {
 
   //print 'subtotal: '.  $commercial_total . '<br />';
   // New items.
+  $exempt_items = array();
   foreach ($node->choice as $num => $choice) {
 
     //Add to commerical rate
@@ -1957,7 +1958,8 @@ function merci_add_reservation_items($node) {
         $date_info = $node->field_merci_date[0];
         $start     = $date_info['value'];
         $end       = $date_info['value2'];
-        $item_nid = merci_get_suggested_bucket_item($type, $start, $end);
+        $item_nid = merci_get_suggested_bucket_item($type, $start, $end,$exempt_items);
+        $exempt_items[] = $item_nid;
         $item_node = node_load($item_nid);
         $item_status = MERCI_ITEM_STATUS_RESERVED;
       } 
@@ -2277,7 +2279,7 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
 
   return $options;
 }
-function merci_get_suggested_bucket_item($content_type, $start = NULL, $end = NULL, $reservation = NULL) {
+function merci_get_suggested_bucket_item($content_type, $start = NULL, $end = NULL, $items = array()) {
   //if there are no dates, return the active total
   
 
@@ -2430,7 +2432,7 @@ function merci_get_suggested_bucket_item($content_type, $start = NULL, $end = NU
   }
 
   foreach ($total_items_array as $item_nid => $node) {
-    if (empty($total_items_array[$item_nid])) {
+    if (empty($total_items_array[$item_nid]) and !in_array($item_nid,$items)) {
       return $item_nid;
     }
 
