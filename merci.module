@@ -3906,7 +3906,7 @@ function merci_lock() {
 /**
  * Implementation of hook_node_operations().
  */
-function merci_node_operations($return) {
+function merci_node_operations($return=null) {
   $operations = array(
     'merci_update' => array(
       'label' => t('Confirm Reservation(s)'),
