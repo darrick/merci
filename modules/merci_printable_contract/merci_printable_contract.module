@@ -114,14 +114,14 @@ function merci_printable_contract($node_id) {
 
   $items = $node->merci['reservation_items'];
 
-  // We want these timestamps generated in UTC.
-  $old_timezone = date_default_timezone_get();
-  date_default_timezone_set('UTC');
-  $starthour = strtotime($node->field_merci_date[0]['value']);
-  $endhour = strtotime($node->field_merci_date[0]['value2']);
-  date_default_timezone_set($old_timezone);
+  $timezone = $node->field_merci_date[0]['timezone'];
+  $timezone_db = $node->field_merci_date[0]['timezone_db'];
+  $start_date = date_make_date($node->field_merci_date[0]['value'], $timezone_db);
+  $end_date = date_make_date($node->field_merci_date[0]['value2'], $timezone_db);
+  date_timezone_set($start_date, timezone_open($timezone));
+  date_timezone_set($end_date, timezone_open($timezone));
 
-  $hours = round(($endhour - $starthour) / 3600, 2);
+  $hours = round((intval(date_format($end_date,"U")) - intval(date_format($start_date,"U"))) / 3600, 2);
   $logo = theme_get_setting('logo_path', '');
 
   ?>
@@ -144,8 +144,8 @@ function merci_printable_contract($node_id) {
           print variable_get('merci_contract_header');
         }
         ?>
-        Start: <?php print date("F j, Y", $starthour) . ' ' . merci_format_time($starthour) .'<br />'; ?>
-        Returned by: <?php print date("F j, Y", $endhour) . ' ' . merci_format_time($endhour) .'<br />'; ?>
+        Start: <?php print date_format_date($start_date,"long") . '<br />'; ?>
+        Returned by: <?php print date_format_date($end_date,"long") . '<br />'; ?>
         Name: <?php print $username ?><br />
         Email: <?php print $email ?><br />
         Phone: <?php print $phone ?><br />
