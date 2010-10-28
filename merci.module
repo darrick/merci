@@ -1021,6 +1021,65 @@ function _merci_choice_form($node, $form_state, $delta, $default = '') {
   return $form;
 }
 
+function merci_get_user_reservable_nodes($type=null) {
+
+  $reservable_nodes = array();
+
+  if($type == 'bucket'){
+    $bucket = true;
+  } elseif ($type == 'resource'){
+    $resource = 'true';
+  } else {
+    $bucket = true;
+    $resource = 'true';
+  }
+
+  if($bucket) {
+    // Buckets.
+    $buckets = merci_load_merci_type_settings('bucket');
+
+    // Loop through each bucket type.
+    while ($bucket = db_fetch_object($buckets)) {
+
+      // Only include active buckets, and content types the user
+      // can reserve.
+      if ($bucket->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($bucket->type)) {
+
+        // Get all assignable nodes for this bucket item.
+        $bucket_nodes = db_query("SELECT n.title, n.nid FROM {node} n INNER JOIN {merci_bucket_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.sub_type = %d AND m.default_availability IN (%d, %d)", $bucket->type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_S);
+
+        // Use up items for assigned nodes.
+        while ($node = db_fetch_object($bucket_nodes)) {
+          // If item is assigned then item is in use by this node.
+          $reservable_nodes[$node->nid] = $node->title;
+        }
+      }
+      // if
+    }
+    // while
+  }
+
+  if ($resource) { 
+    // Resources.
+    $resources = merci_load_merci_type_settings('resource');
+
+    // Loop through each resource type.
+    while ($resource = db_fetch_object($resources)) {
+      // Only include active resources, and content types the user can reserve.
+      if ($resource->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($resource->type)) {
+
+        // Filter out any placeholder nodes for this resource.
+        $items = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.sub_type = %d ORDER BY n.title", 'n', 'nid'), $resource->type, 1, MERCI_SUB_TYPE_ITEM);
+
+        while ($item = db_fetch_object($items)) {
+          $reservable_nodes[$item->nid] = $item->title;
+        }
+        // while
+      }
+    }
+  }
+  return $reservable_nodes;
+}
 /**
  * Builds the list of all currently reservable items, filtered by date.
  *
