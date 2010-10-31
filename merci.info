@@ -3,20 +3,33 @@ name = MERCI
 package = MERCI
 description = "Managed Equipment Reservation Checkout and Inventory"
 
-core = 6.x
+core = 7.x
 
-dependencies[] = content
+; dependencies[] = content
 dependencies[] = number 
 dependencies[] = date
 dependencies[] = date_api
 dependencies[] = date_popup
-dependencies[] = date_timezone
+; dependencies[] = date_timezone
 dependencies[] = views
 dependencies[] = taxonomy
 
 ; Information added by drupal.org packaging script on 2010-03-01
 version = "6.x-1.x-dev"
-core = "6.x"
+core = 7.x
 project = "merci"
 datestamp = "1267445496"
 
+
+files[] = merci.install
+files[] = merci.module
+files[] = merci.views.inc
+files[] = handlers/merci_handler_field.inc
+files[] = handlers/merci_handler_filter_in_operator.inc
+files[] = handlers/views_handler_field_date.inc
+files[] = handlers/views_handler_field_item_node_nid.inc
+files[] = handlers/views_handler_filter_boolean_operator.inc
+files[] = handlers/views_handler_filter_date.inc
+files[] = import/merci_import.php
+files[] = includes/merci.admin.inc
+files[] = templates/merci_reservation_table.tpl.php

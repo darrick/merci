@@ -3,12 +3,17 @@
 name = MERCI Inventory
 package = MERCI
 description = "Applies inventory fields to MERCI resources"
-core = 6.x
+core = 7.x
 dependencies[] = merci
 dependencies[] = content_copy
 ; Information added by drupal.org packaging script on 2009-11-24
 version = "6.x-1.x-dev"
-core = "6.x"
+core = 7.x
 project = "merci"
 datestamp = "1259021537"
 
+
+files[] = merci_inventory.install
+files[] = merci_inventory.module
+files[] = content_types/content_types.inc
+files[] = content_types/merci_inventory_master_content_type.inc

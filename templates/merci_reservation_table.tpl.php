@@ -46,22 +46,19 @@ foreach ($reservations as $date => $times) {
         ?>
             <td class="<?php print $class; ?>"></td>
             <?php
-        $time = date('H:i', strtotime($time .' +15 minutes'));
-      }
       // while
-
+      $time = date('H:i', strtotime($time .' +15 minutes')); }
       ?>
         </tr>
         <?php
-    }
     // for
-
+}
     ?>
       </tbody>
     </table>
     <?php
-  }
   // if
+}
 }
 // foreach
 

@@ -8,138 +8,140 @@
  */
 
 /**
- * Implementation of hook_install().
+ * Implements hook_install().
  */
 function merci_rro_install() {
 
-  drupal_install_schema('merci_rro');
+  // TODO The drupal_(un)install_schema functions are called automatically in D7.
+  // drupal_install_schema('merci_rro')
 }
 // merci_rro_install
 
 /**
- * Implementation of hook_uninstall().
+ * Implements hook_uninstall().
  */
 function merci_rro_uninstall() {
 
-  drupal_uninstall_schema('merci_rro');
+  // TODO The drupal_(un)install_schema functions are called automatically in D7.
+  // drupal_uninstall_schema('merci_rro')
 }
 // merci_rro_uninstall
 
 /**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
 function merci_rro_schema() {
 
   $schema = array();
 
   $schema['merci_rro'] = array(
-    'description' => t('Stores role rule overrides for content types.'),
+    'description' => 'Stores role rule overrides for content types.',
     'fields' => array(
       'rid' => array(
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('Foreign key for {role}.rid.'),
+        'description' => 'Foreign key for {role}.rid.',
       ),
       'type' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-        'description' => t('Foreign key for {node_type}.type.'),
+        'description' => 'Foreign key for {node_type}.type.',
       ),
       'max_hours_per_reservation' => array(
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('The maximum hours that the resource can be reserved for.'),
+        'description' => 'The maximum hours that the resource can be reserved for.',
       ),
       'allow_overnight' => array(
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('TRUE if the resource can be kept overnight.'),
+        'description' => 'TRUE if the resource can be kept overnight.',
       ),
       'allow_weekends' => array(
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('TRUE if the resource can be kept over weekends.'),
+        'description' => 'TRUE if the resource can be kept over weekends.',
       ),
       'late_fee_per_hour' => array(
         'type' => 'float',
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('Per hour fee if the resource is returned late.'),
+        'description' => 'Per hour fee if the resource is returned late.',
       ),
       'rate_per_hour' => array(
         'type' => 'float',
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('Per hour fee for use of the resource.'),
+        'description' => 'Per hour fee for use of the resource.',
       ),
       'fee_free_hours' => array(
         'type' => 'float',
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('Number of hours the item can be used before fees are charged.'),
+        'description' => 'Number of hours the item can be used before fees are charged.',
       ),
       'min_cancel_hours' => array(
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('Minimum number of hours a user can cancel a reservation for the item.'),
+        'description' => 'Minimum number of hours a user can cancel a reservation for the item.',
       ),
       'hours_mon' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-        'description' => t('Monday hours'),
+        'description' => 'Monday hours',
       ),
       'hours_tue' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-        'description' => t('Tuesday hours'),
+        'description' => 'Tuesday hours',
       ),
       'hours_wed' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-        'description' => t('Wednesday hours'),
+        'description' => 'Wednesday hours',
       ),
       'hours_thu' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-        'description' => t('Thursday hours'),
+        'description' => 'Thursday hours',
       ),
       'hours_fri' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-        'description' => t('Friday hours'),
+        'description' => 'Friday hours',
       ),
       'hours_sat' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-        'description' => t('Saturday hours'),
+        'description' => 'Saturday hours',
       ),
       'hours_sun' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-        'description' => t('Sunday hours'),
+        'description' => 'Sunday hours',
       ),
     ),
   );

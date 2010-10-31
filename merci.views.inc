@@ -8,7 +8,7 @@
  */
 
 /**
- * Implementation of hook_views_data().
+ * Implements hook_views_data().
  */
 function merci_views_data() {
   $data = array();

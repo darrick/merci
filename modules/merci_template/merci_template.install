@@ -8,13 +8,17 @@
  */
 
 /**
- * Implementation of hook_disable().
+ * Implements hook_disable().
  */
 function merci_template_disable() {
 
   // Delete all merci_reservation_template nodes
 
-  db_query("DELETE FROM {node} WHERE type = 'merci_reservation_template'");
+  // TODO Please review the conversion of this statement to the D7 database API syntax.
+  /* db_query("DELETE FROM {node} WHERE type = 'merci_reservation_template'") */
+  db_delete('node')
+  ->condition('type', 'merci_reservation_template')
+  ->execute();
 
   // Delete the merci_reservation_template content type
 

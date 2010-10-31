@@ -2,8 +2,11 @@ name = MERCI Calendar View
 package = MERCI
 description = "Provides a calendar based view for reservations"
 
-core = 6.x
+core = 7.x
 
 dependencies[] = merci
 dependencies[] = calendar 
 
+
+files[] = merci_calendar_view.module
+files[] = merci_calendar_view.views_default.inc

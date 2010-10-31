@@ -6,9 +6,8 @@
  * merci calendar view default views 
  */
 
-
 /**
- * Implementation of hook_views_default_views().
+ * Implements hook_views_default_views().
  */
 function merci_calendar_view_views_default_views() {
 
@@ -24,7 +23,8 @@ function merci_calendar_view_views_default_views() {
   $view->base_table = 'node';
   $view->is_cacheable = FALSE;
   $view->api_version = 2;
-  $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+  /* Edit this to true to make a default view disabled initially */
+  $view->disabled = FALSE;
   $handler = $view->new_display('default', 'Default', 'default');
   $handler->override_option('fields', array(
     'title' => array(

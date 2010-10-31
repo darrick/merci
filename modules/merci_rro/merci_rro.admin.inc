@@ -28,7 +28,7 @@ function merci_rro_admin_page($type_name = NULL) {
 
       foreach ($overrides as $override) {
 
-        $html .= theme('merci_rro_override', $override);
+        $html .= theme('merci_rro_override', array('override' => $override));
         $exclude_roles[] = $override->rid;
       }
       // foreach
@@ -48,7 +48,11 @@ function merci_rro_admin_page($type_name = NULL) {
   return $html;
 }
 // merci_rro_admin_page
-function merci_rro_override_delete(&$form_state, $type_name, $rid) {
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function merci_rro_override_delete($form, &$form_state, $type_name, $rid) {
 
   $role = merci_rro_role_name_from_rid($rid);
   $form = array();
@@ -64,16 +68,26 @@ function merci_rro_override_delete(&$form_state, $type_name, $rid) {
 
   $form['merci_rro_sure'] = array(
     '#type' => 'markup',
-    '#value' => '<p>'. t('Are you sure you want to delete the override for role ') .'<i>'. check_plain($role) .'</i>'. t(' on type ') .'<i>'. check_plain($type_name) .'</i>?</p>',
+    '#value' => '<p>' . t('Are you sure you want to delete the override for role ') . '<i>' . check_plain($role) . '</i>' . t(' on type ') . '<i>' . check_plain($type_name) . '</i>?</p>',
   );
 
-  $form['merci_rro_yes'] = array('#type' => 'submit', '#value' => t('Delete'));
-  $form['merci_rro_no'] = array('#type' => 'submit', '#value' => t('Cancel'));
+  $form['merci_rro_yes'] = array(
+    '#type' => 'submit',
+    '#value' => t('Delete'),
+  );
+  $form['merci_rro_no'] = array(
+    '#type' => 'submit',
+    '#value' => t('Cancel'),
+  );
   $form['#submit'] = array('merci_rro_delete_submit');
 
   return $form;
 }
 // merci_rro_override_delete
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_rro_delete_submit($form_id, $form_values) {
 
   $values = $form_values['values'];
@@ -82,12 +96,21 @@ function merci_rro_delete_submit($form_id, $form_values) {
   WHERE rid = %d
   AND type = '%s'";
 
-  db_query($sql, $values['merci_rro_rid'], $values['merci_rro_type']);
+  // TODO Please review the conversion of this statement to the D7 database API syntax.
+  /* db_query($sql, $values['merci_rro_rid'], $values['merci_rro_type']) */
+  db_delete('merci_rro')
+  ->condition('rid', $values['merci_rro_rid'])
+  ->condition('type', $values['merci_rro_type'])
+  ->execute();
 
   drupal_set_message(t('Override deleted for @role', array('@role' => merci_rro_role_name_from_rid($values['merci_rro_rid']))));
 }
 // merci_rro_delete_submit
-function merci_rro_add_new_override(&$form_state, $type_name, $exclude_roles) {
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function merci_rro_add_new_override($form, &$form_state, $type_name, $exclude_roles) {
 
   $form = array();
   $roles = user_roles();
@@ -221,12 +244,19 @@ function merci_rro_add_new_override(&$form_state, $type_name, $exclude_roles) {
     '#description' => $hours_description,
   );
 
-  $form['merci_rro_submit'] = array('#type' => 'submit', '#value' => t('Add'));
+  $form['merci_rro_submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add'),
+  );
   $form['#submit'] = array('merci_rro_new_submit');
 
   return $form;
 }
 // merci_rro_add_new_override
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_rro_new_submit($form_id, $form_values) {
 
   $values = $form_values['values'];
@@ -250,14 +280,28 @@ function merci_rro_new_submit($form_id, $form_values) {
     '%s'
   )";
 
-  db_query($sql,
-    $values['merci_rro_roles'], $values['merci_rro_type'], $values['merci_rro_max_hours_per_reservation'],
-    $values['merci_rro_allow_overnight'], $values['merci_rro_allow_weekends'], $values['merci_rro_rate_per_hour'],
-    $values['merci_rro_late_fee_per_hour'], $values['merci_rro_fee_free_hours'], $values['merci_rro_min_cancel_hours'],
-    $values['merci_hours_mon'], $values['merci_hours_tue'], $values['merci_hours_wed'],
-    $values['merci_hours_thu'], $values['merci_hours_fri'], $values['merci_hours_sat'],
-    $values['merci_hours_sun']
-  );
+  // TODO Please review the conversion of this statement to the D7 database API syntax.
+  /* db_query($sql, $values['merci_rro_roles'], $values['merci_rro_type'], $values['merci_rro_max_hours_per_reservation'], $values['merci_rro_allow_overnight'], $values['merci_rro_allow_weekends'], $values['merci_rro_rate_per_hour'], $values['merci_rro_late_fee_per_hour'], $values['merci_rro_fee_free_hours'], $values['merci_rro_min_cancel_hours'], $values['merci_hours_mon'], $values['merci_hours_tue'], $values['merci_hours_wed'], $values['merci_hours_thu'], $values['merci_hours_fri'], $values['merci_hours_sat'], $values['merci_hours_sun']) */
+  $id = db_insert('merci_rro')
+  ->fields(array(
+    '     rid' => $values['merci_rro_roles'],
+    'type' => $values['merci_rro_type'],
+    'max_hours_per_reservation' => $values['merci_rro_max_hours_per_reservation'],
+    'allow_overnight' => $values['merci_rro_allow_overnight'],
+    'allow_weekends' => $values['merci_rro_allow_weekends'],
+    'late_fee_per_hour' => $values['merci_rro_rate_per_hour'],
+    'rate_per_hour' => $values['merci_rro_late_fee_per_hour'],
+    'fee_free_hours' => $values['merci_rro_fee_free_hours'],
+    'min_cancel_hours' => $values['merci_rro_min_cancel_hours'],
+    'hours_mon' => $values['merci_hours_mon'],
+    'hours_tue' => $values['merci_hours_tue'],
+    'hours_wed' => $values['merci_hours_wed'],
+    'hours_thu' => $values['merci_hours_thu'],
+    'hours_fri' => $values['merci_hours_fri'],
+    'hours_sat' => $values['merci_hours_sat'],
+    'hours_sun   ' => $values['merci_hours_sun'],
+  ))
+  ->execute();
 
   drupal_set_message(t('Override added for @role', array('@role' => merci_rro_role_name_from_rid($values['merci_rro_rid']))));
 }

@@ -2,8 +2,10 @@ name = MERCI UI
 package = MERCI
 description = "Adds tabs to user, resources, and buckets that are compatible with om_navigation."
 
-core = 6.x
+core = 7.x
 
 dependencies[] = merci
-dependencies[] = views_bulk_operations
 
+
+files[] = merci_ui.module
+files[] = merci_ui_view.views_default.inc

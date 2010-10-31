@@ -8,17 +8,17 @@
  */
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function merci_rro_menu() {
 
   $items = array();
 
-  foreach (array_keys(node_get_types()) as $type_name) {
+  foreach (array_keys(node_type_get_types()) as $type_name) {
 
     $type_url_str = str_replace('_', '-', $type_name);
 
-    $items['admin/content/node-type/'. $type_url_str .'/merci_rro'] = array(
+    $items['admin/content/node-type/' . $type_url_str . '/merci_rro'] = array(
       'title' => 'MERCI Role Rule Overrides',
       'page callback' => 'merci_rro_admin_page',
       'page arguments' => array($type_name),
@@ -34,6 +34,10 @@ function merci_rro_menu() {
   return $items;
 }
 // merci_rro_menu
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_rro_node_type_menu_access($type_name) {
 
   $merci_settings = merci_load_content_type_settings($type_name);
@@ -60,7 +64,7 @@ function merci_rro_content_type_overrides($content_type, $cache = TRUE) {
 
     $overrides[$content_type] = array();
 
-    $result = db_query("SELECT * FROM {merci_rro} WHERE type = '%s'", $content_type);
+    $result = db_query("SELECT * FROM {merci_rro} WHERE type = :type", array(':type' => $content_type));
 
     while ($override = db_fetch_object($result)) {
 
@@ -78,13 +82,13 @@ function merci_rro_content_type_overrides($content_type, $cache = TRUE) {
 // merci_rro_content_type_overrides
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
  */
 function merci_rro_theme($existing, $type, $theme, $path) {
 
   return array(
     'merci_rro_override' => array(
-      'arguments' => array('override' => NULL),
+      'variables' => array('override' => NULL),
     ),
   );
 }
@@ -93,32 +97,33 @@ function merci_rro_theme($existing, $type, $theme, $path) {
 /**
  * Theme an override object
  */
-function theme_merci_rro_override($override) {
+function theme_merci_rro_override($variables) {
+  $override = $variables['override'];
 
   $role = merci_rro_role_name_from_rid($override->rid);
 
   $html = '<div class="merci-rro-override">
-    <h3 class="fn">'. check_plain($role) .'</h3>
+    <h3 class="fn">' . check_plain($role) . '</h3>
     <ul>
-      <li><b>'. t('Maximum hours per reservation:') .'</b> <span class="value">'. $override->max_hours_per_reservation .'</span></li>
-      <li><b>'. t('Allow overnight reservation:') .'</b> <span class="value">'. (($override->allow_overnight == 1) ? 'Yes' : 'No') .'</span></li>
-      <li><b>'. t('Allow weekend reservation:') .'</b> <span class="value">'. (($override->allow_weekends == 1) ? 'Yes' : 'No') .'</span></li>
-      <li><b>'. t('Rate per hour:') .'</b> <span class="value">'. $override->rate_per_hour .'</span></li>
-      <li><b>'. t('Late fee per hour:') .'</b> <span class="value">'. $override->late_fee_per_hour .'</span></li>
-      <li><b>'. t('Fee free hours:') .'</b> <span class="value">'. $override->fee_free_hours .'</span></li>
-      <li><b>'. t('Minimum hours for cancelation without No Show:') .'</b> <span class="value">'. $override->min_cancel_hours .'</span></li>
-      <li><b>'. t('Monday Hours:') .'</b> <span class="value">'. $override->hours_mon .'</span></li>
-      <li><b>'. t('Tuesday Hours:') .'</b> <span class="value">'. $override->hours_tue .'</span></li>
-      <li><b>'. t('Wednesday Hours:') .'</b> <span class="value">'. $override->hours_wed .'</span></li>
-      <li><b>'. t('Thursday Hours:') .'</b> <span class="value">'. $override->hours_thu .'</span></li>
-      <li><b>'. t('Friday Hours:') .'</b> <span class="value">'. $override->hours_fri .'</span></li>
-      <li><b>'. t('Saturday Hours:') .'</b> <span class="value">'. $override->hours_sat .'</span></li>
-      <li><b>'. t('Sunday Hours:') .'</b> <span class="value">'. $override->hours_sun .'</span></li>
+      <li><b>' . t('Maximum hours per reservation:') . '</b> <span class="value">' . $override->max_hours_per_reservation . '</span></li>
+      <li><b>' . t('Allow overnight reservation:') . '</b> <span class="value">' . (($override->allow_overnight == 1) ? 'Yes' : 'No') . '</span></li>
+      <li><b>' . t('Allow weekend reservation:') . '</b> <span class="value">' . (($override->allow_weekends == 1) ? 'Yes' : 'No') . '</span></li>
+      <li><b>' . t('Rate per hour:') . '</b> <span class="value">' . $override->rate_per_hour . '</span></li>
+      <li><b>' . t('Late fee per hour:') . '</b> <span class="value">' . $override->late_fee_per_hour . '</span></li>
+      <li><b>' . t('Fee free hours:') . '</b> <span class="value">' . $override->fee_free_hours . '</span></li>
+      <li><b>' . t('Minimum hours for cancelation without No Show:') . '</b> <span class="value">' . $override->min_cancel_hours . '</span></li>
+      <li><b>' . t('Monday Hours:') . '</b> <span class="value">' . $override->hours_mon . '</span></li>
+      <li><b>' . t('Tuesday Hours:') . '</b> <span class="value">' . $override->hours_tue . '</span></li>
+      <li><b>' . t('Wednesday Hours:') . '</b> <span class="value">' . $override->hours_wed . '</span></li>
+      <li><b>' . t('Thursday Hours:') . '</b> <span class="value">' . $override->hours_thu . '</span></li>
+      <li><b>' . t('Friday Hours:') . '</b> <span class="value">' . $override->hours_fri . '</span></li>
+      <li><b>' . t('Saturday Hours:') . '</b> <span class="value">' . $override->hours_sat . '</span></li>
+      <li><b>' . t('Sunday Hours:') . '</b> <span class="value">' . $override->hours_sun . '</span></li>
     </ul>';
 
   if (user_access('administer MERCI')) {
 
-    $html .= '<p><a href="'. base_path() .'admin/content/node-type/'. $override->type .'/merci_rro?delete='. $override->rid .'">Remove</a></p>';
+    $html .= '<p><a href="' . base_path() . 'admin/content/node-type/' . $override->type . '/merci_rro?delete=' . $override->rid . '">Remove</a></p>';
   }
   // if
 
@@ -127,6 +132,10 @@ function theme_merci_rro_override($override) {
   return $html;
 }
 // theme_merci_rro_override
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_rro_role_name_from_rid($rid, $cache = TRUE) {
 
   static $roles;
@@ -142,7 +151,7 @@ function merci_rro_role_name_from_rid($rid, $cache = TRUE) {
 // merci_rro_role_name_from_rid
 
 /**
- * Implementation of hook_merci_rules_alter().
+ * Implements hook_merci_rules_alter().
  */
 function merci_rro_merci_rules_alter(&$rules) {
 
@@ -176,6 +185,10 @@ function merci_rro_merci_rules_alter(&$rules) {
   // foreach
 }
 // merci_rro_merci_rules_alter
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_rro_determine_best_value($rule_type, $a, $b) {
 
   switch ($rule_type) {

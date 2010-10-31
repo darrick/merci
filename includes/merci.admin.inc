@@ -9,7 +9,7 @@
 /**
  * Builds the MERCI admininstration settings form.
  */
-function merci_admin_settings() {
+function merci_admin_settings($form, &$form_state) {
   $form = array();
 
   $statuses = array();
@@ -29,28 +29,28 @@ function merci_admin_settings() {
   $rows = array();
 
   $merci_types = array();
-  $merci_type_result = db_query("SELECT type, type_setting FROM {merci_node_type} WHERE type_setting = 'resource' OR  type_setting = 'bucket'");
+  $merci_type_result = db_query("SELECT type, type_setting FROM {merci_node_type} WHERE type_setting = :type_setting OR  type_setting = :type_setting", array(':type_setting' => 'resource', ':type_setting' => 'bucket'));
 
   while ($merci_type = db_fetch_object($merci_type_result)) {
     $merci_types[$merci_type->type] = $merci_type->type_setting;
   }
   // while
 
-  foreach (node_get_types() as $type) {
+  foreach (node_type_get_types() as $type) {
 
     $type_url_str = str_replace('_', '-', $type->type);
 
     $usage = t('Not used by MERCI');
     if (isset($merci_types[$type->type])) {
-      $usage = 'MERCI '. $merci_types[$type->type];
+      $usage = 'MERCI ' . $merci_types[$type->type];
     }
     // if
 
-    $operations = l(t('Edit'), 'admin/content/node-type/'. $type_url_str, array('query' => drupal_get_destination()));
+    $operations = l(t('Edit'), 'admin/content/node-type/' . $type_url_str, array('query' => drupal_get_destination()));
 
     if (module_exists('merci_inventory') && merci_inventory_node_type_menu_access($type->type)) {
 
-      $operations .= ' | '. l(t('Inventory Sync'), 'admin/content/node-type/'. $type_url_str .'/merci_inventory', array('query' => drupal_get_destination()));
+      $operations .= ' | ' . l(t('Inventory Sync'), 'admin/content/node-type/' . $type_url_str . '/merci_inventory', array('query' => drupal_get_destination()));
     }
     // if
 
@@ -63,7 +63,7 @@ function merci_admin_settings() {
   // foreach
 
   $form['merci_content_types']['content_types_table'] = array(
-    '#value' => theme('table', $header, $rows),
+    '#value' => theme('table', array('header' => $header, 'rows' => $rows)),
   );
 
   $form['merci_general'] = array(
@@ -91,7 +91,7 @@ function merci_admin_settings() {
   );
 
   /*
-$form['merci_general']['merci_email_receipt'] = array(
+   $form['merci_general']['merci_email_receipt'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send Email Receipt'),
     '#default_value' => variable_get('merci_email_receipt', 0),
@@ -104,7 +104,8 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#default_value' => variable_get('merci_email_confirmation', 0),
     '#description' => t('Add link to change reservations from Unconfirmed to Confirmed'),
   );
-*/
+   */
+
 
 
   // Weekend became push in 2.x
@@ -272,6 +273,7 @@ $form['merci_general']['merci_email_receipt'] = array(
       '#collapsed' => TRUE,
     );
 
+    // TODO Please change this theme call to use an associative array for the $variables parameter.
     $form['merci_general']['token_help']['help'] = array(
       '#value' => theme('token_help', 'node'),
     );

@@ -7,18 +7,17 @@
  */
 
 /**
- * Implementation of hook_views_api().
+ * Implements hook_views_api().
  */
-function merci_ui_views_api() {
+function merci_ui_view_views_api() {
   return array(
     'api' => 2,
-    'path' => drupal_get_path('module', 'merci_ui'),
+    'path' => drupal_get_path('module', 'merci_ui_view'),
   );
 }
 
-
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function merci_ui_menu() {
 
@@ -86,6 +85,10 @@ function merci_ui_om_navigation_items($context) {
   return $items;
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_ui_my_reservations_tab_access($context) {
   global $user;
 
@@ -97,6 +100,10 @@ function merci_ui_my_reservations_tab_access($context) {
   }
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_ui_user_reservations_tab_access($context) {
   global $user;
 
@@ -113,24 +120,38 @@ function merci_ui_user_reservations_tab_access($context) {
   }
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_ui_my_reservations_tab($user) {
 
   $view                = views_get_view('merci_my_reservations', 'default');
   $view->override_path = implode("/", arg());
   $output              = $view->preview();
 
-  print theme('page', $output);
+  // TODO Please change this theme call as discussed at http://drupal.org/node/224333#theme_page.
+  // print theme('page', $output);
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_ui_user_reservations_tab($user) {
 
   $view                = views_get_view('merci_my_reservations', 'default');
   $view->override_path = implode("/", arg());
   $output              = $view->preview();
 
-  print theme('page', $output);
+  // TODO Please change this theme call as discussed at http://drupal.org/node/224333#theme_page.
+  // print theme('page', $output);
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_ui_list_reservations_access($node) {
 
   $merci_settings = merci_load_content_type_settings($node->type);
@@ -153,6 +174,10 @@ function merci_ui_list_reservations_access($node) {
   //end if node is not a bucket or resource
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_ui_list_reservations($node, $start, $end) {
 
   // Determine CCK table and columns the date data is stored in.
@@ -167,37 +192,40 @@ function merci_ui_list_reservations($node, $start, $end) {
 
     $start_mysql = date('Y-m-d', $start);
     $end_mysql   = date('Y-m-d', $end);
+    // TODO Please convert this statement to the D7 database API syntax.
     $result      = db_query("SELECT * FROM {merci_reservation_detail} 
       JOIN {node} ON merci_reservation_detail.nid = node.nid 
-      JOIN {". $table ."} ct ON merci_reservation_detail.nid = ct.nid 
+      JOIN {" . $table . "} ct ON merci_reservation_detail.nid = ct.nid
       WHERE item_nid = %d AND $column_start_date < '%s' AND $column_start_date > '%s' 
       ORDER BY $column_start_date DESC", $node->nid, $start_mysql, $end_mysql);
 
-    $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
+    $output .= '<b>' . l(t('Upcoming Reservations'), '/node/' . $node->nid . '/reservations/') . ' | ' . t('Previous Reservations') . '</b><br />';
   }
   elseif ($start) {
     $start_mysql = date('Y-m-d', $start);
+    // TODO Please convert this statement to the D7 database API syntax.
     $result = db_query("SELECT * FROM {merci_reservation_detail} 
       JOIN {node} ON merci_reservation_detail.nid = node.nid 
-      JOIN {". $table ."} ct ON merci_reservation_detail.nid = ct.nid 
+      JOIN {" . $table . "} ct ON merci_reservation_detail.nid = ct.nid
       WHERE item_nid = %d AND $column_start_date < '%s' 
       ORDER BY $column_start_date DESC", $node->nid, $start_mysql);
 
-    $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
+    $output .= '<b>' . l(t('Upcoming Reservations'), '/node/' . $node->nid . '/reservations/') . ' | ' . t('Previous Reservations') . '</b><br />';
   }
   else {
+    // TODO Please convert this statement to the D7 database API syntax.
     $result = db_query("SELECT * FROM {merci_reservation_detail} 
       JOIN {node} ON merci_reservation_detail.nid = node.nid 
-      JOIN {". $table ."} ct ON merci_reservation_detail.nid = ct.nid 
+      JOIN {" . $table . "} ct ON merci_reservation_detail.nid = ct.nid
       WHERE item_nid = %d AND $column_start_date > NOW() ORDER BY $column_start_date", $node->nid);
 
-    $output .= '<b>'. t('Upcoming Reservations') .' | '. l(t('Previous Reservations'), '/node/'. $node->nid .'/reservations/'. strtotime('now') .'/'. strtotime('- 3 months')) .'</b><br />';
+    $output .= '<b>' . t('Upcoming Reservations') . ' | ' . l(t('Previous Reservations'), '/node/' . $node->nid . '/reservations/' . strtotime('now') . '/' . strtotime('- 3 months')) . '</b><br />';
   }
 
   while ($reservationnode = db_fetch_object($result)) {
 
     // TODO use $column_start_date instead of field_merci_date_value
-    $output .= l($reservationnode->title, '/node/'. $reservationnode->nid) .' reserved from '. format_date(strtotime($reservationnode->field_merci_date_value), $type = 'medium') .' '. format_date(strtotime($reservationnode->field_merci_date_value2), $type = 'medium') .'</a><br />';
+    $output .= l($reservationnode->title, '/node/' . $reservationnode->nid) . ' reserved from ' . format_date(strtotime($reservationnode->field_merci_date_value), $type = 'medium') . ' ' . format_date(strtotime($reservationnode->field_merci_date_value2), $type = 'medium') . '</a><br />';
     $count++;
   }
 
@@ -205,6 +233,7 @@ function merci_ui_list_reservations($node, $start, $end) {
     $output .= 'No reservations have been made for this item.';
   }
 
-  print theme('page', $output);
+  // TODO Please change this theme call as discussed at http://drupal.org/node/224333#theme_page.
+  // print theme('page', $output);
 }
 

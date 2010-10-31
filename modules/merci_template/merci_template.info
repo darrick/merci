@@ -2,8 +2,11 @@ name = MERCI Template
 package = MERCI
 description = "Allows the resuse of previous reservation to prepopulate MERCI"
 
-core = 6.x
+core = 7.x
 
 dependencies[] = merci
 dependencies[] = draft
 
+
+files[] = merci_template.install
+files[] = merci_template.module

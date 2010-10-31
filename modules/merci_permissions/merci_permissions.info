@@ -2,13 +2,15 @@
 name = "MERCI Permissions"
 package = MERCI
 description = "Administration form to more easily manage reservation permissions for MERCI."
-core = 6.x
+core = 7.x
 dependencies[] = merci 
 project = "merci"
 
 ; Information added by drupal.org packaging script on 2009-11-10
 version = "6.x-1.x-dev"
-core = "6.x"
+core = 7.x
 project = "merci"
 datestamp = "1257855270"
 
+
+files[] = merci_permissions.module

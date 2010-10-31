@@ -2,7 +2,9 @@ name = MERCI Printable Contract
 package = MERCI
 description = "Adds a printable contract option to MERCI Reservations."
 
-core = 6.x
+core = 7.x
 
 dependencies[] = merci
 
+
+files[] = merci_printable_contract.module

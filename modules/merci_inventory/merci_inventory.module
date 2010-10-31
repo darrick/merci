@@ -8,17 +8,17 @@
  */
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function merci_inventory_menu() {
 
   $items = array();
 
-  foreach (array_keys(node_get_types()) as $type_name) {
+  foreach (array_keys(node_type_get_types()) as $type_name) {
 
     $type_url_str = str_replace('_', '-', $type_name);
 
-    $items['admin/content/node-type/'. $type_url_str .'/merci_inventory'] = array(
+    $items['admin/content/node-type/' . $type_url_str . '/merci_inventory'] = array(
       'title' => 'MERCI Inventory',
       'page callback' => 'merci_inventory_admin_page',
       'page arguments' => array($type_name),
@@ -65,7 +65,7 @@ function merci_inventory_admin_page($type_name = NULL) {
 /**
  * Field sync form
  */
-function merci_inventory_sync_fields(&$form_state, $type_name) {
+function merci_inventory_sync_fields($form, &$form_state, $type_name) {
 
   $form = array();
 
@@ -76,7 +76,7 @@ function merci_inventory_sync_fields(&$form_state, $type_name) {
 
   $form['merci_inventory_sync_to_types'] = array(
     '#type' => 'checkboxes',
-    '#title' => t('Sync fields from') .' <i>'. $type_name .'</i> '. t('to these types'),
+    '#title' => t('Sync fields from') . ' <i>' . $type_name . '</i> ' . t('to these types'),
     '#options' => array(),
   );
 
@@ -87,7 +87,10 @@ function merci_inventory_sync_fields(&$form_state, $type_name) {
   }
   // foreach
 
-  $form['merci_inventory_submit'] = array('#type' => 'submit', '#value' => t('Sync Fields'));
+  $form['merci_inventory_submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Sync Fields'),
+  );
   $form['#submit'] = array('merci_inventory_sync_fields_submit');
 
   return $form;
@@ -120,8 +123,8 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
   }
   // else
 
-  $new_fields=array();
-  $update_fields=array();
+  $new_fields = array();
+  $update_fields = array();
 
   foreach ($values['merci_inventory_sync_to_types'] as $type => $value) {
 
@@ -141,7 +144,7 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
           $new_fields[] = $field;
 
           //content_field_instance_create($field);
-          drupal_set_message(t('%field_name was added to %type', array('%field_name' => $field['field_name'], '%type' => $type )));
+          drupal_set_message(t('%field_name was added to %type', array('%field_name' => $field['field_name'], '%type' => $type)));
           $added++;
         }
         // if
@@ -186,7 +189,7 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
             // Add group
 
             fieldgroup_save_group($type, $group);
-            drupal_set_message(t('%group_name was added to %type', array('%group_name' => $group_name, '%type' => $type) ));
+            drupal_set_message(t('%group_name was added to %type', array('%group_name' => $group_name, '%type' => $type)));
             $added++;
 
             $existing_groups = fieldgroup_groups($type, FALSE, TRUE);
@@ -196,7 +199,8 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
 
             // Update all weights
 
-            db_query("UPDATE {". fieldgroup_tablename() ."} SET weight = %d WHERE type_name = '%s' AND group_name = '%s'",
+            // TODO Please convert this statement to the D7 database API syntax.
+            db_query("UPDATE {" . fieldgroup_tablename() . "} SET weight = %d WHERE type_name = '%s' AND group_name = '%s'",
               $group['weight'] + 1000, $type, $group_name
             );
           }
@@ -216,7 +220,7 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
 
               fieldgroup_update_fields($group_field_params);
 
-            drupal_set_message(t('%field_name was moved into group %group_name of %type', array('%field_name' => $field_name, '%group_name' => $group_name, '%type' => $type )));
+              drupal_set_message(t('%field_name was moved into group %group_name of %type', array('%field_name' => $field_name, '%group_name' => $group_name, '%type' => $type)));
               $added++;
             }
             // if
@@ -232,11 +236,15 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
   // foreach
 
   if ($added == 0) {
-    drupal_set_message(t('No fields were synced, because all fields in %type are already synced in all selected types', array( '%type' => $values['merci_inventory_type'] )));
+    drupal_set_message(t('No fields were synced, because all fields in %type are already synced in all selected types', array('%type' => $values['merci_inventory_type'])));
   }
   // if
 }
 // merci_inventory_sync_fields_submit
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_inventory_sync_resource_types($reset = FALSE) {
 
   static $types = FALSE;
@@ -244,7 +252,7 @@ function merci_inventory_sync_resource_types($reset = FALSE) {
   if ((!is_array($types)) || $reset) {
 
     $types = array();
-    $result = db_query("SELECT type FROM {merci_node_type} WHERE type_setting = 'resource' OR  type_setting = 'bucket'");
+    $result = db_query("SELECT type FROM {merci_node_type} WHERE type_setting = :type_setting OR  type_setting = :type_setting", array(':type_setting' => 'resource', ':type_setting' => 'bucket'));
 
     while ($type = db_fetch_object($result)) {
       $types[] = $type->type;

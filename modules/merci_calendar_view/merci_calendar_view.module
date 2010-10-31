@@ -8,7 +8,7 @@
  */
 
 /**
- * Implementation of hook_views_api().
+ * Implements hook_views_api().
  */
 function merci_calendar_view_views_api() {
   return array(

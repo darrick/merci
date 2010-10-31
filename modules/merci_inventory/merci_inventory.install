@@ -7,27 +7,32 @@
  */
 
 /**
- * Implementation of hook_install().
+ * Implements hook_install().
  */
 function merci_inventory_install() {
 
   drupal_set_message(t('Merci Inventory module successfully installed. merci_inventory_master content types created.  Do not add nodes to this content type.  Only use it to push CCK fields out to other MERCI managed content types.'));
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_inventory_enable() {
   // create content types
-  include_once('./'. drupal_get_path('module', 'merci_inventory') .'/includes/content_types/content_types.inc');
+  include_once DRUPAL_ROOT . '/' . ('./' . drupal_get_path('module', 'merci_inventory') . '/includes/content_types/content_types.inc');
   _merci_inventory_install_create_content_types();
 }
 // function merci_inventory_install
 
 /**
- * Implementation of hook_uninstall().
+ * Implements hook_uninstall().
  */
 function merci_inventory_uninstall() {
 
 
   // delete any merci_inventory_master nodes... even though there really shouldn't be any
+  // TODO Please convert this statement to the D7 database API syntax.
   $result = db_query(db_rewrite_sql("SELECT nid FROM {node} n WHERE type = 'merci_inventory_master'"));
   while ($node = db_fetch_object($result)) {
     node_delete($node->nid);

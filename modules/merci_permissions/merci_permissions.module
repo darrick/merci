@@ -10,7 +10,7 @@ function merci_permissions_menu() {
 
 
     // Administration settings.
-    $items['admin/settings/merci/permissions'] = array(
+  $items['admin/config/merci/permissions'] = array(
       'title' => 'Permissions',
       'page callback' => 'drupal_get_form',
       'page arguments' => array('merci_permissions_form'),
@@ -25,17 +25,22 @@ function merci_permissions_menu() {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
  */
 function merci_permissions_theme() {
   return array(
     'merci_permissions_form' => array(
-      'arguments' => array('form' => NULL),
+      'render element' => array('form' => NULL),
     ),
   );
 }
 
-function theme_merci_permissions_form($form) {
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function theme_merci_permissions_form($variables) {
+  $form = $variables['form'];
   $roles = user_roles();
   foreach (element_children($form['permission']) as $key) {
     // Don't take form control structures
@@ -43,13 +48,25 @@ function theme_merci_permissions_form($form) {
       $row = array();
       // Module name
       if (is_numeric($key)) {
-        $row[] = array('data' => t('@module', array('@module' => drupal_render($form['permission'][$key]))), 'class' => 'module', 'id' => 'module-'. $form['permission'][$key]['#value'], 'colspan' => count($form['role_names']) + 1);
+        $row[] = array(
+          'data' => t('@module', array('@module' => drupal_render($form['permission'][$key]))),
+          'class' => 'module',
+          'id' => 'module-' . $form['permission'][$key]['#value'],
+          'colspan' => count($form['role_names']) + 1,
+        );
       }
       else {
-        $row[] = array('data' => drupal_render($form['permission'][$key]), 'class' => 'permission');
+        $row[] = array(
+          'data' => drupal_render($form['permission'][$key]),
+          'class' => 'permission',
+        );
         foreach (element_children($form['checkboxes']) as $rid) {
           if (is_array($form['checkboxes'][$rid])) {
-            $row[] = array('data' => drupal_render($form['checkboxes'][$rid][$key]), 'class' => 'checkbox', 'title' => $roles[$rid] .' : '. t($key));
+            $row[] = array(
+              'data' => drupal_render($form['checkboxes'][$rid][$key]),
+              'class' => 'checkbox',
+              'title' => $roles[$rid] . ' : ' . t($key),
+            );
           }
         }
       }
@@ -59,14 +76,21 @@ function theme_merci_permissions_form($form) {
   $header[] = (t(''));
   foreach (element_children($form['role_names']) as $rid) {
     if (is_array($form['role_names'][$rid])) {
-      $header[] = array('data' => drupal_render($form['role_names'][$rid]), 'class' => 'checkbox');
+      $header[] = array(
+        'data' => drupal_render($form['role_names'][$rid]),
+        'class' => 'checkbox',
+      );
     }
   }
-  $output = theme('table', $header, $rows, array('id' => 'permissions'));
-  $output .= drupal_render($form);
+  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'permissions')));
+  $output .= drupal_render_children($form);
   return $output;
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_permissions_form_alter(&$form, $form_state, $form_id) {
   return;
   if ($form_id == 'user_admin_perm') {
@@ -110,6 +134,10 @@ function merci_permissions_form_alter(&$form, $form_state, $form_id) {
   }
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_permissions_add_form(&$form) {
   $role_names = user_roles();
 
@@ -120,7 +148,7 @@ function merci_permissions_add_form(&$form) {
   // always search for "$perm," to make sure we do not confuse
   // permissions that are substrings of each other.
   while ($role = db_fetch_object($result)) {
-    $role_permissions[$role->rid] = $role->perm .',';
+    $role_permissions[$role->rid] = $role->perm . ',';
   }
 
   $merci_types = merci_permissions_load_merci_type_settings();
@@ -140,12 +168,13 @@ function merci_permissions_add_form(&$form) {
     $form['permission'][$perm] = array('#value' => t($perm));
     foreach ($role_names as $rid => $name) {
       // Builds arrays for checked boxes for each role
-      if (strpos($role_permissions[$rid], $perm .',') !== FALSE) {
+      if (strpos($role_permissions[$rid], $perm . ',') !== FALSE) {
         $status[$rid][] = $perm;
       }
     }
   }
-  $form['permission'][] = array('#value' => t('Bucket and Resource Permissions'),
+  $form['permission'][] = array(
+    '#value' => t('Bucket and Resource Permissions'),
   );
   foreach ($merci_types as $type => $name) {
     $perm = "reserve $type";
@@ -154,13 +183,13 @@ function merci_permissions_add_form(&$form) {
     foreach ($role_names as $rid => $name) {
       // Builds arrays for checked boxes for each role
       if (
-        strpos($role_permissions[$rid], 'delete own '. $type .' content,') !== FALSE &&
-        strpos($role_permissions[$rid], 'edit own '. $type .' content,') !== FALSE
+        strpos($role_permissions[$rid], 'delete own ' . $type . ' content,') !== FALSE &&
+        strpos($role_permissions[$rid], 'edit own ' . $type . ' content,') !== FALSE
       ) {
         $status[$rid][] = $perm;
       }
-      if (strpos($role_permissions[$rid], 'delete any '. $type .' content,') !== FALSE &&
-        strpos($role_permissions[$rid], 'edit any '. $type .' content,') !== FALSE
+      if (strpos($role_permissions[$rid], 'delete any ' . $type . ' content,') !== FALSE &&
+        strpos($role_permissions[$rid], 'edit any ' . $type . ' content,') !== FALSE
       ) {
         if (!strstr($admin[$rid], 'false')) {
           $admin[$rid] = 'true';
@@ -179,22 +208,40 @@ function merci_permissions_add_form(&$form) {
 
   // Have to build checkboxes here after checkbox arrays are built
   foreach ($role_names as $rid => $name) {
-    $form['checkboxes'][$rid] = array('#type' => 'checkboxes', '#options' => $options, '#default_value' => isset($status[$rid]) ? $status[$rid] : array());
-    $form['role_names'][$rid] = array('#value' => $name, '#tree' => TRUE);
+    $form['checkboxes'][$rid] = array(
+      '#type' => 'checkboxes',
+      '#options' => $options,
+      '#default_value' => isset($status[$rid]) ? $status[$rid] : array(),
+    );
+    $form['role_names'][$rid] = array(
+      '#value' => $name,
+      '#tree' => TRUE,
+    );
   }
 
-  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save Permissions'));
+  $form['buttons']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save Permissions'),
+  );
   $form['#submit'][] = 'merci_permissions_settings_form_submit';
 }
 
-function merci_permissions_form() {
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function merci_permissions_form($form, &$form_state) {
   $form = array();
   merci_permissions_add_form($form);
   return $form;
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_permissions_load_merci_type_settings() {
-  $result = db_query("SELECT nt.type,nt.name FROM {node_type} nt INNER JOIN {merci_node_type} m ON nt.type = m.type WHERE m.type_setting <> 'disabled'");
+  $result = db_query("SELECT nt.type,nt.name FROM {node_type} nt INNER JOIN {merci_node_type} m ON nt.type = m.type WHERE m.type_setting <> :m.type_setting", array(':m.type_setting' => 'disabled'));
   $merci_types = array();
   while ($merci_type = db_fetch_object($result)) {
     $merci_types[$merci_type->type] = $merci_type->name;
@@ -202,6 +249,10 @@ function merci_permissions_load_merci_type_settings() {
   return $merci_types;
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_permissions_settings_form_submit($form, &$form_state) {
 
   $result      = db_query('SELECT * FROM {role}');
@@ -276,7 +327,14 @@ function merci_permissions_grant_permissions($role_name, $new_permissions) {
 
       // rebuild the permission string
       $updated_permissions = join(', ', $permissions);
-      db_query("UPDATE {permission} SET perm = '%s' WHERE rid = %d", $updated_permissions, $role->rid);
+      // TODO Please review the conversion of this statement to the D7 database API syntax.
+      /* db_query("UPDATE {permission} SET perm = '%s' WHERE rid = %d", $updated_permissions, $role->rid) */
+      db_update('permission')
+  ->fields(array(
+    'perm' => $updated_permissions,
+  ))
+  ->condition('rid', $role->rid)
+  ->execute();
     }
     else {
       // No permissions have been set for this role, so we need to insert some
@@ -286,7 +344,9 @@ function merci_permissions_grant_permissions($role_name, $new_permissions) {
       // rebuild the permission string
       $updated_permissions = join(', ', $permissions);
       if (!empty($updated_permissions)) {
-        db_query("INSERT INTO {permission} (rid, perm, tid) VALUES(%d,'%s',%d)", $role->rid, $updated_permissions, 0);
+        // TODO Please convert this statement to the D7 database API syntax.
+        /* db_query("INSERT INTO {permission} (rid, perm, tid) VALUES(%d,'%s',%d)", $role->rid, $updated_permissions, 0) */
+        NULL;
       }
     }
   }
@@ -311,7 +371,14 @@ function merci_permissions_revoke_permissions($role_name, $new_permissions) {
 
     // rebuild the permission string
     $updated_permissions = join(', ', $new_perms);
-    db_query("UPDATE {permission} SET perm = '%s' WHERE rid = %d", $updated_permissions, $role->rid);
+    // TODO Please review the conversion of this statement to the D7 database API syntax.
+    /* db_query("UPDATE {permission} SET perm = '%s' WHERE rid = %d", $updated_permissions, $role->rid) */
+    db_update('permission')
+  ->fields(array(
+    'perm' => $updated_permissions,
+  ))
+  ->condition('rid', $role->rid)
+  ->execute();
   }
   return;
 }
@@ -323,7 +390,7 @@ function merci_permissions_get_permissions_for_role($role_name) {
   $role = merci_permissions_get_role($role_name);
   $permissions = array();
   if ($role->rid > 0) {
-    $perm_string = db_result(db_query("SELECT perm FROM {permission} WHERE rid = %d", $role->rid));
+    $perm_string = db_query("SELECT perm FROM {permission} WHERE rid = :rid", array(':rid' => $role->rid))->fetchField();
     if (strlen($perm_string) > 0) {
       $permissions = explode(',', $perm_string);
       foreach ($permissions as $index => $perm) {
@@ -338,7 +405,7 @@ function merci_permissions_get_permissions_for_role($role_name) {
  * lookup the role by name
  */
 function merci_permissions_get_role($name) {
-  $role = db_fetch_object(db_query("SELECT * FROM {role} r WHERE r.name = '%s'", $name));
+  $role = db_fetch_object(db_query("SELECT * FROM {role} r WHERE r.name = :r.name", array(':r.name' => $name)));
   return $role;
 }
 

@@ -7,11 +7,11 @@
  */
 
 /**
- * Implementation of hook_form_alter().
+ * Implements hook_form_alter().
  */
 function merci_template_form_merci_reservation_node_form_alter(&$form, $form_state) {
 
-  drupal_add_js(drupal_get_path('module', 'merci_template') .'/merci_template.js');
+  drupal_add_js(drupal_get_path('module', 'merci_template') . '/merci_template.js');
 
   if (isset($_GET['draft_id']) && is_numeric($_GET['draft_id'])) {
     $draft_id = $_GET['draft_id'];
@@ -22,7 +22,10 @@ function merci_template_form_merci_reservation_node_form_alter(&$form, $form_sta
   );
 }
 // merci_template_form_alter
-
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_template_draft($op, $draft_id, $draft_data = array(), &$form) {
   foreach ($draft_data as $key => $item) {
     if (preg_match("/^choice\((\d{1,5})\)\(item\)$/", $key, $matches)) {
