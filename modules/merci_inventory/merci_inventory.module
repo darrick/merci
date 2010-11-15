@@ -321,19 +321,30 @@ function merci_inventory_node_operations($return=null) {
  * Callback function for adding items to new merci_inventory node.
  */
 function merci_inventory_operations_update($nodes) {
-  dsm($nodes);
-  foreach ($nodes as $nid) {
-    //$node = node_load($nid);
+  global $user;
+  
+  // Construct the new node object.
+  $node = new stdClass();
 
-    //only update if MERCI Status is Unconfirmed
-    //if ($node->merci['status'] == MERCI_STATUS_UNCONFIRMED) {
-      //$node->merci_status = MERCI_STATUS_PENDING;
-      //$node->choice = $node->merci['reservation_items'];
-      //dsm($nid);
-      //node_save($node);
-      
-    //}
+  $node->title = 'Inventory - ' . format_date(time(), $type = 'small');
+  $node->type = 'merci_inventory';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;          // Published?
+  $node->promote = 0;       // Display on front page?
+  $node->sticky = 0;          // Display top of page?
+  $node->format = 1;         // Filtered HTML?
+  $node->uid = $user->uid;             //  Content owner uid (author)?
+  $node->language = 'en';
+
+  $count = 0;
+  foreach ($nodes as $nid) {
+    $node->field_merci_inventory_item[$count]['nid']  = $nid;
+    $count++; 
   }
+  
+  node_submit($node);
+  node_save($node);
 }
 
 /**
