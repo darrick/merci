@@ -34,7 +34,7 @@ function _merci_inventory_install_create_content_types() {
 function _merci_inventory_install_import_content_type($macro) {
   $form_state = array();
   $form = content_copy_import_form($form_state);
-  $form_state['values']['type_name'] = '<create>';
+  $form_state['values']['type_name'] = 'merci_inventory_master';
   $form_state['values']['macro'] = $macro;
   return content_copy_import_form_submit($form, $form_state);
 }
