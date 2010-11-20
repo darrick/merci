@@ -1,7 +1,0 @@
-; $Id$
-name = Draft Views
-description = Provides views capability for the Draft module
-core = 6.x
-dependencies[] = draft
-dependencies[] = views
-
