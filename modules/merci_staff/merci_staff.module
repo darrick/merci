@@ -1,0 +1,27 @@
+<?php
+// $Id$ 
+
+/**
+ * @file
+ * merci_staff functions
+ */
+
+/**
+* Implementation of hook_form_alter
+**/
+
+function merci_staff_form_alter(&$form, $form_state, $form_id) {
+  switch ($form['type']['#value']) {
+    case 'merci_reservation':
+      if(user_access('administer MERCI') || user_access('manage MERCI')){
+        $form['name'] = $form['author']['name'];
+        $form['name']['#title'] = 'Reserve for';
+        $form['name']['#weight'] = -99;
+      
+        unset($form['author']['name']);
+      }
+    break;
+  }
+}
+
+
