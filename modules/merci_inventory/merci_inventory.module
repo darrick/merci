@@ -323,6 +323,8 @@ function merci_inventory_node_operations($return=null) {
 function merci_inventory_operations_update($nodes) {
   global $user;
   
+  $account = user_load(array('uid' => $user->uid));
+  
   // Construct the new node object.
   $node = new stdClass();
 
@@ -334,7 +336,7 @@ function merci_inventory_operations_update($nodes) {
   $node->promote = 0;       // Display on front page?
   $node->sticky = 0;          // Display top of page?
   $node->format = 1;         // Filtered HTML?
-  $node->uid = $user->uid;             //  Content owner uid (author)?
+  $node->uid = $account->uid;             //  Content owner uid (author)?
   $node->language = 'en';
 
   $count = 0;
@@ -343,7 +345,7 @@ function merci_inventory_operations_update($nodes) {
     $count++; 
   }
   
-  node_submit($node);
+  //node_submit($node);
   node_save($node);
 }
 
