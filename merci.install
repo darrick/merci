@@ -155,7 +155,7 @@ function merci_schema() {
         'not null' => TRUE,
         'default' => 0,
         'description' => t("Number of hours the item can be used before fees are charged."),
-      ),
+      ),      
       'status' => array(
         'type' => 'int',
         'not null' => TRUE,
@@ -489,6 +489,17 @@ function merci_update_6203() {
   $ret[] = update_sql("ALTER TABLE {merci_node_type} CHANGE `type` `type` VARCHAR(32) ;");
   return $ret;
 }
+
+function merci_update_6204() {
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {merci_bucket_node}  ADD daypart1_price FLOAT NOT NULL, ADD daypart2_price FLOAT NOT NULL, ADD daypart3_price FLOAT NOT NULL;");
+  $ret[] = update_sql("ALTER TABLE {merci_resource_node}  ADD daypart1_price FLOAT NOT NULL, ADD daypart2_price FLOAT NOT NULL, ADD daypart3_price FLOAT NOT NULL;");
+  $ret[] = update_sql("ALTER TABLE {merci_node_type}  ADD daypart1_price FLOAT NOT NULL, ADD daypart2_price FLOAT NOT NULL, ADD daypart3_price FLOAT NOT NULL;");
+  
+  return $ret;
+}
+
+
 
 function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
