@@ -10,12 +10,26 @@
  * Implementation of hook_form_alter().
  */
 function merci_template_form_merci_reservation_node_form_alter(&$form, $form_state) {
-
+  //dsm($form);
   drupal_add_js(drupal_get_path('module', 'merci_template') .'/merci_template.js');
-
+  
+      
   if (isset($_GET['draft_id']) && is_numeric($_GET['draft_id'])) {
     $draft_id = $_GET['draft_id'];
+    
+    drupal_add_js("$(document).ready(function() { $('#merci-choices').toggle(); $('#edit-merci-more').toggle(); });", 'inline');
+    
+    $result = db_fetch_object(db_query("SELECT * FROM {drafts} WHERE draft_id = %d", $_GET['draft_id']));
+    
+    $form['draft_name'] = array(
+      '#type' => 'markup',
+      '#title' => t('Room'),
+      '#value' => '<div class="message status"> Reserving ' . $result->title . ' (<a id="show-merci-choices">show details</a>)</div>',
+      '#weight' => -4
+    );
+    
   }
+  
   $form['update_draft_id'] = array(
     '#type' => 'hidden',
     '#value' => $draft_id,
