@@ -1,0 +1,90 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * merci_daypart_pricing functions
+ */
+
+/**
+ * Implementation of hook_menu().
+ */
+function merci_daypart_pricing_menu() {
+
+  $admin = array('administer MERCI');
+  
+  $items['merci/daypart'] = array(
+    'title' => 'Daypart Pricing',
+    'description' => 'Takes a node ID or content type and start and end times of the Reservation and returns prince',
+    'page arguments' => array(3,4,5),
+    'page callback' => 'merci_daypart_pricing',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  
+   // Standard Administration settings.
+  $items['admin/settings/merci/daypart'] = array(
+    'title' => 'Daypart Pricing',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('merci_daypart_pricing_admin_settings'),
+    'access callback' => 'user_access',
+    'access arguments' => $admin,
+    'description' => t('Configure settings for MERCI\'s Daypart Pricing.'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+
+  return $items;
+}
+
+/**
+ * Builds the admininstration settings form.
+ */
+function merci_daypart_pricing_admin_settings() {
+
+  $form['merci_use_lowest'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use lowest pricing'),
+    '#default_value' => variable_get('merci_default_reservation_status', ''),
+    '#description' => t('If the normal hourly pricing is lower than the Daypart pricing, use the hourly pricing.'),
+            );
+  
+  // Hours of operation
+
+  $hours_description = '<div>' . t('Enter military time for both starting and ending time, separated by a dash, in the format') . ' <em>hh:mm-hh:mm</em></div>' . t('ex.') . ' <em>09:00-13:00</em> ' . t('would be start at 9AM, end at `PM. Leave blank to indicate not being used.  A single 24 hour Daypart to enable 24 hour discounts would be ') . '<em>00:00-23:59</em>';
+  
+
+  $form['merci_daypart1'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Daypart 1 hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_daypart1', '00:00-11:59'),
+    '#description' => $hours_description,
+  );
+  
+  $form['merci_daypart2'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Daypart 2 hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_daypart2', '12:00-23:59'),
+    '#description' => $hours_description,
+  );
+  
+  $form['merci_daypart3'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Daypart 3 hours'),
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#default_value' => variable_get('merci_daypart3', ''),
+    '#description' => $hours_description,
+  );
+  
+  return system_settings_form($form);
+}
+
+function merci_daypart_pricing($node_id_or_type, $start, $end) {
+
+}
+// merci_daypart_pricing
