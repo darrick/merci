@@ -92,7 +92,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           $selfcheckout = $node->merci['selfcheckout'];
           $daypart1_price = $node->merci['daypart1_price'];
           $daypart2_price = $node->merci['daypart2_price'];
-          $daypart3_price = $$node->merci['daypart3_price'];
+          $daypart3_price = $node->merci['daypart3_price'];
         }
         else {
           $sub_type = MERCI_SUB_TYPE_ITEM;
@@ -1163,10 +1163,15 @@ function merci_get_user_reservable_nodes($type=null) {
     while ($resource = db_fetch_object($resources)) {
       // Only include active resources, and content types the user can reserve.
       if ($resource->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($resource->type)) {
-
-        // Filter out any placeholder nodes for this resource.
-        $items = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.sub_type = %d ORDER BY n.title", 'n', 'nid'), $resource->type, 1, MERCI_SUB_TYPE_ITEM);
-
+         
+        if (user_access("administer MERCI")) {
+          // Only filter out any placeholder nodes for this resource.
+          $items = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.sub_type = %d ORDER BY n.title", 'n', 'nid'), $resource->type, 1, MERCI_SUB_TYPE_ITEM);
+        } 
+        else {
+          // Filter out any placeholder AND template-only nodes for this resource.
+          $items = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.sub_type = %d ORDER BY n.title", 'n', 'nid'), $resource->type, 1, MERCI_SUB_TYPE_ITEM);
+        }
         while ($item = db_fetch_object($items)) {
           $reservable_nodes[$item->nid] = $item->title;
         }
@@ -1193,7 +1198,7 @@ function merci_get_user_reservable_nodes($type=null) {
  *     'flat_options' => An array of available items, whose values are the
  *                       nids of the items.
  */
-function merci_build_reservable_items($node, $form_state, $reservation_nid = NULL) {
+function merci_build_reservable_items($node, $form_state, $reservation_nid = NULL, $account = NULL) {
 
   // Newly set dates take precedence.
   if (isset($form_state['values']['field_merci_date'])) {
@@ -1225,7 +1230,7 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
 
     // Only include active buckets, and content types the user
     // can reserve.
-    if ($bucket->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($bucket->type)) {
+    if ($bucket->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($bucket->type, $account)) {
 
       // Check for available items in the bucket.
       $available_bucket_items = merci_get_available_bucket_count($bucket->type, $start, $end, $reservation_nid) - $bucket->spare_items;
@@ -1265,14 +1270,17 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
     $item_options = array();
 
     // Only include active resources, and content types the user can reserve.
-    if ($resource->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($resource->type)) {
+    if ($resource->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($resource->type, $account)) {
 
       // No filtering for new reservations.
       if (isset($is_new)) {
-
+        
+        
         // Filter out any placeholder nodes for this resource.
         $items = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.sub_type = %d ORDER BY n.title", 'n', 'nid'), $resource->type, 1, MERCI_SUB_TYPE_ITEM);
-
+        
+        
+        
         while ($item = db_fetch_object($items)) {
           $item_options[$item->nid] = $item->title;
         }
@@ -1334,8 +1342,8 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
  */
 
 
-function merci_check_content_type_restrictions($content_type, $start, $end) {
-  if (user_access("administer MERCI") || user_access("manage MERCI")) {
+function merci_check_content_type_restrictions($content_type, $start, $end, $account = NULL) {
+  if (user_access("administer MERCI", $account) || user_access("manage MERCI", $account)) {
     //$return[] = t('You are making a reservation as a user with permissions to Manage or Administer MERCI.  This allows you to override the normal content type restrictions.');
   } 
   else {
@@ -1378,7 +1386,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
           }
         }
         // Do we allow extending a reservtion over days we are closed?
-        if (user_access('override max hours over closed days')) {
+        if (user_access('override max hours over closed days', $account)) {
           $hours_of_operation = merci_load_hours_of_operation($content_type);
           for ($i = 1; $i <= 6; $i++) {
             if (empty($hours_of_operation[$i])) {
@@ -1435,8 +1443,8 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
  * @return TRUE if the user has access to reserve the content type, FALSE
  *   otherwise.
  */
-function merci_check_content_type_user_permissions($type) {
-  return user_access("edit own $type content") && user_access("delete own $type content");
+function merci_check_content_type_user_permissions($type, $account = NULL) {
+  return user_access("edit own $type content", $account) && user_access("delete own $type content", $account);
 }
 
 /**
@@ -2916,7 +2924,13 @@ function merci_access($op, $node, $account) {
  * Implementation of hook_validate().
  */
 function merci_node_validate($form, &$form_state) {
-  if (user_access('suspend MERCI access') && !user_access('administer MERCI')) {
+  
+  //check the logged in user unless merci_staff is enabled
+  if (module_exists('merci_staff')) {
+    $account = user_load(array('name' => check_plain($form['name']['#value'])));
+  }
+  
+  if (user_access('suspend MERCI access', $account) && !user_access('administer MERCI', $account)) {
     form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
     return;
   }
@@ -2968,7 +2982,7 @@ function merci_node_validate($form, &$form_state) {
   $max_days           = variable_get("merci_max_days_advance_reservation", '0');
 
   //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restrictions
-  if (user_access('administer MERCI') || user_access('create reservations outside hours of operation')) {
+  if (user_access('administer MERCI', $account) || user_access('create reservations outside hours of operation', $account)) {
     if (strtotime(date('G:i', strtotime($start . ' UTC'))) < strtotime($start_hours['open']) || strtotime($start_hours['close']) < strtotime(date('G:i', strtotime($end . ' UTC')))) {
       //dsm(strtotime(date('G:i', strtotime($start . ' UTC'))) . ' < ' . strtotime($start_hours['open']) . ' or ' .  strtotime($start_hours['close']) . ' < ' . strtotime(date('G:i', strtotime($end . ' UTC'))));
       drupal_set_message('<b>' . t('You are making a Reservation outside the normal hours of operation.  This may impact access to the items you are reserving.') . '</b>');
@@ -3064,7 +3078,7 @@ function merci_node_validate($form, &$form_state) {
           $type = $value;
         }
         // Make sure the item still passes content type restrictions.
-        $restrictions = merci_check_content_type_restrictions($type, $start, $end);
+        $restrictions = merci_check_content_type_restrictions($type, $start, $end, $account);
         if (!empty($restrictions)) {
           $message = '';
           foreach ($restrictions as $restriction) {
@@ -3117,7 +3131,7 @@ function merci_node_validate($form, &$form_state) {
         $type = $choice['item'];
       }
       // Make sure the item still passes content type restrictions.
-      $restrictions = merci_check_content_type_restrictions($type, $start, $end);
+      $restrictions = merci_check_content_type_restrictions($type, $start, $end, $account);
       if (!empty($restrictions)) {
         $message = '';
         foreach ($restrictions as $restriction) {
