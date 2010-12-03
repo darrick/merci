@@ -1,3 +1,4 @@
+; $Id$
 name = MERCI
 package = MERCI
 description = "Managed Equipment Reservation Checkout and Inventory"

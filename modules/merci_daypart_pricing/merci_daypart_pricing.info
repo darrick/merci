@@ -1,3 +1,4 @@
+; $Id$
 name = MERCI Daypart Pricing
 package = MERCI
 description = "Adds 3 start and stop times to content types and a price for each time.  Using only one time will result in a 24 hour price."

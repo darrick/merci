@@ -1,3 +1,4 @@
+; $Id$
 name = MERCI Printable Contract
 package = MERCI
 description = "Adds a printable contract option to MERCI Reservations."
