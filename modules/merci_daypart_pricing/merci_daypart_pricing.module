@@ -84,7 +84,68 @@ function merci_daypart_pricing_admin_settings() {
   return system_settings_form($form);
 }
 
-function merci_daypart_pricing($node_id_or_type, $start, $end) {
+function merci_daypart_pricing($start, $end, $node_type_array) {
+  
+  
+  $items = explode(',', $_POST['items']);
+  $dates = array(
+    strtotime($_POST['date'][0] . ' ' . $_POST['time'][0]),
+    strtotime($_POST['date'][1] . ' ' . $_POST['time'][1]),
+  );
+  
+  watchdog('daypart items', $items[0]);
+  watchdog('daypart start', $dates[0]);
+  
+  $start_date = date_make_date($dates[0]);
+  $end_date = date_make_date($dates[1]);
 
+  $hours = round(($dates[1] - $dates[0]) / 3600, 2);
+  
+  watchdog('daypart hours', $hours);
+  
+  foreach ($items as $item) {
+    watchdog('daypart item', $item);
+    
+    if (is_numeric($item)) {
+      $item_node = node_load($item);
+      
+      watchdog('daypart resource type', $item_node->type);
+      $type = merci_load_content_type_settings($item_node->type);
+      watchdog('daypart resource rate', $type->rate_per_hour);
+    } else {
+      $type = merci_load_content_type_settings($item);
+      watchdog('daypart bucket rate', $type->rate_per_hour);
+    }
+
+    $fee_hours       = $hours - ($type->fee_free_hours);
+    $commercial_cost = $type->rate_per_hour * $hours;
+    $member_cost     = ($fee_hours > 0) ? ($type->rate_per_hour * $discount) * $fee_hours : 0;
+    $day_rate     = ($type->rate_per_hour * 24);
+    
+    $commercial_cost_total += $commercial_cost;
+    $member_cost_total += $member_cost;
+  }
+
+  // create return object
+  $return = new StdClass;
+  $return->member = $member_cost_total;
+  $return->commercial = $commercial_cost_total;
+  return drupal_json($return);
 }
 // merci_daypart_pricing
+
+/**
+ * Implements hook_form_alter().
+ */
+function merci_daypart_pricing_form_alter(&$form, &$form_state, $form_id) {
+
+  if (
+    ($form_id == 'merci_reservation_node_form') &&
+    ($form['nid']['#value'] == NULL)
+  ) {
+  
+    drupal_add_js(drupal_get_path('module', 'merci_daypart_pricing') . '/js/merci_daypart_pricing.js');
+
+  } // if
+
+} // merci_daypart_pricing_form_alter
