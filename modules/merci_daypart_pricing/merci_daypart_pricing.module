@@ -45,7 +45,7 @@ function merci_daypart_pricing_admin_settings() {
   $form['merci_use_lowest'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use lowest pricing'),
-    '#default_value' => variable_get('merci_default_reservation_status', ''),
+    '#default_value' => variable_get('merci_use_lowest', 0),
     '#description' => t('If the normal hourly pricing is lower than the Daypart pricing, use the hourly pricing.'),
             );
   
@@ -86,45 +86,182 @@ function merci_daypart_pricing_admin_settings() {
 
 function merci_daypart_pricing($start, $end, $node_type_array) {
   
+  $discount = variable_get('merci_membership_discount', 1);
+  $debug = FALSE;
+      
+  if ($debug) {
+   
+    $dates[0] = 1292607900;
+    $dates[1] = 1291747500;
+    $items[0] = 1;
+    
+  } else {
   
-  $items = explode(',', $_POST['items']);
-  $dates = array(
-    strtotime($_POST['date'][0] . ' ' . $_POST['time'][0]),
-    strtotime($_POST['date'][1] . ' ' . $_POST['time'][1]),
-  );
+    $items = explode(',', $_POST['items']);
+    $dates = array(
+      strtotime($_POST['date'][0] . ' ' . $_POST['time'][0]),
+      strtotime($_POST['date'][1] . ' ' . $_POST['time'][1]),
+    );
   
-  watchdog('daypart items', $items[0]);
-  watchdog('daypart start', $dates[0]);
+  }
   
-  $start_date = date_make_date($dates[0]);
-  $end_date = date_make_date($dates[1]);
+  $day = strtolower(date(l,strtotime($_POST['date'][0])));
+  
+  
+  if (variable_get('merci_' . $day . '_is_weekend', 0)) {
+    $weekend_charge = TRUE;
+  }
+  
+  watchdog('weekend charge', $weekend_charge);
 
   $hours = round(($dates[1] - $dates[0]) / 3600, 2);
   
-  watchdog('daypart hours', $hours);
+  //convert to 24hr to compare
+  
+  if(variable_get('merci_daypart1', '0')) {
+    $start = strtotime($_POST['time'][0]);
+    $end = strtotime($_POST['time'][1]);
+    
+    $daypart1 = explode('-', variable_get('merci_daypart1', '0'));
+    $daypart2 = explode('-', variable_get('merci_daypart2', '0'));
+    $daypart3 = explode('-', variable_get('merci_daypart3', '0'));
+    
+    
+    //watchdog('daypart 1 check', $start . ' >  ' . strtotime($daypart1[0]));
+    //watchdog('daypart 1 check', $end . ' <  ' . strtotime($daypart1[1]));
+    
+    
+    //START WITH THE BIGGER RANGES AND WORK DOWN TO THE SMALLEST
+    //THIS LOGIC ONLY WORKS FOR SAME DAY RESERVATIONS
+    
+    //within daypart 1 & 2 & 3
+    $daypart1_charge = TRUE;
+    $daypart2_charge = TRUE;
+    $daypart3_charge = TRUE;
+    
+    
+    //within daypart 1 & 2
+    if ( $start > strtotime($daypart1[0]) && $end < strtotime($daypart2[1])) {
+      $daypart1_charge = TRUE;
+      $daypart2_charge = TRUE;
+      $daypart3_charge = FALSE;
+    }
+    
+    //within daypart 2 & 3
+    if ( $start > strtotime($daypart2[0]) && $end < strtotime($daypart3[1])) {
+      $daypart1_charge = TRUE;
+      $daypart2_charge = TRUE;
+      $daypart3_charge = FALSE;
+    }
+    
+    //within only daypart 1
+    if ( $start > strtotime($daypart1[0]) && $end < strtotime($daypart1[1])) {
+      $daypart1_charge = TRUE;
+      $daypart2_charge = FALSE;
+      $daypart3_charge = FALSE;
+    }
+    
+    //within only daypart 2
+    if ( $start > strtotime($daypart2[0]) && $end < strtotime($daypart2[1]) ) {
+      $daypart1_charge = FALSE;
+      $daypart2_charge = TRUE;
+      $daypart3_charge = FALSE;
+    }
+    
+    //within only daypart 3
+    if ( $start > strtotime($daypart3[0]) && $end < strtotime($daypart3[1])) {
+      $daypart1_charge = FALSE;
+      $daypart2_charge = FALSE;
+      $daypart3_charge = TRUE;
+    }
+    
+    //watchdog('daypart charges', $daypart1_charge . ',' . $daypart2_charge . ',' . $daypart3_charge);
+  
+  }
+  
+  
+  //watchdog('daypart hours', $hours);
   
   foreach ($items as $item) {
-    watchdog('daypart item', $item);
     
     if (is_numeric($item)) {
+      //this is a Resource to load the pricing based on the node
       $item_node = node_load($item);
+      //print_r($item_node);
+      //$type = merci_load_content_type_settings($item_node->type);
+      //watchdog('daypart resource rate', $item_node->merci['rate_per_hour']);
+      // watchdog('daypart 1 rate', $item_node->merci['daypart1_price']);
+      // watchdog('daypart 2 rate', $item_node->merci['daypart2_price']);
+      // watchdog('daypart 3 rate', $item_node->merci['daypart3_price']);
       
-      watchdog('daypart resource type', $item_node->type);
-      $type = merci_load_content_type_settings($item_node->type);
-      watchdog('daypart resource rate', $type->rate_per_hour);
+      $fee_hours       = $hours - ($item_node->merci['fee_free_hours']);
+      $rate_per_hour   = $item_node->merci['rate_per_hour']; 
+      $daypart1_price  = $item_node->merci['daypart1_price'];
+      $daypart2_price  = $item_node->merci['daypart2_price'];
+      $daypart3_price  = $item_node->merci['daypart3_price'];
+      $weekend_price   = $item_node->merci['weekend_price'];
+      
     } else {
+      //for buckets, load settings based on type
       $type = merci_load_content_type_settings($item);
-      watchdog('daypart bucket rate', $type->rate_per_hour);
+      $fee_hours       = $hours - ($type->fee_free_hours);
+      $rate_per_hour   = $type->rate_per_hour;
+      
+      $daypart1_price  = $type->daypart1_price;
+      $daypart2_price  = $type->daypart2_price;
+      $daypart3_price  = $type->daypart3_price;
+      $weekend_price   = $type->weekend_price;
     }
-
-    $fee_hours       = $hours - ($type->fee_free_hours);
-    $commercial_cost = $type->rate_per_hour * $hours;
-    $member_cost     = ($fee_hours > 0) ? ($type->rate_per_hour * $discount) * $fee_hours : 0;
-    $day_rate     = ($type->rate_per_hour * 24);
     
-    $commercial_cost_total += $commercial_cost;
-    $member_cost_total += $member_cost;
+    //START FRESH
+    $daypart_price = 0;
+    
+    watchdog('weekend price', $weekend_price);
+    
+    if ($weekend_charge) {
+      $daypart_price = $weekend_price;
+    } else {
+
+    if ($daypart1_charge) {
+      $daypart_price += $daypart1_price;
+      watchdog('daypart 1 added to price', $daypart_price);
+    }
+    
+    if ($daypart2_charge) {
+      $daypart_price += $daypart2_price;
+      watchdog('daypart 2 added to price', $daypart_price);
+    }
+    
+    if ($daypart3_charge) {
+      $daypart_price += $daypart3_price;
+      watchdog('daypart 3 added to price', $daypart_price);
+    }
+    }
+    
+    $commercial_cost = $rate_per_hour * $hours;
+    
+    $day_rate        = ($rate_per_hour * 24);
+    
+    if(variable_get('merci_use_lowest', 0)) {
+    if ($daypart_price < $commercial_cost) {
+      $commercial_cost_total += $daypart1_price;
+      $member_cost     = ($daypart1_price * $discount);
+      $member_cost_total += $member_cost;
+    } else {
+      $commercial_cost_total += $commercial_cost;
+      
+      $member_cost     = ($fee_hours > 0) ? ($rate_per_hour * $discount) * $fee_hours : 0;
+      $member_cost_total += $member_cost;
+    }
+    } else {
+      $commercial_cost_total += $daypart_price;
+      $member_cost     = ($daypart_price * $discount);
+      $member_cost_total += $member_cost;  
+    }
+    
   }
+  
+  
 
   // create return object
   $return = new StdClass;
