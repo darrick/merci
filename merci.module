@@ -668,9 +668,9 @@ function merci_menu() {
 
   $items['merci/confirm'] = array(
     'title' => 'Confirm MERCI Reservation',
-    'description' => 'Takes a node ID and returns a page confirming Reservation',
+    'description' => 'Takes an ID and returns a page confirming Reservation',
     'page arguments' => array(2),
-    'page callback' => 'merci_confirm_reservation',
+    'page callback' => 'merci_confirm_via_email',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
@@ -1742,6 +1742,18 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
               db_query("INSERT INTO {merci_resource_node} (nid, vid, default_availability, late_fee_per_hour, rate_per_hour, fee_free_hours, min_cancel_hours, autocheckout, autocheckin, selfcheckout, daypart1_price, daypart2_price, daypart3_price, weekend_price, sub_type) VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)", $node->nid, $node->vid, $node->merci_default_availability, $node->merci_late_fee_per_hour, $node->merci_rate_per_hour, $node->merci_fee_free_hours, $node->merci_min_cancel_hours, $node->merci_autocheckout, $node->merci_autocheckin, $node->merci_selfcheckout, $node->daypart1_price, $node->daypart2_price, $node->daypart3_price, $node->weekend_price, $node->merci_sub_type);
               break;
           }
+          
+          
+          // Are we emailing the user the confirmation of receipt?
+          if (variable_get('merci_email_confirm', 0)) {
+            merci_email_user($node, 'confirmation');
+          } else {
+            if (variable_get('merci_email_receipt', 0)) {
+              merci_email_user($node, 'receipt');
+            }
+          }
+          
+          
         }
         else {
           switch ($type) {
@@ -3815,11 +3827,17 @@ function merci_taxonomy_json($node_id) {
 
 // Changes the reservation from UNCONFIRMED to CONFIRMED.
 // Normally accessed from email sent to user
-function merci_confirm_reservation($node_id) {
-
-  print 'nothing here yet';
+// TODO: Currently takes nid, but should be a more unique id
+function merci_confirm_via_email($nid) {
+  
+  if (merci_confirm_reservation($nid)) {
+    return t('Reservation confirmed');
+  } else {
+    return t('Reservation not confirmed.  The Reservation may have been confirmed by staff.'); 
+  }
+  
 }
-// merci_confirm_reservation
+// merci_confirm_via_email
 
 /**
  * Implementation of hook_cron().
@@ -4176,23 +4194,31 @@ function merci_node_operations($return=null) {
 }
 
 /**
- * Callback function for updating node titles.
+ * Callback function for updating Reservation status from VBO.
  */
 function merci_operations_update($nodes) {
   foreach ($nodes as $nid) {
-    $node = node_load($nid);
-
-    //only update if MERCI Status is Unconfirmed
-    if ($node->merci['status'] == MERCI_STATUS_UNCONFIRMED) {
-      $node->merci_status = MERCI_STATUS_PENDING;
-      //$node->choice = $node->merci['reservation_items'];
- 
-      node_save($node);
-      
-    }
+    merci_confirm_reservation($nid);
   }
 }
 
+/**
+ * Callback function for updating Reservation status.
+ */
+function merci_confirm_reservation($nid) {
+  $node = node_load($nid);
+
+  //only update if MERCI Status is Unconfirmed
+  if ($node->merci['status'] == MERCI_STATUS_UNCONFIRMED) {
+    $node->merci_status = MERCI_STATUS_PENDING;
+    node_save($node); 
+  }
+  
+}
+
+/**
+ * Callback function for updating pricing in Reservation form.
+ */
 function merci_pricing($start, $end, $node_type_array) {
   
   $discount = variable_get('merci_membership_discount', 1);
@@ -4247,3 +4273,27 @@ function merci_pricing($start, $end, $node_type_array) {
   return drupal_json($return);
 }
 // merci_daypart_pricing
+
+function merci_email_user($node, $type){
+  
+  //dsm($node);
+  
+  $account = user_load(array('name' => check_plain($node->name)));
+  
+  //dsm($account);
+  
+  if ($account->mail && variable_get('site_mail', 0)) {
+  
+    $body = 'test';
+  
+    $message = array(
+      'to' => $account->mail,
+      'subject' => t('Confirm Reservation Starting ' . $node->field_merci_date[0]['value']),
+      'body' => $body,
+      'headers' => array('From' => variable_get('site_mail', 0)),
+    );
+    drupal_mail_send($message);
+  
+  }
+  
+}
