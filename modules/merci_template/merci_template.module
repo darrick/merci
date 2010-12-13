@@ -54,14 +54,17 @@ function merci_template_admin_settings() {
 
 function merci_template_list() {
   $result = db_query("SELECT title, draft_id, node_type FROM {drafts} WHERE title IS NOT NULL");
-  
-  //$output = l(t('Reserve'), 'node/add/'. str_replace("_", "-", $values->drafts_node_type), array('query' => array('draft_id' => $values->drafts_draft_id), 'attributes' => array('class' => 'button')));
 
   while ($merci_template = db_fetch_object($result)) {
-    //$output .= $merci_template->title;
+    
     $output .= l(t('Reserve ' . $merci_template->title), 'node/add/'. str_replace("_", "-", $merci_template->node_type), array('query' => array('draft_id' => $merci_template->draft_id), 'attributes' => array('class' => 'button')));
 
   }
+  
+  if (!$output) {
+    $output = t('There are no Templates.');
+  }
+  
   return $output;
 }
 
