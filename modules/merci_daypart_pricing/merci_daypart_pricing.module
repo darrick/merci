@@ -15,7 +15,7 @@ function merci_daypart_pricing_menu() {
   
   $items['merci/daypart'] = array(
     'title' => 'Daypart Pricing',
-    'description' => 'Takes a node ID or content type and start and end times of the Reservation and returns prince',
+    'description' => 'Takes a node ID or content type and start and end times of the Reservation and returns price',
     'page arguments' => array(3,4,5),
     'page callback' => 'merci_daypart_pricing',
     'access arguments' => array('access content'),
@@ -281,7 +281,7 @@ function merci_daypart_pricing_form_alter(&$form, &$form_state, $form_id) {
     ($form['nid']['#value'] == NULL)
   ) {
   
-    drupal_add_js(drupal_get_path('module', 'merci_daypart_pricing') . '/js/merci_daypart_pricing.js');
+    //drupal_add_js(drupal_get_path('module', 'merci_daypart_pricing') . '/js/merci_daypart_pricing.js');
 
   } // if
 
