@@ -1743,17 +1743,6 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
               break;
           }
           
-          
-          // Are we emailing the user the confirmation of receipt?
-          if (variable_get('merci_email_confirm', 0)) {
-            merci_email_user($node, 'confirmation');
-          } else {
-            if (variable_get('merci_email_receipt', 0)) {
-              merci_email_user($node, 'receipt');
-            }
-          }
-          
-          
         }
         else {
           switch ($type) {
@@ -1766,6 +1755,9 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
               break;
           }
         }
+        
+
+          
         break;
 
       case 'delete':
@@ -2125,6 +2117,12 @@ function merci_insert($node) {
     db_query("INSERT INTO {merci_reservation} (nid, vid, status) VALUES (%d, %d, %d)", $node->nid, $node->vid, $node->merci_status);
     merci_add_reservation_items($node);
   }
+  
+  // Are we emailing the user a receipt?
+  if (variable_get('merci_email_receipt', 0)) {
+    merci_email_user($node);
+  }
+  
 }
 
 /**
@@ -2140,6 +2138,8 @@ function merci_update($node) {
     }
     merci_add_reservation_items($node);
   }
+  
+  //TODO: Should add an option to email user if their reservation is changed/confirmed
 }
 
 /**
@@ -4285,17 +4285,24 @@ function merci_pricing($start, $end, $node_type_array) {
 }
 // merci_daypart_pricing
 
-function merci_email_user($node, $type){
+function merci_email_user($node){
   
   //dsm($node);
   
   $account = user_load(array('name' => check_plain($node->name)));
   
-  //dsm($account);
+  dsm($account->mail);
   
   if ($account->mail && variable_get('site_mail', 0)) {
-  
+    //format receipt
+    
     $body = 'test';
+    
+    //add confirmation link to message
+    if (variable_get('merci_email_confirm', 0)) {
+      $body .= url('merci/confirm' . $node->nid);
+    }
+    
   
     $message = array(
       'to' => $account->mail,
@@ -4303,8 +4310,10 @@ function merci_email_user($node, $type){
       'body' => $body,
       'headers' => array('From' => variable_get('site_mail', 0)),
     );
+    dsm($message);
+    
     drupal_mail_send($message);
-  
+    watchdog('merci', 'sent email to ' . $account->mail . ' from ' . variable_get('site_mail', 0));
   }
   
 }
