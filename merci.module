@@ -2204,7 +2204,7 @@ function merci_add_reservation_items($node) {
     elseif ($choice['item']) {
       $type        = $choice['item'];
       $title       = db_result(db_query("SELECT name FROM {node_type} WHERE type = '%s'", $type));
-      $settings = db_fetch_object(db_query("SELECT * FROM {merci_node_type} WHERE type = '%s'", $type));
+      $settings    = db_fetch_object(db_query("SELECT * FROM {merci_node_type} WHERE type = '%s'", $type));
       if ($settings->auto_assign_bucket_item) {
         $date_info = $node->field_merci_date[0];
         $start     = $date_info['value'];
@@ -3844,9 +3844,9 @@ function merci_taxonomy_json($node_id) {
 function merci_confirm_via_email($nid) {
   
   if (merci_confirm_reservation($nid)) {
-    return t('Reservation confirmed');
+    drupal_set_message(t('Reservation confirmed'));
   } else {
-    return t('Reservation not confirmed.  The Reservation may have been confirmed by staff.'); 
+    drupal_set_message(t('Reservation not confirmed.  The Reservation may have been confirmed by staff.')); 
   }
   
 }
@@ -4223,7 +4223,8 @@ function merci_confirm_reservation($nid) {
   if ($node->merci['status'] == MERCI_STATUS_UNCONFIRMED) {
     $node->merci_status = MERCI_STATUS_PENDING;
     node_save($node); 
-  }
+    return TRUE;
+  } 
   
 }
 
@@ -4291,16 +4292,36 @@ function merci_email_user($node){
   
   $account = user_load(array('name' => check_plain($node->name)));
   
-  dsm($account->mail);
+  //dsm($account->mail);
   
   if ($account->mail && variable_get('site_mail', 0)) {
     //format receipt
     
-    $body = 'test';
+    //$node->choice
+    //$node->field_merci_member_cost[0]['value']
+    //$node->field_merci_commercial_cost[0]['value']
+    //$node->field_merci_date[0]['value']
+    //$node->field_merci_date[0]['value2']
+    //timezone_db
     
+    $body = "You have reserved the following items from " . $node->field_merci_date[0]['value'] . " to " . $node->field_merci_date[0]['value2'] . ".\n";
+    
+    foreach ($node->choice as $num => $choice) {
+    
+      // Resource.
+      if (is_numeric($choice['item'])) {
+        $body .= $choice['item'] . ".\n";
+      }
+      
+      // Bucket.
+      elseif ($choice['item']) {
+        $body .= $choice['item'] . ".\n\n";
+      }
+    } //foreach
     //add confirmation link to message
-    if (variable_get('merci_email_confirm', 0)) {
-      $body .= url('merci/confirm' . $node->nid);
+    if (variable_get('merci_email_confirmation', 0)) {
+      $destination = 'destination=' . url('node/' . $node->nid);
+      $body .= "Click this link to confirm your Reservation: \n " . url('merci/confirm/' . $node->nid, array('query' => $destination,'absolute' => TRUE));
     }
     
   
@@ -4310,10 +4331,10 @@ function merci_email_user($node){
       'body' => $body,
       'headers' => array('From' => variable_get('site_mail', 0)),
     );
-    dsm($message);
+    //dsm($message);
     
     drupal_mail_send($message);
-    watchdog('merci', 'sent email to ' . $account->mail . ' from ' . variable_get('site_mail', 0));
+    watchdog('merci', 'emailed receipt to ' . $account->mail . ' from ' . variable_get('site_mail', 0));
   }
   
 }
