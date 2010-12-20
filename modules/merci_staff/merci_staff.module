@@ -20,8 +20,18 @@ function merci_staff_form_alter(&$form, $form_state, $form_id) {
       if (module_exists('civicrm')) {
         $form['name']['#autocomplete_path'] = 'user/autocompletecivi';
       }
-
+      
       unset($form['author']['name']);
+      
+      //create override checkbox          
+      $form['override'] = array(
+        //'#type' => 'optionwidgets_onoff',
+        '#type' => 'checkbox',
+        '#title' => 'Override Validation',
+        '#weight' => -97,
+        '#columns' => 0
+      );
+      
     }
     break;
   }

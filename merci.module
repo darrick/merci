@@ -350,56 +350,43 @@ function merci_form_alter(&$form, $form_state, $form_id) {
      }
      
      if(!$overriden) {
-       drupal_add_js(drupal_get_path('module', 'merci') . '/merci_pricing.js');
-          
-       if (user_access("administer MERCI")) {
-         drupal_add_js('merciDisablePricingFields()', 'inline');
-       }
+       drupal_add_js(drupal_get_path('module', 'merci') . '/merci_pricing.js'); 
      }
      
-     /*
-     if ($form['nid']['#value'] == NULL) {
-        if (module_exists('merci_daypart_pricing')) {
-          drupal_add_js(drupal_get_path('module', 'merci_daypart_pricing') . '/js/merci_daypart_pricing.js');
-        } else {
-          drupal_add_js(drupal_get_path('module', 'merci') . '/merci_pricing.js');
-          
-          if (user_access("administer MERCI")) {
-            drupal_add_js('merciDisablePricingFields()', 'inline');
-          }
-          
+     
+     if (!user_access("administer MERCI")) {
+         //drupal_add_js('merciDisablePricingFields()', 'inline');
+         //Disable member cost and commerical cost.  
+         $form['#after_build'][] = '_merci_after_build';
+      }
+      
+      // Users without administer or manage MERCI permission can only alter their own Unconfirmed Reservations.
+      if ($form['merci']['merci_status']['#default_value']) {
+        if(!user_access('administer MERCI') && !user_access('administer MERCI')) {
+          unset($form['buttons']['preview']);
+          unset($form['buttons']['submit']);
         }
       }
-      */
       
-      //Disable member cost and commerical cost.  These are only here to make Views easier.
-      $form['#after_build'][] = '_merci_after_build';
-
-
-      //Users without administer MERCI permission can only alter Unconfirmed Reservations.
-      if (!user_access('administer MERCI') && $form['merci']['merci_status']['#default_value']) {
-        unset($form['buttons']['preview']);
-        unset($form['buttons']['submit']);
-      }
-
+      // 
       if (user_access('suspend MERCI access') && !user_access('administer MERCI')) {
         form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
-        //unset($form);
+        drupal_access_denied();
  
       }
-      else {
+      
 
-        $form['field_merci_date'][0]['merci_date_filter'] = array(
-          '#type' => 'submit',
-          '#value' => t('Limit Lists to Available Items'),
-          '#weight' => 10,
-          '#submit' => array('merci_date_filter'),
-        );
+      $form['field_merci_date'][0]['merci_date_filter'] = array(
+        '#type' => 'submit',
+        '#value' => t('Limit Lists to Available Items'),
+        '#weight' => 10,
+        '#submit' => array('merci_date_filter'),
+      );
 
-        // Since hook_validate is broken in 6.x, we add our own
-        // custom validation here.
-        $form['#validate'][] = 'merci_node_validate';
-      }
+      // Since hook_validate is broken in 6.x, we add our own
+      // custom validation here.
+      $form['#validate'][] = 'merci_node_validate';
+      
       break;
 
     // Node settings form.
@@ -1039,11 +1026,8 @@ function merci_node_type($op, $info) {
  */
 function merci_form(&$node, $form_state) {
   $form = node_content_form($node, $form_state);
-  
-  //check the logged in user unless merci_staff is enabled
-  if (module_exists('merci_staff')) {
-    $account = user_load(array('name' => check_plain($node->name)));
-  }
+   
+  $account = merci_user_load(NULL, $node);
   
   // Add a wrapper for the choices and more button.
   $form['choice_wrapper'] = array(
@@ -1620,10 +1604,7 @@ function merci_choice_js() {
     $node = new stdClass();
   }
   
-  //check the logged in user unless merci_staff is enabled
-  if (module_exists('merci_staff')) {
-    $account = user_load(array('name' => check_plain($_POST['name'])));
-  }
+  $account = merci_user_load(NULL, $node);
   
   $dates = $_POST['field_merci_date'][0];
   // If a start and end date exist, we have to massage them
@@ -3044,10 +3025,7 @@ function merci_node_validate($form, &$form_state) {
   //set debug state
   $debug = variable_get('merci_debug', 0);
   
-  //check the logged in user unless merci_staff is enabled
-  if (module_exists('merci_staff')) {
-    $account = user_load(array('name' => check_plain($form['name']['#value'])));
-  }
+  $account = merci_user_load($form);
   
   if (user_access('suspend MERCI access', $account) && !user_access('administer MERCI', $account)) {
     form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
@@ -3221,6 +3199,7 @@ function merci_node_validate($form, &$form_state) {
         }
         // It's not a content type restriction, so it's a date conflict.
         else {
+          if ($debug) watchdog('merci', 'CONFLICT GRID merci_node_validate()');
           $message .= merci_conflict_grid($type, $title, $start, $end, $value);
         }
         form_set_error("existing_items][placeholders][$did", $message);
@@ -4104,10 +4083,6 @@ function merci_format_time($hours_minutes) {
   return $return;
 }
 
-function merci_manage() {
-  $output = 'Nothing to see here... yet';
-  return $output;
-}
 
 /**
  * Custom after_build callback handler.
@@ -4117,8 +4092,8 @@ function _merci_after_build($form, &$form_state) {
   //_merci_fix_disabled($form['field_merci_member_cost']);
 
   // Use this one if the field is placed inside a fieldgroup.
-  _merci_fix_disabled($form['group_merci_internal']['field_merci_member_cost']);
-  _merci_fix_disabled($form['group_merci_internal']['field_merci_commercial_cost']);
+  _merci_fix_disabled($form['group_merci_costs']['field_merci_member_cost']);
+  _merci_fix_disabled($form['group_merci_costs']['field_merci_commercial_cost']);
 
 
   return $form;
@@ -4396,3 +4371,19 @@ function merci_email_user($node){
   }
   
 }
+
+function merci_user_load($form = NULL, $node = NULL){
+
+  global $user;
+  //check the logged in user unless merci_staff is enabled
+  if (module_exists('merci_staff')) {
+    if (!$form['override']['#value'] || !$node->override) {
+    $account = user_load(array('name' => check_plain($_POST['name'])));
+    }
+  } else {
+    $account = $user;
+  }
+
+  return $account;
+}
+  
