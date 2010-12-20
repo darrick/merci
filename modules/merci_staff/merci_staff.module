@@ -12,16 +12,149 @@
 
 function merci_staff_form_alter(&$form, $form_state, $form_id) {
   switch ($form['type']['#value']) {
-    case 'merci_reservation':
-      if(user_access('administer MERCI') || user_access('manage MERCI')){
-        $form['name'] = $form['author']['name'];
-        $form['name']['#title'] = 'Reserve for';
-        $form['name']['#weight'] = -99;
-      
-        unset($form['author']['name']);
+  case 'merci_reservation':
+    if(user_access('administer MERCI') || user_access('manage MERCI')){
+      $form['name'] = $form['author']['name'];
+      $form['name']['#title'] = 'Reserve for';
+      $form['name']['#weight'] = -99;
+      if (module_exists('civicrm')) {
+        $form['name']['#autocomplete_path'] = 'user/autocompletecivi';
       }
+
+      unset($form['author']['name']);
+    }
     break;
   }
 }
 
+/**
+ ** Menu callback; Retrieve a JSON object containing autocomplete suggestions for existing users.
+ **/
+function merci_staff_autocomplete($string = '') {
+  $matches = array();
+  if ($string) {
+
+    //	drupal_json($matches);
+
+    if ( ! civicrm_initialize( ) ) {
+      return;
+    }
+    $fields = content_fields();
+    $field = $fields[$field_name];
+    $matches = array();
+
+    $references = _merci_staff_potential_references($field, $string);
+    foreach ($references as $id => $row) {
+      // Add a class wrapper for a few required CSS overrides.
+      $matches["{$row['title']}"] = '<div class="reference-autocomplete">'. $row['rendered'] . '</div>';
+    }
+  }
+  drupal_json($matches);
+
+}
+
+function merci_staff_menu() {
+  $items = array();
+
+  if (module_exists('civicrm')) {
+    $items['user/autocompletecivi'] = array(
+      'title' => 'User autocomplete',
+      'page callback' => 'merci_staff_autocomplete',
+      'access callback' => 'user_access',
+      'access arguments' => array('access user profiles'),
+      'type' => MENU_CALLBACK,
+    );
+  }
+  return $items;
+}
+
+function _merci_staff_potential_references($field, $string = '', $exact_string = FALSE) {
+    static $results = array();
+
+    $references = _merci_staff_potential_references_standard($field, $string, $exact_string);
+
+    // Store the results.
+    $results[$field['field_name']][$string][$exact_string] = $references;
+
+    return $results[$field['field_name']][$string][$exact_string];
+}
+
+/**
+ * Helper function for _civicrm_cck_potential_references():
+ * referenceable nodes defined by content types.
+ */
+function _merci_staff_potential_references_standard( $field, $string = '', $exact_string = FALSE, $limit = '10' ) {
+    $args = $whereClause = $contactTypes = $contactSubTypes = array();
+    
+    if ( ! civicrm_initialize( ) ) {
+        return;
+    }
+
+    require_once 'CRM/Contact/BAO/ContactType.php';
+    $basicTypes = CRM_Contact_BAO_ContactType::basicTypePairs( );
+      
+    foreach ( $basicTypes as $name => $label ) {
+        if ( is_array( $field[$name] ) ) {
+            $contactNames = array_filter( $field[$name] );
+            if ( !empty( $contactNames ) ) {
+                if ( in_array( $name, $contactNames ) ) {
+                    $contactTypes[] = $name;
+                } else {
+                    $contactSubTypes = array_merge( $contactSubTypes, array_keys( $contactNames ) );
+                }
+            }
+        }
+    } 
+  
+    if ( !empty( $contactTypes ) ) {
+        $contactTypes  = implode( "','", $contactTypes );
+        $whereClause[] = "contact_type IN ( '{$contactTypes}' )";
+    }
+    
+    if ( !empty( $contactSubTypes ) ) {
+        $contactSubTypes = implode( "','", $contactSubTypes );
+        $whereClause[]   = "contact_sub_type IN ( '{$contactSubTypes}' )";
+    }
+   
+    $whereClause = empty( $whereClause ) ? '' : '(' . implode( ' OR ', $whereClause ) . ') AND';
+    $related_clause = "";
+
+    if (isset($string)) {
+        if($exact_string) {
+            $string_clause = " AND display_name = %1";
+            $args[] = $string;
+        } else {
+            $string_clause = " AND display_name LIKE %1";
+            $args[] = "%%" . $string ."%";
+        }
+    }
+      
+    $q = "
+    SELECT users.name as dname, civicrm_contact.id, display_name
+    FROM civicrm_contact
+    JOIN civicrm_uf_match ON civicrm_contact.id = civicrm_uf_match.contact_id
+    JOIN users ON civicrm_uf_match.uf_id = users.uid
+    WHERE $whereClause
+    display_name IS NOT NULL
+    AND display_name NOT LIKE ''
+    AND display_name NOT LIKE '<Last>%%'
+    AND display_name NOT LIKE '%@%%'
+    AND display_name NOT LIKE '--%%'
+    AND display_name NOT LIKE '- -%%'
+    AND display_name NOT LIKE ',%%'
+    AND display_name NOT LIKE '..%%'
+    ". $string_clause ." LIMIT $limit";
+    $params = array( 1 => array( $args[0], "String" ) );
+    $dao = CRM_Core_DAO::executeQuery( $q, $params );
+
+    $references = array();
+    while ($dao->fetch()) {
+        $references[$dao->id] = array(
+                                      'title' => $dao->dname,
+                                      'rendered' => $dao->display_name,
+                                      );
+    }
+
+    return $references;
+}
 
