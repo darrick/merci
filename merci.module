@@ -954,6 +954,12 @@ function merci_admin_settings() {
     '#default_value' => variable_get('merci_membership_discount', ''),
     '#description' => t('Fraction of commercial rate users in a role with member discount permission pays. Enter as decimal.  60% would be .60.  An item with a commercial rate of $100 would cost a member $60 for any hours beyond the fee free hours for that reservation.'),
   );
+  
+   $form['merci_general']['merci_debug'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Run in Debug Mode'),
+    '#default_value' => variable_get('merci_debug', 0),
+  );
 
   //check to see if the fields are locked
   $result = db_query("SELECT locked FROM {content_node_field} WHERE field_name = '%s'", 'field_merci_date');  
@@ -1751,7 +1757,7 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
               break;
 
             case 'resource':
-              db_query("UPDATE {merci_resource_node} SET default_availability = %d, late_fee_per_hour = %d, rate_per_hour = %d, fee_free_hours = %d, min_cancel_hours = %d, autocheckout = %d, autocheckin = %d, selfcheckout = %d, selfcheckout = %d, daypart1_price = %d, daypart2_price = %d, daypart3_price = %d, weekend_price = %d,WHERE vid = %d", $node->merci_default_availability, $node->merci_late_fee_per_hour, $node->merci_rate_per_hour, $node->merci_fee_free_hours, $node->merci_min_cancel_hours, $node->merci_autocheckout, $node->merci_autocheckin, $node->merci_selfcheckout, $node->daypart1_price, $node->daypart2_price, $node->daypart3_price, $node->weekend_price, $node->vid);
+              db_query("UPDATE {merci_resource_node} SET default_availability = %d, late_fee_per_hour = %d, rate_per_hour = %d, fee_free_hours = %d, min_cancel_hours = %d, autocheckout = %d, autocheckin = %d, selfcheckout = %d, daypart1_price = %d, daypart2_price = %d, daypart3_price = %d, weekend_price = %d,WHERE vid = %d", $node->merci_default_availability, $node->merci_late_fee_per_hour, $node->merci_rate_per_hour, $node->merci_fee_free_hours, $node->merci_min_cancel_hours, $node->merci_autocheckout, $node->merci_autocheckin, $node->merci_selfcheckout, $node->daypart1_price, $node->daypart2_price, $node->daypart3_price, $node->weekend_price, $node->vid);
               break;
           }
         }
@@ -2381,14 +2387,16 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
     $nid              = isset($item->tnid) ? $item->tnid : $item->pnid;
     $operations       = '';
     $placeholder_node = node_load($item->pnid);
-    if (node_access('update', $placeholder_node)) {
-
+    
+    //if (node_access('update', $placeholder_node)) {
+    if (user_access("manage MERCI")) {
       if (merci_has_accessories($item->type)) {
 
         $operations .= '<span class="edit-details" id="merci-id-' . $item->pnid . '">' . l(t('Add accessories'), "node/$item->pnid/edit", array('query' => drupal_get_destination())) . '</span>';
       }
     }
-    if ($edit_page && node_access('delete', $placeholder_node)) {
+    //if ($edit_page && node_access('delete', $placeholder_node)) {
+    if ($edit_page && user_access("manage MERCI")) {
       $operations .= ' &nbsp;&nbsp;' . l(t('delete'), "node/$item->pnid/delete", array('query' => drupal_get_destination()));
     }
 
@@ -3016,6 +3024,8 @@ function merci_access($op, $node, $account) {
  * Implementation of hook_validate().
  */
 function merci_node_validate($form, &$form_state) {
+  //set debug state
+  $debug = variable_get('merci_debug', 0);
   
   //check the logged in user unless merci_staff is enabled
   if (module_exists('merci_staff')) {
@@ -3157,6 +3167,7 @@ function merci_node_validate($form, &$form_state) {
     foreach ($node->existing_items['bucket_resource'] as $did => $value) {
      
       // The item is no longer reservable, so figure out why.
+      // Kevin asks... WHY IS IT NO LONGER RESERVABLE? ARE WE JUST ASSUMING??
       if ($value and empty($total_flat_options[$value])) {
         // Resource.
         if (is_numeric($value)) {
@@ -3842,12 +3853,18 @@ function merci_taxonomy_json($node_id) {
 // Normally accessed from email sent to user
 // TODO: Currently takes nid, but should be a more unique id
 function merci_confirm_via_email($nid) {
-  
+  global $basepath;
   if (merci_confirm_reservation($nid)) {
     drupal_set_message(t('Reservation confirmed'));
   } else {
     drupal_set_message(t('Reservation not confirmed.  The Reservation may have been confirmed by staff.')); 
   }
+  
+  $return = $_GET["destination"];
+  if(!$return){
+    $return = $basepath;
+  }
+  drupal_goto($return);
   
 }
 // merci_confirm_via_email
@@ -4310,17 +4327,21 @@ function merci_email_user($node){
     
       // Resource.
       if (is_numeric($choice['item'])) {
-        $body .= $choice['item'] . ".\n";
+        $new_item = db_fetch_object(db_query("SELECT title, type FROM {node} WHERE nid = %d", $choice['item']));
+        $title    = $new_item->title;
+
+        $body    .= $title . ".\n";
       }
       
       // Bucket.
       elseif ($choice['item']) {
-        $body .= $choice['item'] . ".\n\n";
+        $title = db_result(db_query("SELECT name FROM {node_type} WHERE type = '%s'", $choice['item']));
+        $body .= $title . ".\n\n";
       }
     } //foreach
     //add confirmation link to message
     if (variable_get('merci_email_confirmation', 0)) {
-      $destination = 'destination=' . url('node/' . $node->nid);
+      $destination = 'destination=node/' . $node->nid;
       $body .= "Click this link to confirm your Reservation: \n " . url('merci/confirm/' . $node->nid, array('query' => $destination,'absolute' => TRUE));
     }
     
