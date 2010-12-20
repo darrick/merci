@@ -1165,7 +1165,7 @@ function _merci_choice_form($node, $form_state, $delta, $default = '', $account 
   if (empty($options)) {
     // NOTE: we don't filter by node here because we only want items not
     //reserved by any node including the node calling the function.
-    $options = merci_build_reservable_items($node, $form_state, $account);
+    $options = merci_build_reservable_items($node, $form_state, NULL, $account);
   }
   $form['item'] = array(
     '#type' => 'select',
@@ -3067,8 +3067,10 @@ function merci_node_validate($form, &$form_state) {
       }
     }
   }
-
+  
+  // ****
   // Build date objects we'll need for our different validations.
+  // ****
   $start              = $node->field_merci_date[0]['value'];
   $end                = $node->field_merci_date[0]['value2'];
   $start_object       = merci_create_local_date_object($start);
@@ -3083,8 +3085,16 @@ function merci_node_validate($form, &$form_state) {
   $start_date         = date_format($start_object, 'm-d-Y');
   $max_days           = variable_get("merci_max_days_advance_reservation", '0');
 
-  //Users in role with Administer MERCI permssion are exempt from content type and hours of operation restrictions
+  
+  // Hours of operation restrictions, max days, and closed dates checks
+  // Users in role with Administer MERCI permssion or outside hours of operation skip these checks 
   if (user_access('administer MERCI', $account) || user_access('create reservations outside hours of operation', $account)) {
+    
+    if ($debug) watchdog('merci', 'SKIP Hours of Operation Check');
+    if ($debug) watchdog('merci', 'SKIP Max Days Check');
+    if ($debug) watchdog('merci', 'SKIP Closed Dates Check');
+    
+    //check to see if warning should be displayed
     if (strtotime(date('G:i', strtotime($start . ' UTC'))) < strtotime($start_hours['open']) || strtotime($start_hours['close']) < strtotime(date('G:i', strtotime($end . ' UTC')))) {
 
       drupal_set_message('<b>' . t('You are making a Reservation outside the normal hours of operation.  This may impact access to the items you are reserving.') . '</b>');
@@ -3092,6 +3102,7 @@ function merci_node_validate($form, &$form_state) {
   }
   else {
     // Reservation start date cannot exceed the max advance
+    if ($debug) watchdog('merci', 'CHECKING Max Days');
     if ($max_days) {
       $max_date = new DateTime("+$max_days day");
       //$max_date = date('m-d-Y', mktime(0, 0, 0, date("m"), date("d")+$max_days, date("Y")));
@@ -3102,6 +3113,7 @@ function merci_node_validate($form, &$form_state) {
 
     // Can't start or end a reservation on days that are
     // closed dates.
+    if ($debug) watchdog('merci', 'CHECKING Closed Dates');
     if (in_array($start_month_day, $hours_of_operation['closed_days'])) {
       $name = date_format($start_object, 'F jS');
       form_set_error('field_merci_date][0][value][date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
@@ -3113,7 +3125,7 @@ function merci_node_validate($form, &$form_state) {
 
     // Can't start or end a reservation on a day the facility
     // has no hours of operation, or outside hours of operation.
-
+    if ($debug) watchdog('merci', 'CHECKING Hours of Operation');
     $start_name = date_format($start_object, 'l');
     if (!$hours_of_operation[$start_day_of_week]) {
       form_set_error('field_merci_date][0][value][date', t('Reservations cannot start on a %day.', array('%day' => $start_name)));
@@ -3141,17 +3153,19 @@ function merci_node_validate($form, &$form_state) {
 
         form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end on a %day after %end.', array('%day' => $end_name, '%end' => merci_format_time($end_hours['close']))));
       }
-    }
-  }
+    } 
+  } // Hours of operation restrictions, max days, and closed dates checks
 
   // Tests for existing items.
+  
   if (isset($node->nid)) {
     // For saved reservations, include the items already reserved
     // in the available list.
+    if ($debug) watchdog('merci', 'CHECKING Existing Items');
     $options = merci_build_reservable_items($node, $form_state, $node->nid, $account);
   }
   else {
-    $options = merci_build_reservable_items($node, $form_state, $account);
+    $options = merci_build_reservable_items($node, $form_state, NULL, $account);
   }
   $flat_options = $options['flat_options'];
 
@@ -3210,7 +3224,7 @@ function merci_node_validate($form, &$form_state) {
   // Tests for new items.
   // Only need to rebuild this again for existing nodes.
   if (isset($node->nid)) {
-    $options = merci_build_reservable_items($node, $form_state, $account);
+    $options = merci_build_reservable_items($node, $form_state, NULL, $account);
     $flat_options = $options['flat_options'];
   }
 
@@ -3263,6 +3277,12 @@ function merci_node_validate($form, &$form_state) {
   if ($current_status && $current_status != $node->merci_status && time() > strtotime($node->field_merci_date[0]['value2']) && !in_array((int) $node->merci_status, array(MERCI_STATUS_CANCELLED, MERCI_STATUS_CHECKED_IN, MERCI_STATUS_DENIED))) {
     $statuses = merci_record_status();
     form_set_error('merci_status', t('You cannot change the status to %status for a reservation that has past.', array('%status' => $statuses[$node->merci_status])));
+  }
+  
+   // Allow other modules to add validation.
+  foreach (module_implements('merci_validation') as $module) {
+    $function = $module .'_merci_validation';
+    $function($node);
   }
 }
 
