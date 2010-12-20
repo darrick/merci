@@ -342,7 +342,23 @@ function merci_form_alter(&$form, $form_state, $form_id) {
 
     case 'merci_reservation_node_form':
       
-      if ($form['nid']['#value'] == NULL) {
+      // Allow other modules to add pricing.
+     foreach (module_implements('merci_pricing_js') as $module) {
+       $function = $module .'_merci_pricing_js';
+       $function($node);
+       $overriden++;
+     }
+     
+     if(!$overriden) {
+       drupal_add_js(drupal_get_path('module', 'merci') . '/merci_pricing.js');
+          
+       if (user_access("administer MERCI")) {
+         drupal_add_js('merciDisablePricingFields()', 'inline');
+       }
+     }
+     
+     /*
+     if ($form['nid']['#value'] == NULL) {
         if (module_exists('merci_daypart_pricing')) {
           drupal_add_js(drupal_get_path('module', 'merci_daypart_pricing') . '/js/merci_daypart_pricing.js');
         } else {
@@ -354,6 +370,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           
         }
       }
+      */
       
       //Disable member cost and commerical cost.  These are only here to make Views easier.
       $form['#after_build'][] = '_merci_after_build';
