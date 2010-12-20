@@ -57,7 +57,7 @@ function merci_template_list() {
 
   while ($merci_template = db_fetch_object($result)) {
     
-    $output .= l(t('Reserve ' . $merci_template->title), 'node/add/'. str_replace("_", "-", $merci_template->node_type), array('query' => array('draft_id' => $merci_template->draft_id), 'attributes' => array('class' => 'button')));
+    $output .= l(t('Reserve ' . $merci_template->title), 'node/add/'. str_replace("_", "-", $merci_template->node_type), array('query' => array('draft_id' => $merci_template->draft_id), 'attributes' => array('class' => 'button'))) . '<br />';
 
   }
   
