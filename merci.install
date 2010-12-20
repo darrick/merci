@@ -150,6 +150,30 @@ function merci_schema() {
         'default' => 0,
         'description' => t("Per hour fee for use of the resource."),
       ),
+      'daypart1_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between start and end of day part."),
+      ),
+      'daypart2_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between start and end of day part."),
+      ),
+      'daypart3_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between start and end of day part."),
+      ),
+      'weekend_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between on day flagged as weekend."),
+      ),
       'fee_free_hours' => array(
         'type' => 'float',
         'not null' => TRUE,
@@ -313,6 +337,30 @@ function merci_schema() {
         'default' => 0,
         'description' => t("Per hour fee for use of the resource."),
       ),
+      'daypart1_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between start and end of day part."),
+      ),
+      'daypart2_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between start and end of day part."),
+      ),
+      'daypart3_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between start and end of day part."),
+      ),
+      'weekend_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between on day flagged as weekend."),
+      ),
       'fee_free_hours' => array(
         'type' => 'float',
         'not null' => TRUE,
@@ -389,6 +437,30 @@ function merci_schema() {
         'not null' => TRUE,
         'default' => 0,
         'description' => t("Per hour fee for use of the resource."),
+      ),
+      'daypart1_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between start and end of day part."),
+      ),
+      'daypart2_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between start and end of day part."),
+      ),
+      'daypart3_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between start and end of day part."),
+      ),
+      'weekend_price' => array(
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("Fee for use of the resource between on day flagged as weekend."),
       ),
       'fee_free_hours' => array(
         'type' => 'float',
@@ -599,6 +671,7 @@ function merci_create_cck_fields() {
       'label' => 'Member Cost',
       'field_name' => 'field_merci_member_cost',
       'type_name' => 'merci_reservation',
+      'group' => 'group_merci_costs',
       'type' => 'number_decimal',
       'widget_type' => 'number',
       'change' => 'Change basic information',
@@ -615,7 +688,6 @@ function merci_create_cck_fields() {
       ),
       'default_value_php' => '',
       'default_value_widget' => NULL,
-      'group' => FALSE,
       'required' => 0,
       'multiple' => '0',
       'min' => '',
@@ -675,6 +747,7 @@ function merci_create_cck_fields() {
       'label' => 'Commercial Cost',
       'field_name' => 'field_merci_commercial_cost',
       'type_name' => 'merci_reservation',
+      'group' => 'group_merci_costs',
       'type' => 'number_decimal',
       'widget_type' => 'number',
       'change' => 'Change basic information',
@@ -751,10 +824,11 @@ function merci_create_cck_fields() {
       'label' => 'Commercial Rental',
       'field_name' => 'field_merci_commercial_rental',
       'type_name' => 'merci_reservation',
+      'group' => 'group_merci_costs',
       'type' => 'number_integer',
       'widget_type' => 'optionwidgets_onoff',
       'change' => 'Change basic information',
-      'weight' => '1',
+      'weight' => '4',
       'locked' => '1',
       'description' => '',
       'default_value' =>
@@ -766,7 +840,6 @@ function merci_create_cck_fields() {
       ),
       'default_value_php' => '',
       'default_value_widget' => NULL,
-      'group' => FALSE,
       'required' => 0,
       'multiple' => '0',
       'min' => '',
@@ -791,7 +864,7 @@ function merci_create_cck_fields() {
       'display_settings' =>
       array(
         'weight' => '1',
-        'parent' => 'group_merci_internal',
+        'parent' => '',
         'label' =>
         array(
           'format' => 'above',
@@ -836,9 +909,15 @@ function merci_create_cck_fields() {
   );
   // Need to load the CCK include file where content_field_instance_create() is defined.
   module_load_include('inc', 'content', 'includes/content.crud');
-  // Create the field.
-
+  // Create the Costs field group.
+  
+  $group = array('label' => 'Costs', 'group_name' => 'group_merci_costs', 'weight'  => -3, 'settings' => array('form' => array('style' => 'fieldset')));
+  
+  fieldgroup_save_group('merci_reservation', $group);
+  
   foreach ($merci_reservation_fields as $field) {
+    
+    
     // Create the fields
     if (!content_field_instance_read(array('field_name' => $field['field_name']), TRUE)) {
       content_field_instance_create($field, FALSE);
