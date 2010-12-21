@@ -3264,7 +3264,12 @@ function merci_node_validate($form, &$form_state) {
    // Allow other modules to add validation.
   foreach (module_implements('merci_validation') as $module) {
     $function = $module .'_merci_validation';
-    $function($node);
+    $message = $function($form);
+    //custom validation functions should return nothing if the reservation is valid
+    //or a string explaining why the reservation can't be saved with these settings
+    if ($message) {
+      form_set_error('merci_status', $message);
+    }
   }
 }
 
