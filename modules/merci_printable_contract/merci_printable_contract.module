@@ -138,7 +138,6 @@ function merci_printable_contract($node) {
   date_timezone_set($end_date, timezone_open($timezone));
 
   $hours = round((intval(date_format($end_date,"U")) - intval(date_format($start_date,"U"))) / 3600, 2);
-  dpm($items);
 
   
   $html = theme('merci_printable_contract', $start_date, $end_date, $hours, $username, $email, $phone, $items);
