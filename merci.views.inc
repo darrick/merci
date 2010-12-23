@@ -206,14 +206,13 @@ function merci_views_data() {
   );
 
   // merci_reservation_detail
-  $data['merci_reservation_detail2']['table']['group'] = t('MERCI');
-  $data['merci_reservation_detail2']['table']['join']['node'] = array(
+  $data['merci_reservation_detail']['table']['group'] = t('MERCI');
+  $data['merci_reservation_detail']['table']['join']['node'] = array(
     'left_field' => 'vid',
-    'field' => 'placeholder_nid',
+    'field' => 'vid',
     'type' => 'INNER',
-    'table' => 'merci_reservation_detail',
   );
-  $data['merci_reservation_detail2']['date_argument'] = array(
+  $data['merci_reservation_detail']['date_argument'] = array(
     'group' => t('Date'),
     'title' => t('Date for reservation detail'),
     'help' => t('Filter any Views date field by a date argument'),
@@ -221,35 +220,6 @@ function merci_views_data() {
       'handler' => 'date_api_argument_handler',
       'empty name field' => t('Undated'),
     ),
-  );
-  $data['merci_reservation_detail2']['nid'] = array(
-    'title' => t('Reservation nid'),
-    'help' => t('The node id of the reservation for this placeholder item.'),
-    'field' => array(
-      'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
-      'skip base' => array('node'),
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_in_operator',
-    ),
-    'relationship' => array(
-      'base' => 'node',
-      'field' => 'nid',
-      'label' => t('Reservation for placeholder item node id'),
-    ),
-  );
-
-
-  // merci_reservation_detail
-  $data['merci_reservation_detail']['table']['group'] = t('MERCI');
-  $data['merci_reservation_detail']['table']['join']['node'] = array(
-    'left_field' => 'vid',
-    'field' => 'vid',
-    'type' => 'INNER',
   );
   $data['merci_reservation_detail']['placeholder_nid'] = array(
     'title' => t('Reserved placeholder nid'),
@@ -302,6 +272,46 @@ function merci_views_data() {
       'handler' => 'views_handler_field_item_node_nid',
     ),
   );
+  /*
+  // merci_reservation_detail
+  $data['merci_reservation_detail2']['table']['group'] = t('MERCI');
+  $data['merci_reservation_detail2']['table']['join']['node'] = array(
+    'left_field' => 'vid',
+    'field' => 'placeholder_nid',
+    'type' => 'INNER',
+    'table' => 'merci_reservation_detail',
+  );
+  $data['merci_reservation_detail2']['date_argument'] = array(
+    'group' => t('Date'),
+    'title' => t('Date for reservation detail'),
+    'help' => t('Filter any Views date field by a date argument'),
+    'argument' => array(
+      'handler' => 'date_api_argument_handler',
+      'empty name field' => t('Undated'),
+    ),
+  );
+  $data['merci_reservation_detail2']['nid'] = array(
+    'title' => t('Reservation nid'),
+    'help' => t('The node id of the reservation for this placeholder item.'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => TRUE,
+      'skip base' => array('node'),
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_in_operator',
+    ),
+    'relationship' => array(
+      'base' => 'node',
+      'field' => 'nid',
+      'label' => t('Reservation for placeholder item node id'),
+    ),
+  );
+   */
+
 
 
   // merci_bucket_node
