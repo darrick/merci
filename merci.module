@@ -349,44 +349,57 @@ function merci_form_alter(&$form, $form_state, $form_id) {
        $overriden++;
      }
      
-     if (!$overriden) {
-       drupal_add_js(drupal_get_path('module', 'merci') . '/merci_pricing.js'); 
+     if(!$overriden) {
+       drupal_add_js(drupal_get_path('module', 'merci') . '/merci_pricing.js');
+          
+       if (user_access("administer MERCI")) {
+         drupal_add_js('merciDisablePricingFields()', 'inline');
+       }
      }
      
-     
-     if (!user_access("administer MERCI")) {
-         //drupal_add_js('merciDisablePricingFields()', 'inline');
-         //Disable member cost and commerical cost.  
-         $form['#after_build'][] = '_merci_after_build';
-      }
-      
-      // Users without administer or manage MERCI permission can only alter their own Unconfirmed Reservations.
-      if ($form['merci']['merci_status']['#default_value']) {
-        if (!user_access('administer MERCI') && !user_access('administer MERCI')) {
-          unset($form['buttons']['preview']);
-          unset($form['buttons']['submit']);
+     /*
+     if ($form['nid']['#value'] == NULL) {
+        if (module_exists('merci_daypart_pricing')) {
+          drupal_add_js(drupal_get_path('module', 'merci_daypart_pricing') . '/js/merci_daypart_pricing.js');
+        } else {
+          drupal_add_js(drupal_get_path('module', 'merci') . '/merci_pricing.js');
+          
+          if (user_access("administer MERCI")) {
+            drupal_add_js('merciDisablePricingFields()', 'inline');
+          }
+          
         }
       }
+      */
       
-      // 
+      //Disable member cost and commerical cost.  These are only here to make Views easier.
+      $form['#after_build'][] = '_merci_after_build';
+
+
+      //Users without administer MERCI permission can only alter Unconfirmed Reservations.
+      if (!user_access('administer MERCI') && $form['merci']['merci_status']['#default_value']) {
+        unset($form['buttons']['preview']);
+        unset($form['buttons']['submit']);
+      }
+
       if (user_access('suspend MERCI access') && !user_access('administer MERCI')) {
         form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
-        drupal_access_denied();
+        //unset($form);
  
       }
-      
+      else {
 
-      $form['field_merci_date'][0]['merci_date_filter'] = array(
-        '#type' => 'submit',
-        '#value' => t('Limit Lists to Available Items'),
-        '#weight' => 10,
-        '#submit' => array('merci_date_filter'),
-      );
+        $form['field_merci_date'][0]['merci_date_filter'] = array(
+          '#type' => 'submit',
+          '#value' => t('Limit Lists to Available Items'),
+          '#weight' => 10,
+          '#submit' => array('merci_date_filter'),
+        );
 
-      // Since hook_validate is broken in 6.x, we add our own
-      // custom validation here.
-      $form['#validate'][] = 'merci_node_validate';
-      
+        // Since hook_validate is broken in 6.x, we add our own
+        // custom validation here.
+        $form['#validate'][] = 'merci_node_validate';
+      }
       break;
 
     // Node settings form.
@@ -691,6 +704,15 @@ function merci_menu() {
     'weight' => -19,
   );
 
+  // $items['admin/merci/manage/default'] = array(
+//     'title' => 'Overview',
+//     'description' => 'Dashboard of options to Manage MERCI',
+//     'page arguments' => array(2),
+//     'page callback' => 'merci_manage',
+//     'access arguments' => array('manage MERCI'),
+//     'type' => MENU_NORMAL_ITEM,
+//   );
+
   $items['admin/merci/manage/current-inventory'] = array(
     'title' => 'Current Inventory',
     'description' => 'Displays list',
@@ -716,7 +738,7 @@ function merci_menu() {
   $items['merci/pricing'] = array(
     'title' => 'MERCI Pricing',
     'description' => 'Takes a node ID or content type and start and end times of the Reservation and returns price',
-    'page arguments' => array(3, 4, 5),
+    'page arguments' => array(3,4,5),
     'page callback' => 'merci_pricing',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
@@ -1017,8 +1039,11 @@ function merci_node_type($op, $info) {
  */
 function merci_form(&$node, $form_state) {
   $form = node_content_form($node, $form_state);
-   
-  $account = merci_user_load(NULL, $node);
+  
+  //check the logged in user unless merci_staff is enabled
+  if (module_exists('merci_staff')) {
+    $account = user_load(array('name' => check_plain($node->name)));
+  }
   
   // Add a wrapper for the choices and more button.
   $form['choice_wrapper'] = array(
@@ -1145,6 +1170,8 @@ function merci_date_filter($form, &$form_state) {
  */
 function _merci_choice_form($node, $form_state, $delta, $default = '', $account = NULL) {
   
+  //dsm($account);
+  
   static $options = array();
   $form = array(
     '#tree' => TRUE,
@@ -1168,22 +1195,20 @@ function _merci_choice_form($node, $form_state, $delta, $default = '', $account 
   return $form;
 }
 
-function merci_get_user_reservable_nodes($type=NULL) {
+function merci_get_user_reservable_nodes($type=null) {
 
   $reservable_nodes = array();
 
-  if ($type == 'bucket') {
-    $bucket = TRUE;
-  } 
-  elseif ($type == 'resource') {
-    $resource = TRUE;
-  } 
-  else {
-    $bucket = TRUE;
-    $resource = TRUE;
+  if($type == 'bucket'){
+    $bucket = true;
+  } elseif ($type == 'resource'){
+    $resource = 'true';
+  } else {
+    $bucket = true;
+    $resource = 'true';
   }
 
-  if ($bucket) {
+  if($bucket) {
     // Buckets.
     $buckets = merci_load_merci_type_settings('bucket');
 
@@ -1254,6 +1279,8 @@ function merci_get_user_reservable_nodes($type=NULL) {
  */
 function merci_build_reservable_items($node, $form_state, $reservation_nid = NULL, $account = NULL) {
   
+  //dsm($account);
+  
   // Newly set dates take precedence.
   if (isset($form_state['values']['field_merci_date'])) {
     $start = $form_state['values']['field_merci_date'][0]['value'];
@@ -1289,8 +1316,9 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
       // Check for available items in the bucket.
       $available_bucket_items = merci_get_available_bucket_count($bucket->type, $start, $end, $reservation_nid) - $bucket->spare_items;
 
-      if (empty($is_new)) {
+      if(empty($is_new)){
         // Check bucket restrictions.
+        // DIFF??
         $restrictions = merci_check_content_type_restrictions($bucket->type, $start, $end);
       }
       if (empty($restrictions) and  $available_bucket_items) {
@@ -1343,6 +1371,7 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
       else {
 
         // Check resource restrictions.
+        //DIFF?
         $restrictions = merci_check_content_type_restrictions($resource->type, $start, $end);
 
         if (empty($restrictions)) {
@@ -1496,6 +1525,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end, $acc
  *   otherwise.
  */
 function merci_check_content_type_user_permissions($type, $account = NULL) {
+  //dsm($account);
   return user_access("edit own $type content", $account) && user_access("delete own $type content", $account);
 }
 
@@ -1590,7 +1620,10 @@ function merci_choice_js() {
     $node = new stdClass();
   }
   
-  $account = merci_user_load(NULL, $node);
+  //check the logged in user unless merci_staff is enabled
+  if (module_exists('merci_staff')) {
+    $account = user_load(array('name' => check_plain($_POST['name'])));
+  }
   
   $dates = $_POST['field_merci_date'][0];
   // If a start and end date exist, we have to massage them
@@ -2199,7 +2232,7 @@ function merci_add_reservation_items($node) {
         $date_info = $node->field_merci_date[0];
         $start     = $date_info['value'];
         $end       = $date_info['value2'];
-        $item_nid = merci_get_suggested_bucket_item($type, $start, $end, $exempt_items);
+        $item_nid = merci_get_suggested_bucket_item($type, $start, $end,$exempt_items);
         $exempt_items[] = $item_nid;
         $item_node = node_load($item_nid);
         $item_status = MERCI_ITEM_STATUS_RESERVED;
@@ -2675,7 +2708,7 @@ function merci_get_suggested_bucket_item($content_type, $start = NULL, $end = NU
   }
 
   foreach ($total_items_array as $item_nid => $node) {
-    if (empty($total_items_array[$item_nid]) && !in_array($item_nid, $items)) {
+    if (empty($total_items_array[$item_nid]) and !in_array($item_nid,$items)) {
       return $item_nid;
     }
 
@@ -2708,7 +2741,7 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
   if (!$start) {
     
     //if user is admin/manager and merci template is installed
-    if (module_exists('merci_template') && user_access("administer MERCI")) {
+    if(module_exists('merci_template') && user_access("administer MERCI")){
 
       $count = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM {node} 
       LEFT JOIN {merci_bucket_node} ON node.vid = merci_bucket_node.vid 
@@ -3011,7 +3044,10 @@ function merci_node_validate($form, &$form_state) {
   //set debug state
   $debug = variable_get('merci_debug', 0);
   
-  $account = merci_user_load($form);
+  //check the logged in user unless merci_staff is enabled
+  if (module_exists('merci_staff')) {
+    $account = user_load(array('name' => check_plain($form['name']['#value'])));
+  }
   
   if (user_access('suspend MERCI access', $account) && !user_access('administer MERCI', $account)) {
     form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
@@ -3185,7 +3221,6 @@ function merci_node_validate($form, &$form_state) {
         }
         // It's not a content type restriction, so it's a date conflict.
         else {
-          if ($debug) watchdog('merci', 'CONFLICT GRID merci_node_validate()');
           $message .= merci_conflict_grid($type, $title, $start, $end, $value);
         }
         form_set_error("existing_items][placeholders][$did", $message);
@@ -3264,12 +3299,7 @@ function merci_node_validate($form, &$form_state) {
    // Allow other modules to add validation.
   foreach (module_implements('merci_validation') as $module) {
     $function = $module .'_merci_validation';
-    $message = $function($form);
-    //custom validation functions should return nothing if the reservation is valid
-    //or a string explaining why the reservation can't be saved with these settings
-    if ($message) {
-      form_set_error('merci_status', $message);
-    }
+    $function($node);
   }
 }
 
@@ -3804,6 +3834,7 @@ function merci_taxonomy_json($node_id) {
         $output['status'] = 'failed';
         $output['error'] = 'Required fields not selected.';
 
+        //DIFF??
       }
       // else
     }
@@ -3862,13 +3893,12 @@ function merci_confirm_via_email($nid) {
   global $basepath;
   if (merci_confirm_reservation($nid)) {
     drupal_set_message(t('Reservation confirmed'));
-  } 
-  else {
+  } else {
     drupal_set_message(t('Reservation not confirmed.  The Reservation may have been confirmed by staff.')); 
   }
   
   $return = $_GET["destination"];
-  if (!$return) {
+  if(!$return){
     $return = $basepath;
   }
   drupal_goto($return);
@@ -4074,6 +4104,10 @@ function merci_format_time($hours_minutes) {
   return $return;
 }
 
+function merci_manage() {
+  $output = 'Nothing to see here... yet';
+  return $output;
+}
 
 /**
  * Custom after_build callback handler.
@@ -4083,8 +4117,8 @@ function _merci_after_build($form, &$form_state) {
   //_merci_fix_disabled($form['field_merci_member_cost']);
 
   // Use this one if the field is placed inside a fieldgroup.
-  _merci_fix_disabled($form['group_merci_costs']['field_merci_member_cost']);
-  _merci_fix_disabled($form['group_merci_costs']['field_merci_commercial_cost']);
+  _merci_fix_disabled($form['group_merci_internal']['field_merci_member_cost']);
+  _merci_fix_disabled($form['group_merci_internal']['field_merci_commercial_cost']);
 
 
   return $form;
@@ -4167,8 +4201,7 @@ function merci_current_inventory() {
     // TODO: Check if the View exists... not the module that normally creates it.
     if (module_exists('merci_inventory')) {
       $output .= l($mercitype->type, 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'type[0]=' . $mercitype->type)) . ' (' . $currentlyout . '/' . $currentlyactive . '/' . ($currentlyactive - $currentlyout) . ')<br />';
-    } 
-    else {
+    }  else {
       $output .= $mercitype->type . ' (' . $currentlyout . '/' . $currentlyactive . '/' . ($currentlyactive - $currentlyout) . ')<br />';
     }
   }
@@ -4197,7 +4230,7 @@ function merci_content_extra_fields() {
 function merci_unlock() {
   db_query("UPDATE {content_node_field} SET locked = 0 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
   $return = $_GET["destination"];
-  if (!$return) {
+  if(!$return){
     $return = 'admin/settings/merci';
   }
   drupal_goto($return);
@@ -4206,7 +4239,7 @@ function merci_unlock() {
 function merci_lock() {
   db_query("UPDATE {content_node_field} SET locked = 1 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
   $return = $_GET["destination"];
-  if (!$return) {
+  if(!$return){
     $return = 'admin/settings/merci';
   }
   drupal_goto($return);
@@ -4215,7 +4248,7 @@ function merci_lock() {
 /**
  * Implementation of hook_node_operations().
  */
-function merci_node_operations($return=NULL) {
+function merci_node_operations($return=null) {
   $operations = array(
     'merci_update' => array(
       'label' => t('Confirm Reservation(s)'),
@@ -4263,8 +4296,7 @@ function merci_pricing($start, $end, $node_type_array) {
     $dates[1] = 1291747500;
     $items[0] = 1;
     
-  } 
-  else {
+  } else {
   
     $items = explode(',', $_POST['items']);
     $dates = array(
@@ -4284,8 +4316,7 @@ function merci_pricing($start, $end, $node_type_array) {
       $fee_hours       = $hours - ($item_node->merci['fee_free_hours']);
       $rate_per_hour   = $item_node->merci['rate_per_hour']; 
       
-    } 
-    else {
+    } else {
       //for buckets, load settings based on type
       $type = merci_load_content_type_settings($item);
       $fee_hours       = $hours - ($type->fee_free_hours);
@@ -4309,9 +4340,13 @@ function merci_pricing($start, $end, $node_type_array) {
 }
 // merci_daypart_pricing
 
-function merci_email_user($node) {
+function merci_email_user($node){
+  
+  //dsm($node);
   
   $account = user_load(array('name' => check_plain($node->name)));
+  
+  //dsm($account->mail);
   
   if ($account->mail && variable_get('site_mail', 0)) {
     //format receipt
@@ -4344,7 +4379,7 @@ function merci_email_user($node) {
     //add confirmation link to message
     if (variable_get('merci_email_confirmation', 0)) {
       $destination = 'destination=node/' . $node->nid;
-      $body .= "Click this link to confirm your Reservation: \n " . url('merci/confirm/' . $node->nid, array('query' => $destination, 'absolute' => TRUE));
+      $body .= "Click this link to confirm your Reservation: \n " . url('merci/confirm/' . $node->nid, array('query' => $destination,'absolute' => TRUE));
     }
     
   
@@ -4354,26 +4389,10 @@ function merci_email_user($node) {
       'body' => $body,
       'headers' => array('From' => variable_get('site_mail', 0)),
     );
+    //dsm($message);
     
     drupal_mail_send($message);
     watchdog('merci', 'emailed receipt to ' . $account->mail . ' from ' . variable_get('site_mail', 0));
   }
   
 }
-
-function merci_user_load($form = NULL, $node = NULL) {
-
-  global $user;
-  //check the logged in user unless merci_staff is enabled
-  if (module_exists('merci_staff')) {
-    if (!$form['override']['#value'] || !$node->override) {
-    $account = user_load(array('name' => check_plain($_POST['name'])));
-    }
-  } 
-  else {
-    $account = $user;
-  }
-
-  return $account;
-}
-  
