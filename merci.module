@@ -2085,7 +2085,48 @@ function merci_node_type_save_submit($form, &$form_state) {
       $merci['type']);
 
     if (!db_affected_rows()) {
-      db_query("INSERT INTO {merci_node_type} (type, type_setting, max_hours_per_reservation, allow_overnight, allow_weekends, late_fee_per_hour, rate_per_hour, fee_free_hours, status, spare_items, min_cancel_hours, autocheckout, autocheckin, selfcheckout, grouping, auto_assign_bucket_item, daypart1_price, daypart2_price, daypart3_price, weekend_price) VALUES ('%s', '%s', %d, %d, %d, %d, %f, %f, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)", $merci['type'], $merci['merci_type_setting'], $merci['merci_max_hours_per_reservation'], $merci['merci_allow_overnight'], $merci['merci_allow_weekends'], $merci['merci_late_fee_per_hour'], $merci['merci_rate_per_hour'], $merci{'merci_fee_free_hours'}, $merci['merci_status'], $merci['merci_spare_items'], $merci['merci_min_cancel_hours'], $merci['merci_autocheckout'], $merci['merci_autocheckin'], $merci['merci_selfcheckout'], $merci['merci_grouping'], $merci['merci_auto_assign_bucket_item'], $merci['merci_daypart1_price'], $merci['merci_daypart2_price'], $merci['merci_daypart3_price'], $merci['merci_weekend_price']);
+      db_query("INSERT INTO {merci_node_type} 
+        (type, 
+        type_setting, 
+        max_hours_per_reservation, 
+        allow_overnight, 
+        allow_weekends, 
+        late_fee_per_hour, 
+        rate_per_hour, 
+        fee_free_hours, 
+        status, 
+        spare_items, 
+        min_cancel_hours, 
+        autocheckout, 
+        autocheckin, 
+        selfcheckout, 
+        grouping, 
+        auto_assign_bucket_item, 
+        daypart1_price, 
+        daypart2_price, 
+        daypart3_price, 
+        weekend_price) 
+        VALUES ('%s', '%s', %d, %d, %d, %d, %f, %f, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)", 
+        $merci['type'], 
+        $merci['merci_type_setting'], 
+        $merci['merci_max_hours_per_reservation'], 
+        $merci['merci_allow_overnight'], 
+        $merci['merci_allow_weekends'], 
+        $merci['merci_late_fee_per_hour'], 
+        $merci['merci_rate_per_hour'], 
+        $merci{'merci_fee_free_hours'}, 
+        $merci['merci_status'], 
+        $merci['merci_spare_items'], 
+        $merci['merci_min_cancel_hours'], 
+        $merci['merci_autocheckout'], 
+        $merci['merci_autocheckin'], 
+        $merci['merci_selfcheckout'], 
+        $merci['merci_grouping'], 
+        $merci['merci_auto_assign_bucket_item'], 
+        $merci['merci_daypart1_price'], 
+        $merci['merci_daypart2_price'], 
+        $merci['merci_daypart3_price'], 
+        $merci['merci_weekend_price']);
     }
   }
 }
