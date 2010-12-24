@@ -1741,7 +1741,7 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
               break;
 
             case 'resource':
-              db_query("UPDATE {merci_resource_node} SET default_availability = %d, late_fee_per_hour = %d, rate_per_hour = %d, fee_free_hours = %d, min_cancel_hours = %d, autocheckout = %d, autocheckin = %d, selfcheckout = %d, daypart1_price = %d, daypart2_price = %d, daypart3_price = %d, weekend_price = %d,WHERE vid = %d", $node->merci_default_availability, $node->merci_late_fee_per_hour, $node->merci_rate_per_hour, $node->merci_fee_free_hours, $node->merci_min_cancel_hours, $node->merci_autocheckout, $node->merci_autocheckin, $node->merci_selfcheckout, $node->daypart1_price, $node->daypart2_price, $node->daypart3_price, $node->weekend_price, $node->vid);
+              db_query("UPDATE {merci_resource_node} SET default_availability = %d, late_fee_per_hour = %d, rate_per_hour = %d, fee_free_hours = %d, min_cancel_hours = %d, autocheckout = %d, autocheckin = %d, selfcheckout = %d, daypart1_price = %d, daypart2_price = %d, daypart3_price = %d, weekend_price = %d WHERE vid = %d", $node->merci_default_availability, $node->merci_late_fee_per_hour, $node->merci_rate_per_hour, $node->merci_fee_free_hours, $node->merci_min_cancel_hours, $node->merci_autocheckout, $node->merci_autocheckin, $node->merci_selfcheckout, $node->daypart1_price, $node->daypart2_price, $node->daypart3_price, $node->weekend_price, $node->vid);
               break;
           }
         }
