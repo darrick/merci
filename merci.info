@@ -14,5 +14,6 @@ dependencies[] = date_timezone
 dependencies[] = views
 dependencies[] = taxonomy
 dependencies[] = fieldgroup
+dependencies[] = optionwidgets 
 
 
