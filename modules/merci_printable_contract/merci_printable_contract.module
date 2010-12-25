@@ -44,7 +44,7 @@ function merci_printable_contract_theme() {
     'merci_printable_contract' => array(
       'template' => 'merci-printable-contract',
       'path' => "$path/",
-      'arguments' => array('items' => NULL, 'start_date' => NULL, 'end_date' => NULL, 'hours' => NULL, 'username' => NULL, 'email' => NULL, 'phone' => NULL, 'items' => NULL),
+      'arguments' => array('start_date' => NULL, 'end_date' => NULL, 'hours' => NULL, 'username' => NULL, 'email' => NULL, 'phone' => NULL, 'items' => NULL),
       ),
     );
 }
@@ -140,7 +140,7 @@ function merci_printable_contract($node) {
   $hours = round((intval(date_format($end_date,"U")) - intval(date_format($start_date,"U"))) / 3600, 2);
 
   
-  $html = theme('merci_printable_contract', $items, $start_date, $end_date, $hours, $username, $email, $phone, $items);
+  $html = theme('merci_printable_contract', $start_date, $end_date, $hours, $username, $email, $phone, $items);
   
   print $html;
 }
