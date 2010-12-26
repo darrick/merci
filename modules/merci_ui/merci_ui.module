@@ -173,7 +173,7 @@ function merci_ui_list_reservations($node, $start, $end) {
       WHERE item_nid = %d AND $column_start_date < '%s' AND $column_start_date > '%s' 
       ORDER BY $column_start_date DESC", $node->nid, $start_mysql, $end_mysql);
 
-    $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
+    $output .= '<b>'. l(t('Upcoming Reservations'), 'node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
   }
   elseif ($start) {
     $start_mysql = date('Y-m-d', $start);
@@ -183,7 +183,7 @@ function merci_ui_list_reservations($node, $start, $end) {
       WHERE item_nid = %d AND $column_start_date < '%s' 
       ORDER BY $column_start_date DESC", $node->nid, $start_mysql);
 
-    $output .= '<b>'. l(t('Upcoming Reservations'), '/node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
+    $output .= '<b>'. l(t('Upcoming Reservations'), 'node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
   }
   else {
     $result = db_query("SELECT * FROM {merci_reservation_detail} 
@@ -191,13 +191,13 @@ function merci_ui_list_reservations($node, $start, $end) {
       JOIN {". $table ."} ct ON merci_reservation_detail.nid = ct.nid 
       WHERE item_nid = %d AND $column_start_date > NOW() ORDER BY $column_start_date", $node->nid);
 
-    $output .= '<b>'. t('Upcoming Reservations') .' | '. l(t('Previous Reservations'), '/node/'. $node->nid .'/reservations/'. strtotime('now') .'/'. strtotime('- 3 months')) .'</b><br />';
+    $output .= '<b>'. t('Upcoming Reservations') .' | '. l(t('Previous Reservations'), 'node/'. $node->nid .'/reservations/'. strtotime('now') .'/'. strtotime('- 3 months')) .'</b><br />';
   }
 
   while ($reservationnode = db_fetch_object($result)) {
 
     // TODO use $column_start_date instead of field_merci_date_value
-    $output .= l($reservationnode->title, '/node/'. $reservationnode->nid) .' reserved from '. format_date(strtotime($reservationnode->field_merci_date_value), $type = 'medium') .' '. format_date(strtotime($reservationnode->field_merci_date_value2), $type = 'medium') .'</a><br />';
+    $output .= l($reservationnode->title, 'node/'. $reservationnode->nid) .' reserved from '. format_date(strtotime($reservationnode->field_merci_date_value), $type = 'medium') .' '. format_date(strtotime($reservationnode->field_merci_date_value2), $type = 'medium') .'</a><br />';
     $count++;
   }
 
