@@ -6,5 +6,6 @@ description = "Applies inventory fields to MERCI resources"
 core = 6.x
 dependencies[] = merci
 dependencies[] = content_copy
+dependencies[] = text
 
 
