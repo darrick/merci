@@ -374,9 +374,9 @@ function merci_form_alter(&$form, $form_state, $form_id) {
             $late_fee_per_hour = $merci_settings->late_fee_per_hour;
             $fee_free_hours    = $merci_settings->fee_free_hours;
             $min_cancel_hours  = $merci_settings->min_cancel_hours;
-            $autocheckout      = $node->merci_autocheckout;
-            $autocheckin       = $node->merci_autocheckin;
-            $selfcheckout      = $node->merci_selfcheckout;
+            $autocheckout      = $merci_settings->autocheckout;
+            $autocheckin       = $merci_settings->autocheckin;
+            $selfcheckout      = $merci_settings->selfcheckout;
           }
         }
 
@@ -456,6 +456,15 @@ function merci_form_alter(&$form, $form_state, $form_id) {
               '#element_validate' => array('merci_is_numeric_validate'),
               '#description' => t('The number of hours the item can be used before fees are charged.'),
             );
+            $form['merci']['merci_min_cancel_hours'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Minimum hours for cancelation without No Show'),
+              '#size' => 10,
+              '#default_value' => $min_cancel_hours,
+              '#element_validate' => array('merci_is_numeric_validate'),
+              '#description' => t('Minimum number of hours before the start time a user may cancel a reservation for the item.'),
+            );
+
             $form['merci']['merci_autocheckout'] = array(
               '#type' => 'checkbox',
               '#title' => t('Auto checkout'),
@@ -837,6 +846,7 @@ function merci_admin_settings($form, &$form_state) {
   );
 
   $instances = field_info_instances('node','merci_reservation');
+
     
   $locked_fields = array();
   $unlocked_fields = array();
@@ -844,8 +854,8 @@ function merci_admin_settings($form, &$form_state) {
     $field = field_info_field($instance['field_name']);
     if($field['locked']) {
       $locked_fields[] = $instance['field_name'];
-  } 
-  else {
+    } 
+    else {
       $unlocked_fields[] = $instance['field_name'];
     }
   }
@@ -1553,9 +1563,6 @@ function merci_nodeapi_OLD(&$node, $op, $a3 = NULL, $a4 = NULL) {
 
 
 
-  dpm("Hello");
-
-  dpm($node);
   // TODO Remaining code in this function needs to be moved to the appropriate new hook function.
   if (($cache = cache_get('merci_' . $node->type . '_data')) && !empty($cache->data)) {
     $merci_node_type = $cache->data;
@@ -1841,7 +1848,6 @@ function merci_delete_item_validate($node, $single = TRUE) {
  * Validates saving of MERCI node types.
  */
 function merci_node_type_save_validate($form, &$form_state) {
-  dpm($form);
   $values = $form_state['values'];
   // Only validate node types set to an inactive status.
   if ($values['merci_type_setting'] != 'disabled' && (int) $values['merci_status'] == MERCI_STATUS_INACTIVE) {
@@ -2022,7 +2028,6 @@ function merci_node_type_save_submit($form, &$form_state) {
   }
 
   if ($form_state['clicked_button']['#value'] == t('Save content type')) {
-    dpm($merci);
      
     $is_existing = (bool) db_query_range('SELECT 1 FROM {merci_node_type} WHERE type = :type', 0, 1, array(':type' => $merci['type']))->fetchField();
 
@@ -2092,7 +2097,6 @@ function merci_node_type_save_submit($form, &$form_state) {
         'auto_assign_bucket_item' => $merci['merci_auto_assign_bucket_item'],
       ))
   ->execute();
-      dpm($id);
     }
   }
 }
@@ -2506,7 +2510,6 @@ function merci_build_reservation_table_form($form, &$form_state, $node, $edit_pa
     $form['#table'][$did]['ops'] = $operations;
   }
 
-  dpm($form);
   return $form;
 }
 
@@ -2640,9 +2643,6 @@ function merci_get_bucket_items_array($content_type, $start = NULL, $end = NULL,
   foreach ($total_items_nodes as $ctnodes) {
     $total_items_array[$ctnodes->nid] = array();
   }
-
-  dpm($total_items_array);
-
 
   $args = array(':start' => $start, ':end' => $end, ':type' => $content_type, ':item_status' => MERCI_ITEM_STATUS_AVAILABLE);
 
@@ -2842,9 +2842,6 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
 
 
   $total_items_array = merci_get_bucket_items_array($content_type,$start,$end,$reservation);
-
-  dpm($total_items_array);
-
 
   foreach ($total_items_array as $item_nid => $reservations) {
     if (!empty($reservations)) {
@@ -3262,8 +3259,6 @@ function merci_conflict_grid2($type, $title, $node, $nid = NULL) {
   }
 
  
-  dpm($reservations_per_day);
-
   $message = '<div> ' . t("The dates and times for %name conflict with one or more existing reservations", array('%name' => $title)) . '</div>';
 
   $message .= '<div class="merci-availability-key"><span class="available"></span> = available <span class="unavailable"></span> = unavailable</div>';
@@ -3495,7 +3490,6 @@ function merci_load_reservations_for_node_in_timespan2($resource_nid, $bucket_ty
     $args[':item_nid'] = $resource_nid;
     
   }
-  dpm($args);
 
   $sql = "SELECT d.item_nid, n.nid AS node, r.entity_id AS reservation, r.field_merci_date_value AS start, r.field_merci_date_value2 AS end
       FROM {merci_reservation_detail} d
@@ -3509,7 +3503,6 @@ function merci_load_reservations_for_node_in_timespan2($resource_nid, $bucket_ty
 
   $reservations = db_query( $sql, $args);
 
-  dpm($reservations);
   
   foreach ($reservations as $reservation) {
     $items[] = $reservation;
@@ -4232,6 +4225,7 @@ function merci_manage() {
  */
 function _merci_after_build($form, &$form_state) {
   // Use this one if the field is placed on top of the form.
+  return $form;
   //_merci_fix_disabled($form['field_merci_member_cost']);
 
   // Use this one if the field is placed inside a fieldgroup.
@@ -4356,17 +4350,18 @@ function merci_content_extra_fields() {
 function merci_unlock() {
   // TODO Please review the conversion of this statement to the D7 database API syntax.
   /* db_query("UPDATE {content_node_field} SET locked = 0 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'") */
-  db_update('content_node_field')
+  db_update('field_config')
   ->fields(array(
     'locked' => 0,
   ))
-  ->condition('field_name', 'field_merci_date')
-  ->condition('field_name', 'field_merci_member_cost')
-  ->condition('field_name', 'field_merci_commercial_cost')
-  ->condition('field_name', 'field_merci_commercial_rental')
+  ->condition('field_name', array('field_merci_date',
+   'field_merci_member_cost',
+   'field_merci_commercial_cost',
+   'field_merci_commercial_rental',
+), 'IN')
   ->execute();
 
-  drupal_goto('admin/config/merci');
+  drupal_goto('admin/merci/manage/settings');
 }
 
 /**
@@ -4376,7 +4371,7 @@ function merci_unlock() {
 function merci_lock() {
   // TODO Please review the conversion of this statement to the D7 database API syntax.
   /* db_query("UPDATE {content_node_field} SET locked = 1 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'") */
-  db_update('content_node_field')
+  db_update('field_config')
   ->fields(array(
     'locked' => 1,
   ))
