@@ -18,7 +18,7 @@ $logourl = theme_get_setting('logo_path', '');
           print token_replace(variable_get('merci_contract_header', ''), 'node', $node);
         }
         else {
-          print variable_get('merci_contract_header');
+          print variable_get('merci_contract_header','');
         }
         ?>
         Start: <?php print date_format_date($start_date,"long") . '<br />'; ?>
@@ -108,8 +108,8 @@ $logourl = theme_get_setting('logo_path', '');
           <tfoot>
         </table>
         <div id="boilerplate"><?php if (module_exists('token')) { echo token_replace(variable_get('merci_contract_boilerplate', ''), 'node', $node); }
-  else  { echo variable_get('merci_contract_boilerplate'); } ?></div>
+  else  { echo variable_get('merci_contract_boilerplate',''); } ?></div>
         <div id="footer"><?php if (module_exists('token')) { echo token_replace(variable_get('merci_contract_footer', ''), 'node', $node); }
-  else  { echo variable_get('merci_contract_footer'); } ?></div>
+  else  { echo variable_get('merci_contract_footer',''); } ?></div>
       </div>
     </body>
