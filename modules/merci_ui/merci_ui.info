@@ -8,4 +8,6 @@ dependencies[] = merci
 
 
 files[] = merci_ui.module
-files[] = merci_ui_view.views_default.inc
+files[] = includes/merci_ui.views.inc
+files[] = includes/merci_ui.views_default.inc
+files[] = includes/views_plugin_access_php.inc 
