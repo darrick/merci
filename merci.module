@@ -1638,7 +1638,7 @@ function merci_choice_js() {
   }
 
   // Build our new form element.
-  $form_element = _merci_choice_form($node, $form_state, $delta, $account);
+  $form_element = _merci_choice_form($node, $form_state, $delta, $default, $account);
   drupal_alter('form', $form_element, array(), 'merci_choice_js');
 
   // Build the new form.
