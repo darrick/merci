@@ -47,7 +47,7 @@ function merci_init() {
  * Implementation of hook_perm().
  */
 function merci_perm() {
-  return array('create reservations', 'create confirmed reservations', 'membership discount', 'suspend MERCI access', 'administer MERCI', 'create reservations outside hours of operation', 'manage MERCI', 'override max hours over closed days');
+  return array('create merci_reservation content', 'create reservations', 'create confirmed reservations', 'membership discount', 'suspend MERCI access', 'administer MERCI', 'create reservations outside hours of operation', 'manage MERCI', 'override max hours over closed days');
 }
 
 /**
@@ -2307,78 +2307,80 @@ function merci_add_reservation_items($node) {
   //print 'subtotal: '.  $commercial_total . '<br />';
   // New items.
   $exempt_items = array();
-  foreach ($node->choice as $num => $choice) {
+  if(isset($node->choice)) {
+    foreach ($node->choice as $num => $choice) {
 
-    //Add to commerical rate
-    //print '<pre>';
-    //print_r();
-    $rate = merci_get_rate($choice['item']);
-    $commercial_total = $commercial_total + ($hours * $rate->rate_per_hour);
+      //Add to commerical rate
+      //print '<pre>';
+      //print_r();
+      $rate = merci_get_rate($choice['item']);
+      $commercial_total = $commercial_total + ($hours * $rate->rate_per_hour);
 
-    // Resource.
-    if (is_numeric($choice['item'])) {
-      $item        = db_fetch_object(db_query("SELECT type, title FROM {node} WHERE nid = %d", $choice['item']));
-      $type        = $item->type;
-      $title       = $item->title;
-      $item_nid    = $choice['item'];
-      $item_node   = node_load($item_nid);
-      $item_status = MERCI_ITEM_STATUS_RESERVED;
-    }
-    // Bucket.
-    elseif ($choice['item']) {
-      $type        = $choice['item'];
-      $title       = db_result(db_query("SELECT name FROM {node_type} WHERE type = '%s'", $type));
-      $settings    = db_fetch_object(db_query("SELECT * FROM {merci_node_type} WHERE type = '%s'", $type));
-      if ($settings->auto_assign_bucket_item) {
-        $date_info = $node->field_merci_date[0];
-        $start     = $date_info['value'];
-        $end       = $date_info['value2'];
-        $item_nid = merci_get_suggested_bucket_item($type, $start, $end, $exempt_items);
-        $exempt_items[] = $item_nid;
-        $item_node = node_load($item_nid);
+      // Resource.
+      if (is_numeric($choice['item'])) {
+        $item        = db_fetch_object(db_query("SELECT type, title FROM {node} WHERE nid = %d", $choice['item']));
+        $type        = $item->type;
+        $title       = $item->title;
+        $item_nid    = $choice['item'];
+        $item_node   = node_load($item_nid);
         $item_status = MERCI_ITEM_STATUS_RESERVED;
-      } 
-      else {
-        $item_nid    = 0;
-        $item_node   = FALSE;
-        $item_status = MERCI_ITEM_STATUS_AVAILABLE;
       }
+      // Bucket.
+      elseif ($choice['item']) {
+        $type        = $choice['item'];
+        $title       = db_result(db_query("SELECT name FROM {node_type} WHERE type = '%s'", $type));
+        $settings    = db_fetch_object(db_query("SELECT * FROM {merci_node_type} WHERE type = '%s'", $type));
+        if ($settings->auto_assign_bucket_item) {
+          $date_info = $node->field_merci_date[0];
+          $start     = $date_info['value'];
+          $end       = $date_info['value2'];
+          $item_nid = merci_get_suggested_bucket_item($type, $start, $end, $exempt_items);
+          $exempt_items[] = $item_nid;
+          $item_node = node_load($item_nid);
+          $item_status = MERCI_ITEM_STATUS_RESERVED;
+        } 
+        else {
+          $item_nid    = 0;
+          $item_node   = FALSE;
+          $item_status = MERCI_ITEM_STATUS_AVAILABLE;
+        }
+      }
+      else {
+        // Nothing selected -- move along...
+        continue;
+      }
+
+      // Build the item's placeholder node.
+      $reservation = new stdClass();
+      $reservation->type = $type;
+      $reservation->name = $node->name;
+      $reservation->uid = $node->uid;
+      $reservation->title = "$title " . t('(Reservation)');
+      $reservation->body = '';
+      $reservation->status = 0;
+      $reservation->promote = 0;
+      $reservation->sticky = 0;
+
+      // MERCI specific data.
+      $merci_settings = merci_load_content_type_settings($type);
+      $reservation->merci_default_availability = MERCI_AVA_F;
+      $reservation->merci_sub_type = MERCI_SUB_TYPE_RESERVATION;
+
+      // Use the item specific accounting data if an item is assigned,
+      // otherwise fall back to the content type defaults.
+      $reservation->merci_late_fee_per_hour = $item_node ? $item_node->merci['late_fee_per_hour'] : $merci_settings->late_fee_per_hour;
+      $reservation->merci_rate_per_hour = $item_node ? $item_node->merci['rate_per_hour'] : $merci_settings->rate_per_hour;
+      $reservation->merci_fee_free_hours = $item_node ? $item_node->merci['fee_free_hours'] : $merci_settings->fee_free_hours;
+      $reservation->merci_min_cancel_hours = $item_node ? $item_node->merci['min_cancel_hours'] : $merci_settings->min_cancel_hours;
+      $reservation->merci_autocheckout = $item_node ? $item_node->merci['autocheckout'] : $merci_settings->autocheckout;
+      $reservation->merci_autocheckin = $item_node ? $item_node->merci['autocheckin'] : $merci_settings->autocheckin;
+      $reservation->merci_selfcheckout = $item_node ? $item_node->merci['selfcheckout'] : $merci_settings->selfcheckout;
+
+      $reservation = node_submit($reservation);
+      node_save($reservation);
+
+      db_query("INSERT INTO {merci_reservation_detail} (nid, vid, placeholder_nid, item_nid, item_status) VALUES (%d, %d, %d, %d, %d)", $node->nid, $node->vid, $reservation->nid, $item_nid, $item_status);
     }
-    else {
-      // Nothing selected -- move along...
-      continue;
-    }
-
-    // Build the item's placeholder node.
-    $reservation = new stdClass();
-    $reservation->type = $type;
-    $reservation->name = $node->name;
-    $reservation->uid = $node->uid;
-    $reservation->title = "$title " . t('(Reservation)');
-    $reservation->body = '';
-    $reservation->status = 0;
-    $reservation->promote = 0;
-    $reservation->sticky = 0;
-
-    // MERCI specific data.
-    $merci_settings = merci_load_content_type_settings($type);
-    $reservation->merci_default_availability = MERCI_AVA_F;
-    $reservation->merci_sub_type = MERCI_SUB_TYPE_RESERVATION;
-
-    // Use the item specific accounting data if an item is assigned,
-    // otherwise fall back to the content type defaults.
-    $reservation->merci_late_fee_per_hour = $item_node ? $item_node->merci['late_fee_per_hour'] : $merci_settings->late_fee_per_hour;
-    $reservation->merci_rate_per_hour = $item_node ? $item_node->merci['rate_per_hour'] : $merci_settings->rate_per_hour;
-    $reservation->merci_fee_free_hours = $item_node ? $item_node->merci['fee_free_hours'] : $merci_settings->fee_free_hours;
-    $reservation->merci_min_cancel_hours = $item_node ? $item_node->merci['min_cancel_hours'] : $merci_settings->min_cancel_hours;
-    $reservation->merci_autocheckout = $item_node ? $item_node->merci['autocheckout'] : $merci_settings->autocheckout;
-    $reservation->merci_autocheckin = $item_node ? $item_node->merci['autocheckin'] : $merci_settings->autocheckin;
-    $reservation->merci_selfcheckout = $item_node ? $item_node->merci['selfcheckout'] : $merci_settings->selfcheckout;
-
-    $reservation = node_submit($reservation);
-    node_save($reservation);
-
-    db_query("INSERT INTO {merci_reservation_detail} (nid, vid, placeholder_nid, item_nid, item_status) VALUES (%d, %d, %d, %d, %d)", $node->nid, $node->vid, $reservation->nid, $item_nid, $item_status);
   }
 
   // Update the state of all items with associations.
