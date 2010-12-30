@@ -34,7 +34,10 @@ function merci_staff_menu() {
 * Implementation of hook_form_alter
 **/
 
-function merci_staff_form_merci_reservation_node_form_alter(&$form, &$form_state) {
+function merci_staff_form_alter(&$form, &$form_state,$form_id) {
+  if($form_id != 'merci_reservation_node_form') {
+    return;
+  }
   drupal_add_js(drupal_get_path('module', 'merci_staff') . '/merci_staff.js');
   if (user_access('administer MERCI') || user_access('manage MERCI')) {
     $form['name'] = $form['author']['name'];
@@ -65,6 +68,19 @@ function merci_staff_form_merci_reservation_node_form_alter(&$form, &$form_state
     );
     $form['#prefix'] = '<div id="merci-staff-edit-form-wrapper">';
     $form['#suffix'] = '</div>';
+
+    if (module_exists('og')) {
+      if(!isset($form['og_nodeapi'])) {
+        db_query("UPDATE {system} SET weight = 10 WHERE name = 'merci_staff'");
+      }
+      global $user;
+      $current_user = $user;
+      $newuser = user_load(array('name' => $form['name']['#default_value']));
+      $user = $newuser;
+
+      og_form_add_og_audience($form,$form_state);
+      $user = $current_user;
+    }
   }
 }
 
