@@ -6,34 +6,65 @@
  * merci_staff functions
  */
 
+function merci_staff_menu() {
+  $items = array();
+
+  if (module_exists('civicrm')) {
+    $items['user/autocompletecivi'] = array(
+      'title' => 'User autocomplete',
+      'page callback' => 'merci_staff_autocomplete',
+      'access callback' => 'user_access',
+      'access arguments' => array('access user profiles'),
+      'type' => MENU_CALLBACK,
+    );
+  }
+
+  // Callback for AJAX adding of item selectors.
+  $items['mercistaff/updatename'] = array(
+    'page callback' => 'merci_staff_update_name',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+
 /**
 * Implementation of hook_form_alter
 **/
 
-function merci_staff_form_alter(&$form, $form_state, $form_id) {
-  switch ($form['type']['#value']) {
-  case 'merci_reservation':
-    if (user_access('administer MERCI') || user_access('manage MERCI')) {
-      $form['name'] = $form['author']['name'];
-      $form['name']['#title'] = 'Reserve for';
-      $form['name']['#weight'] = -99;
-      if (module_exists('civicrm')) {
-        $form['name']['#autocomplete_path'] = 'user/autocompletecivi';
-      }
-      
-      unset($form['author']['name']);
-      
-      //create override checkbox          
-      $form['override'] = array(
-        //'#type' => 'optionwidgets_onoff',
-        '#type' => 'checkbox',
-        '#title' => 'Override Validation',
-        '#weight' => -97,
-        '#columns' => 0
-      );
-      
+function merci_staff_form_merci_reservation_node_form_alter(&$form, &$form_state) {
+  drupal_add_js(drupal_get_path('module', 'merci_staff') . '/merci_staff.js');
+  if (user_access('administer MERCI') || user_access('manage MERCI')) {
+    $form['name'] = $form['author']['name'];
+    $form['name']['#title'] = 'Reserve for';
+    $form['name']['#weight'] = -99;
+    $form['name']['#default_value'] = $form_state['values']['name'] ? $form_state['values']['name'] : $form['author']['name']['#default_value'];
+    if (module_exists('civicrm')) {
+      $form['name']['#autocomplete_path'] = 'user/autocompletecivi';
     }
-    break;
+    $form['name']['#ahah'] = array(
+      'path' => 'mercistaff/updatename',
+      //'wrapper' => 'edit-og-groups-wrapper',
+      'wrapper' => 'merci-staff-edit-form-wrapper',
+      'method' => 'replace',
+      'effect' => 'fade',
+
+      );
+
+    unset($form['author']['name']);
+
+    //create override checkbox          
+    $form['override'] = array(
+      //'#type' => 'optionwidgets_onoff',
+      '#type' => 'checkbox',
+      '#title' => 'Override Validation',
+      '#weight' => -97,
+      '#columns' => 0
+    );
+    $form['#prefix'] = '<div id="merci-staff-edit-form-wrapper">';
+    $form['#suffix'] = '</div>';
   }
 }
 
@@ -43,8 +74,6 @@ function merci_staff_form_alter(&$form, $form_state, $form_id) {
 function merci_staff_autocomplete($string = '') {
   $matches = array();
   if ($string) {
-
-    //	drupal_json($matches);
 
     if ( ! civicrm_initialize( ) ) {
       return;
@@ -60,23 +89,95 @@ function merci_staff_autocomplete($string = '') {
     }
   }
   drupal_json($matches);
-
 }
 
-function merci_staff_menu() {
-  $items = array();
+function merci_staff_update_name() {
+  //module_load_include('inc', 'node', 'node.pages');
+  $choice_count = count($_POST['choice']);
+  $form_state = array('storage' => NULL, 'submitted' => TRUE);
+  $form_build_id = $_POST['form_build_id'];
 
-  if (module_exists('civicrm')) {
-    $items['user/autocompletecivi'] = array(
-      'title' => 'User autocomplete',
-      'page callback' => 'merci_staff_autocomplete',
-      'access callback' => 'user_access',
-      'access arguments' => array('access user profiles'),
-      'type' => MENU_CALLBACK,
+  // Get the form from the cache.
+  $form = form_get_cache($form_build_id, $form_state);
+  $args = $form['#parameters'];
+  $form_id = array_shift($args);
+  // We will run some of the submit handlers so we need to disable redirecting.
+  $form['#redirect'] = FALSE;
+  // We need to process the form, prepare for that by setting a few internals
+  // variables.
+  $form['#post'] = $_POST;
+  $form['#programmed'] = FALSE;
+  $form_state['post'] = $_POST;
+
+  $dates = $_POST['field_merci_date'][0];
+  // If a start and end date exist, we have to massage them
+  // into the proper format from user input.
+  // TODO: is there a more elegant way to do this?
+  if ($dates['value']['date'] && $dates['value']['time'] && $dates['value2']['date'] && $dates['value2']['time']) {
+    module_load_include('inc', 'date_api', 'date_api_elements');
+    $date_timezone = date_default_timezone_name();
+    $date_format   = 'm/d/Y g:ia';
+    $start         = array(
+      '#value' => array(
+        'date' => $dates['value']['date'],
+        'time' => $dates['value']['time'],
+      ),
+      '#date_timezone' => $date_timezone,
+      '#date_format' => $date_format,
     );
+    $end = array(
+      '#value' => array(
+        'date' => $dates['value2']['date'],
+        'time' => $dates['value2']['time'],
+      ),
+      '#date_timezone' => $date_timezone,
+      '#date_format' => $date_format,
+    );
+    $form_state['values']['field_merci_date'][0]['value'] = date_popup_input_value($start);
+    $form_state['values']['field_merci_date'][0]['value2'] = date_popup_input_value($end);
   }
-  return $items;
+  else {
+    $form_state['values']['field_merci_date'][0]['value'] = NULL;
+    $form_state['values']['field_merci_date'][0]['value2'] = NULL;
+  }
+
+  global $user;
+  $current_user = $user;
+  $newuser = user_load(array('name' => $form['#post']['name']));
+  $user = $newuser;
+
+  if (module_exists('og')) {
+    og_form_add_og_audience($form,$form_state);
+  }
+  // Add the current choices to the form.
+  for ($delta = 0; $delta < $choice_count; $delta++) {
+    $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
+
+    $form_element[$delta] = _merci_choice_form($node, $form_state, $delta, $default, $newuser);
+  }
+  $user = $current_user;
+
+  $form['choice_wrapper']['choice'] = $form_element;
+  form_set_cache($form_build_id, $form, $form_state);
+  $form += array(
+    '#post' => $_POST,
+    '#programmed' => FALSE,
+  );
+  $form = form_builder($form_id, $form, $form_state);
+
+  unset($form['#prefix'], $form['#suffix']);
+  // Get the JS settings so we can merge them.
+  $javascript = drupal_add_js(NULL, NULL, 'header');
+  $settings = call_user_func_array('array_merge_recursive', $javascript['setting']);
+
+  drupal_json(array(
+    'status'   => TRUE,
+    'data'     => theme('status_messages') . drupal_render($form),
+    'settings' => array('ahah' => $settings['ahah']),
+  ));
+
 }
+
 
 function _merci_staff_potential_references($field, $string = '', $exact_string = FALSE) {
     static $results = array();
