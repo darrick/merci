@@ -381,6 +381,12 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#value' => t('Limit Lists to Available Items'),
         '#weight' => 10,
         '#submit' => array('merci_date_filter'),
+        '#ahah' => array(
+          'path' => 'merci/datefilter',
+          'wrapper' => 'merci-choices',
+          'method' => 'replace',
+          'effect' => 'fade',
+        ),
       );
 
       // Since hook_validate is broken in 6.x, we add our own
@@ -641,6 +647,13 @@ function merci_menu() {
   $items['merci/js'] = array(
     'title' => 'Javascript Choice Form',
     'page callback' => 'merci_choice_js',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['merci/datefilter'] = array(
+    'title' => 'Javascript Choice Form',
+    'page callback' => 'merci_date_filter_js',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
@@ -1016,9 +1029,10 @@ function merci_node_type($op, $info) {
  * Implementation of hook_form().
  */
 function merci_form(&$node, $form_state) {
+
   $form = node_content_form($node, $form_state);
    
-  $account = merci_user_load(NULL, $node);
+  $account = merci_user_load($form, $node);
   
   // Add a wrapper for the choices and more button.
   $form['choice_wrapper'] = array(
@@ -1648,6 +1662,85 @@ function merci_choice_js() {
 
   // Render the new output.
   $choice_form = $form['choice_wrapper']['choice'];
+  // Prevent duplicate wrappers.
+  unset($choice_form['#prefix'], $choice_form['#suffix']);
+  $choice_form[$delta]['#attributes']['class'] = empty($choice_form[$delta]['#attributes']['class']) ? 'ahah-new-content' : $choice_form[$delta]['#attributes']['class'] . ' ahah-new-content';
+  $output = theme('status_messages') . drupal_render($choice_form);
+
+  drupal_json(array('status' => TRUE, 'data' => $output));
+}
+
+function merci_date_filter_js() {
+  $choice_count = count($_POST['choice']);
+  $nid = isset($_POST['nid']) ? $_POST['nid'] : 0;
+  if ((int) $nid) {
+    $node = node_load($nid);
+  }
+  else {
+    $node = new stdClass();
+  }
+  
+  $account = merci_user_load(NULL, $node);
+  
+  $dates = $_POST['field_merci_date'][0];
+  // If a start and end date exist, we have to massage them
+  // into the proper format from user input.
+  // TODO: is there a more elegant way to do this?
+  if ($dates['value']['date'] && $dates['value']['time'] && $dates['value2']['date'] && $dates['value2']['time']) {
+    module_load_include('inc', 'date_api', 'date_api_elements');
+    $date_timezone = date_default_timezone_name();
+    $date_format   = 'm/d/Y g:ia';
+    $start         = array(
+      '#value' => array(
+        'date' => $dates['value']['date'],
+        'time' => $dates['value']['time'],
+      ),
+      '#date_timezone' => $date_timezone,
+      '#date_format' => $date_format,
+    );
+    $end = array(
+      '#value' => array(
+        'date' => $dates['value2']['date'],
+        'time' => $dates['value2']['time'],
+      ),
+      '#date_timezone' => $date_timezone,
+      '#date_format' => $date_format,
+    );
+    $form_state['values']['field_merci_date'][0]['value'] = date_popup_input_value($start);
+    $form_state['values']['field_merci_date'][0]['value2'] = date_popup_input_value($end);
+  }
+  else {
+    $form_state = array();
+  }
+
+  // Add the current choices to the form.
+  for ($delta = 0; $delta < $choice_count; $delta++) {
+    $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
+
+    $form_element[$delta] = _merci_choice_form($node, $form_state, $delta, $default, $account);
+  }
+
+  // Build the new form.
+  $form_state = array('submitted' => FALSE);
+  $form_build_id = $_POST['form_build_id'];
+  // Add the new element to the stored form. Without adding the element to the
+  // form, Drupal is not aware of this new elements existence and will not
+  // process it. We retreive the cached form, add the element, and resave.
+  if (!$form = form_get_cache($form_build_id, $form_state)) {
+    exit();
+  }
+  $form['choice_wrapper']['choice'] = $form_element;
+  form_set_cache($form_build_id, $form, $form_state);
+  $form += array(
+    '#post' => $_POST,
+    '#programmed' => FALSE,
+  );
+
+  // Rebuild the form.
+  $form = form_builder('merci_reservation_node_form', $form, $form_state);
+  // Render the new output.
+  $choice_form = $form['choice_wrapper']['choice'];
+  //$choice_form = $form_element;
   // Prevent duplicate wrappers.
   unset($choice_form['#prefix'], $choice_form['#suffix']);
   $choice_form[$delta]['#attributes']['class'] = empty($choice_form[$delta]['#attributes']['class']) ? 'ahah-new-content' : $choice_form[$delta]['#attributes']['class'] . ' ahah-new-content';
@@ -3049,6 +3142,7 @@ function merci_access($op, $node, $account) {
  * Implementation of hook_validate().
  */
 function merci_node_validate($form, &$form_state) {
+
   //set debug state
   $debug = variable_get('merci_debug', 0);
   
@@ -4408,13 +4502,15 @@ function merci_user_load($form = NULL, $node = NULL) {
   //check the logged in user unless merci_staff is enabled
   if (module_exists('merci_staff')) {
     if (!$form['override']['#value'] || !$node->override) {
-    $account = user_load(array('name' => check_plain($_POST['name'])));
+      $name = $form['name'] ? $form['name'] : $_POST['name'];
+    $account = user_load(array('name' => check_plain($name)));
     }
   } 
-  else {
-    $account = $user;
-  }
 
-  return $account;
+  if($account->uid){
+    return $account;
+  }
+  return $user;
+
 }
   
