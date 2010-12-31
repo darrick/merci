@@ -82,7 +82,6 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
       $user = $current_user;
     }
   }
-  dpm($form);
 }
 
 /**
@@ -161,7 +160,6 @@ function merci_staff_update_name() {
     '#programmed' => FALSE,
   );
   $form = form_builder($form_id, $form, $form_state);
-  //dpm($form);
 
   unset($form['#prefix'], $form['#suffix']);
   // Get the JS settings so we can merge them.
