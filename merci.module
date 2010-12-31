@@ -1717,7 +1717,7 @@ function merci_date_filter_js() {
   for ($delta = 0; $delta < $choice_count; $delta++) {
     $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
 
-    $form_element[$delta] = _merci_choice_form($node, $form_state, $delta, $default, $account);
+    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default, $account);
   }
 
   // Build the new form.
@@ -1729,7 +1729,7 @@ function merci_date_filter_js() {
   if (!$form = form_get_cache($form_build_id, $form_state)) {
     exit();
   }
-  $form['choice_wrapper']['choice'] = $form_element;
+  //$form['choice_wrapper']['choice'] = $form_element;
   form_set_cache($form_build_id, $form, $form_state);
   $form += array(
     '#post' => $_POST,
@@ -1743,7 +1743,7 @@ function merci_date_filter_js() {
   //$choice_form = $form_element;
   // Prevent duplicate wrappers.
   unset($choice_form['#prefix'], $choice_form['#suffix']);
-  $choice_form[$delta]['#attributes']['class'] = empty($choice_form[$delta]['#attributes']['class']) ? 'ahah-new-content' : $choice_form[$delta]['#attributes']['class'] . ' ahah-new-content';
+  //$choice_form[$delta]['#attributes']['class'] = empty($choice_form[$delta]['#attributes']['class']) ? 'ahah-new-content' : $choice_form[$delta]['#attributes']['class'] . ' ahah-new-content';
   $output = theme('status_messages') . drupal_render($choice_form);
 
   drupal_json(array('status' => TRUE, 'data' => $output));
