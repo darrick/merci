@@ -169,27 +169,33 @@ function merci_staff_update_name() {
   for ($delta = 0; $delta < $choice_count; $delta++) {
     $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
 
-    $form_element[$delta] = _merci_choice_form($node, $form_state, $delta, $default, $newuser);
+    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default, $newuser);
   }
   $user = $current_user;
 
-  $form['choice_wrapper']['choice'] = $form_element;
+  //$form['choice_wrapper']['choice'] = $form_element;
   form_set_cache($form_build_id, $form, $form_state);
   $form += array(
     '#post' => $_POST,
     '#programmed' => FALSE,
   );
   $form = form_builder($form_id, $form, $form_state);
+  //dpm($form);
 
   unset($form['#prefix'], $form['#suffix']);
   // Get the JS settings so we can merge them.
-  $javascript = drupal_add_js(NULL, NULL, 'header');
-  $settings = call_user_func_array('array_merge_recursive', $javascript['setting']);
+//  $javascript = drupal_add_js(NULL, NULL, 'header');
+//  $settings = call_user_func_array('array_merge_recursive', $javascript['setting']);
+  /*
+  for ($delta = 0; $delta < $choice_count; $delta++) {
+    $form['choice_wrapper']['choice'][$delta]['#attributes']['class'] = empty($form['choice_wrapper']['choice'][$delta]['#attributes']['class']) ? 'ahah-new-content' : $form['choice_wrapper']['choice'][$delta]['#attributes']['class'] . ' ahah-new-content';
+  }
+   */
 
   drupal_json(array(
     'status'   => TRUE,
     'data'     => theme('status_messages') . drupal_render($form),
-    'settings' => array('ahah' => $settings['ahah']),
+//    'settings' => array('ahah' => $settings['ahah']),
   ));
 
 }

@@ -1033,7 +1033,7 @@ function merci_form(&$node, $form_state) {
   $form = node_content_form($node, $form_state);
    
   $account = merci_user_load($form, $node);
-  
+
   // Add a wrapper for the choices and more button.
   $form['choice_wrapper'] = array(
     '#tree' => FALSE,
@@ -1605,7 +1605,7 @@ function merci_choice_js() {
   }
   
   $account = merci_user_load(NULL, $node);
-  
+
   $dates = $_POST['field_merci_date'][0];
   // If a start and end date exist, we have to massage them
   // into the proper format from user input.
@@ -4504,8 +4504,8 @@ function merci_user_load($form = NULL, $node = NULL) {
   //check the logged in user unless merci_staff is enabled
   if (module_exists('merci_staff')) {
     if (!$form['override']['#value'] || !$node->override) {
-      $name = $form['name'] ? $form['name'] : $_POST['name'];
-    $account = user_load(array('name' => check_plain($name)));
+      $name = $node->name ? $node->name : ($form['name'] ? $form['name'] : $_POST['name']);
+      $account = user_load(array('name' => check_plain($name)));
     }
   } 
 
