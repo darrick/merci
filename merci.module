@@ -1591,10 +1591,55 @@ function merci_load_merci_type_settings($merci_type) {
   return db_query("SELECT nt.type, nt.name, m.type_setting, m.max_hours_per_reservation, m.allow_overnight, m.allow_weekends, m.late_fee_per_hour, m.rate_per_hour, m.fee_free_hours, m.status, m.spare_items, m.min_cancel_hours, m.autocheckout, m.autocheckin, m.selfcheckout FROM {node_type} nt INNER JOIN {merci_node_type} m ON nt.type = m.type WHERE m.type_setting = '%s' ORDER BY nt.name", $merci_type);
 }
 
+function merci_convert_date_popup($dates){
+  module_load_include('inc', 'date_api', 'date_api_elements');
+
+  $date_timezone = date_default_timezone_name();
+  $date_format   = 'm/d/Y g:ia';
+  $start         = array(
+    '#value' => array(
+      'date' => $dates['value']['date'],
+      'time' => $dates['value']['time'],
+    ),
+    '#date_timezone' => $date_timezone,
+    '#date_format' => $date_format,
+  );
+  $end = array(
+    '#value' => array(
+      'date' => $dates['value2']['date'],
+      'time' => $dates['value2']['time'],
+    ),
+    '#date_timezone' => $date_timezone,
+    '#date_format' => $date_format,
+  );
+  $start = date_popup_input_value($start);
+  $end = date_popup_input_value($end);
+  $start = date_make_date($start);
+  $end   = date_make_date($end);
+  date_timezone_set($start, timezone_open('UTC'));
+  date_timezone_set($end, timezone_open('UTC'));
+  $start = date_convert($start, DATE_OBJECT, DATE_DATETIME);
+  $end = date_convert($end, DATE_OBJECT, DATE_DATETIME);
+  return array('value' => $start, 'value2' => $end);
+}
 /**
  * Menu callback for AHAH additions.
  */
 function merci_choice_js() {
+  $form_state = array('storage' => NULL, 'submitted' => TRUE);
+  $form_build_id = $_POST['form_build_id'];
+
+  // Get the form from the cache.
+  $form = form_get_cache($form_build_id, $form_state);
+  $args = $form['#parameters'];
+  $form_id = array_shift($args);
+  // We will run some of the submit handlers so we need to disable redirecting.
+  $form['#redirect'] = FALSE;
+  // We need to process the form, prepare for that by setting a few internals
+  // variables.
+  $form['#post'] = $_POST;
+  $form['#programmed'] = FALSE;
+  $form_state['post'] = $_POST;
   $delta = count($_POST['choice']);
   $nid = isset($_POST['nid']) ? $_POST['nid'] : 0;
   if ((int) $nid) {
@@ -1611,27 +1656,7 @@ function merci_choice_js() {
   // into the proper format from user input.
   // TODO: is there a more elegant way to do this?
   if ($dates['value']['date'] && $dates['value']['time'] && $dates['value2']['date'] && $dates['value2']['time']) {
-    module_load_include('inc', 'date_api', 'date_api_elements');
-    $date_timezone = date_default_timezone_name();
-    $date_format   = 'm/d/Y g:ia';
-    $start         = array(
-      '#value' => array(
-        'date' => $dates['value']['date'],
-        'time' => $dates['value']['time'],
-      ),
-      '#date_timezone' => $date_timezone,
-      '#date_format' => $date_format,
-    );
-    $end = array(
-      '#value' => array(
-        'date' => $dates['value2']['date'],
-        'time' => $dates['value2']['time'],
-      ),
-      '#date_timezone' => $date_timezone,
-      '#date_format' => $date_format,
-    );
-    $form_state['values']['field_merci_date'][0]['value'] = date_popup_input_value($start);
-    $form_state['values']['field_merci_date'][0]['value2'] = date_popup_input_value($end);
+    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates);
   }
   else {
     $form_state = array();
@@ -1641,6 +1666,7 @@ function merci_choice_js() {
   $form_element = _merci_choice_form($node, $form_state, $delta, $default, $account);
   drupal_alter('form', $form_element, array(), 'merci_choice_js');
 
+  /*
   // Build the new form.
   $form_state = array('submitted' => FALSE);
   $form_build_id = $_POST['form_build_id'];
@@ -1650,6 +1676,7 @@ function merci_choice_js() {
   if (!$form = form_get_cache($form_build_id, $form_state)) {
     exit();
   }
+   */
   $form['choice_wrapper']['choice'][$delta] = $form_element;
   form_set_cache($form_build_id, $form, $form_state);
   $form += array(
@@ -1671,6 +1698,21 @@ function merci_choice_js() {
 }
 
 function merci_date_filter_js() {
+  $form_state = array('storage' => NULL, 'submitted' => TRUE);
+  $form_build_id = $_POST['form_build_id'];
+
+  // Get the form from the cache.
+  $form = form_get_cache($form_build_id, $form_state);
+  $args = $form['#parameters'];
+  $form_id = array_shift($args);
+  // We will run some of the submit handlers so we need to disable redirecting.
+  $form['#redirect'] = FALSE;
+  // We need to process the form, prepare for that by setting a few internals
+  // variables.
+  $form['#post'] = $_POST;
+  $form['#programmed'] = FALSE;
+  $form_state['post'] = $_POST;
+
   $choice_count = count($_POST['choice']);
   $nid = isset($_POST['nid']) ? $_POST['nid'] : 0;
   if ((int) $nid) {
@@ -1687,27 +1729,7 @@ function merci_date_filter_js() {
   // into the proper format from user input.
   // TODO: is there a more elegant way to do this?
   if ($dates['value']['date'] && $dates['value']['time'] && $dates['value2']['date'] && $dates['value2']['time']) {
-    module_load_include('inc', 'date_api', 'date_api_elements');
-    $date_timezone = date_default_timezone_name();
-    $date_format   = 'm/d/Y g:ia';
-    $start         = array(
-      '#value' => array(
-        'date' => $dates['value']['date'],
-        'time' => $dates['value']['time'],
-      ),
-      '#date_timezone' => $date_timezone,
-      '#date_format' => $date_format,
-    );
-    $end = array(
-      '#value' => array(
-        'date' => $dates['value2']['date'],
-        'time' => $dates['value2']['time'],
-      ),
-      '#date_timezone' => $date_timezone,
-      '#date_format' => $date_format,
-    );
-    $form_state['values']['field_merci_date'][0]['value'] = date_popup_input_value($start);
-    $form_state['values']['field_merci_date'][0]['value2'] = date_popup_input_value($end);
+    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates);
   }
   else {
     $form_state = array();
@@ -1720,6 +1742,7 @@ function merci_date_filter_js() {
     $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default, $account);
   }
 
+  /*
   // Build the new form.
   $form_state = array('submitted' => FALSE);
   $form_build_id = $_POST['form_build_id'];
@@ -1729,6 +1752,7 @@ function merci_date_filter_js() {
   if (!$form = form_get_cache($form_build_id, $form_state)) {
     exit();
   }
+   */
   //$form['choice_wrapper']['choice'] = $form_element;
   form_set_cache($form_build_id, $form, $form_state);
   $form += array(
