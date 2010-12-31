@@ -1366,7 +1366,9 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
       }
       // else
 
-      $options['options'][$resource->name] = $item_options;
+      if(!empty($item_options)){
+        $options['options'][$resource->name] = $item_options;
+      }
 
       if (!is_array($options['flat_options'])) {
         $options['flat_options'] = array();
