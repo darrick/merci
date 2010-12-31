@@ -73,6 +73,7 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
       if(!isset($form['og_nodeapi'])) {
         db_query("UPDATE {system} SET weight = 10 WHERE name = 'merci_staff'");
       }
+      unset($form['og_nodeapi']);
       global $user;
       $current_user = $user;
       $newuser = user_load(array('name' => $form['name']['#default_value']));
@@ -143,15 +144,16 @@ function merci_staff_update_name() {
   $user = $newuser;
 
   if (module_exists('og')) {
+    unset($form['og_nodeapi']);
     og_form_add_og_audience($form,$form_state);
   }
+  $user = $current_user;
   // Add the current choices to the form.
   for ($delta = 0; $delta < $choice_count; $delta++) {
     $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
 
     $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default, $newuser);
   }
-  $user = $current_user;
 
   //$form['choice_wrapper']['choice'] = $form_element;
   form_set_cache($form_build_id, $form, $form_state);
