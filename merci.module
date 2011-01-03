@@ -47,7 +47,7 @@ function merci_init() {
  * Implementation of hook_perm().
  */
 function merci_perm() {
-  return array('create merci_reservation content', 'create reservations', 'create confirmed reservations', 'membership discount', 'suspend MERCI access', 'administer MERCI', 'create reservations outside hours of operation', 'manage MERCI', 'override max hours over closed days');
+  return array('create merci_reservation content', 'create reservations', 'create confirmed reservations', 'membership discount', 'suspend MERCI access', 'administer MERCI', 'create reservations outside hours of operation', 'manage MERCI', 'override max hours over closed days', 'view all reservations');
 }
 
 /**
@@ -2548,23 +2548,28 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
 
     $merci_settings = merci_load_content_type_settings($item->type);
 
-    // Only MERCI admins can change the bucket item assignment.
-    if ($edit_page && user_access('administer MERCI') && $merci_settings->type_setting == 'bucket') {
-      $options = array(0 => t('<Select>'));
-      $default = isset($item->tnid) ? $item->tnid : 0;
-      $options += merci_get_available_bucket_items($node, $item->type);
-      $form['items'][$did] = array(
-        '#type' => 'select',
-        '#options' => $options,
-        '#default_value' => $default,
-      );
+    
+    if ($edit_page && $merci_settings->type_setting == 'bucket') {
+      // Only MERCI admins and managers can change the bucket item assignment.
+      if (user_access('administer MERCI') || user_access('manage MERCI')) {
+      
+        $options = array(0 => t('<Select>'));
+        $default = isset($item->tnid) ? $item->tnid : 0;
+        $options += merci_get_available_bucket_items($node, $item->type);
+        $form['items'][$did] = array(
+          '#type' => 'select',
+          '#options' => $options,
+          '#default_value' => $default,
+        );
+      }
     }
     else {
       $form['items'][$did] = array(
         '#type' => 'value',
         '#value' => $item->tnid,
       );
-      $form['#table'][$did]['display_item'] = l($title, "node/$item->pnid");
+      //$form['#table'][$did]['display_item'] = l($title, "node/$item->pnid");
+      $form['#table'][$did]['display_item'] = $title;
     }
 
     $form['placeholders'][$did] = array(
@@ -3096,11 +3101,14 @@ function theme_merci_build_reservation_table_form($form) {
   $node   = $form['#node'];
   $rows   = array();
   foreach ($form['#table'] as $did => $columns) {
+    
     $item = drupal_render($form['items'][$did]);
+        
     // The content type name.
     if (isset($columns['display_item'])) {
       $item .= $columns['display_item'];
     }
+   
     $rows[] = array(
       $item,
       $form['#table'][$did]['type'],
@@ -3151,10 +3159,13 @@ function merci_access($op, $node, $account) {
 
   $type = isset($node->type) ? $node->type : $node;
   $uid = isset($node->uid) ? $node->uid : FALSE;
-
+  
   if ($type == 'merci_reservation') {
     // MERCI admins and users working with their own reservations have all access.
-    if (user_access('administer MERCI')) {
+    if (user_access('administer MERCI') || user_access('manage MERCI')) {
+      return TRUE;
+    }
+    elseif (user_access('view all reservations') && $op == 'view') {
       return TRUE;
     }
     elseif (user_access('create reservations')) {
