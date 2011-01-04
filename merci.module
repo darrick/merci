@@ -594,7 +594,8 @@ function merci_view($node, $teaser = FALSE, $page = FALSE) {
 function merci_form(&$node, $form_state) {
 
   merci_check_default_timezone();
-  $form = node_content_form($node, $form_state);
+  //$form = node_content_form($node, $form_state);
+  $form = array();
    
   $account = merci_user_load(NULL, $node);
   
@@ -703,20 +704,6 @@ function merci_form(&$node, $form_state) {
     $form['#after_build'][] = '_merci_after_build';
   }
 
-  $form['field_merci_date'][0]['merci_date_filter'] = array(
-    '#type' => 'submit',
-    '#value' => t('Limit Lists to Available Items'),
-    '#weight' => 10,
-    '#submit' => array('merci_date_filter'),
-    '#ahah' => array(
-      'path' => 'merci/datefilter',
-      'wrapper' => 'merci-choices',
-      'method' => 'replace',
-      'effect' => 'fade',
-    ),
-
-  );
-
   // Since hook_validate is broken in 6.x, we add our own
   // custom validation here.
   // TODO check if this fixed.
@@ -750,6 +737,21 @@ function merci_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     // Node settings form.
 
+  case 'merci_reservation_node_form':
+    $form['field_merci_date'][0]['merci_date_filter'] = array(
+      '#type' => 'submit',
+      '#value' => t('Limit Lists to Available Items'),
+      '#weight' => 10,
+      '#submit' => array('merci_date_filter'),
+      '#ahah' => array(
+        'path' => 'merci/datefilter',
+        'wrapper' => 'merci-choices',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+
+    );
+    break;
     case 'node_type_form':
       // Reservation content type can't used for other MERCI functionality.
       if (isset($form['#node_type']->type) && $form['#node_type']->type == 'merci_reservation') {
@@ -895,6 +897,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       $form['#validate'][] = 'merci_node_admin_delete_validate';
       break;
   }
+  dpm($form);
 }
 
 /**
