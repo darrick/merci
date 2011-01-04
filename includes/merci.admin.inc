@@ -1,10 +1,11 @@
 <?php
-// $Id$ //
+// $Id$
 
 /**
  * @file
- * merci admin settings 
+ * MERCI - Managed Equipment Reservation Checkout and Inventory
  */
+
 
 /**
  * Builds the MERCI admininstration settings form.
@@ -15,7 +16,7 @@ function merci_admin_settings() {
   $statuses = array();
 
   $statuses[MERCI_STATUS_UNCONFIRMED] = t('Unconfirmed');
-  $statuses[MERCI_STATUS_PENDING] = t('Pending');
+  $statuses[MERCI_STATUS_PENDING] = t('Confirmed');
   $statuses[MERCI_STATUS_CHECKED_OUT] = t('Checked Out');
 
   $form['merci_content_types'] = array(
@@ -42,15 +43,15 @@ function merci_admin_settings() {
 
     $usage = t('Not used by MERCI');
     if (isset($merci_types[$type->type])) {
-      $usage = 'MERCI '. $merci_types[$type->type];
+      $usage = 'MERCI ' . $merci_types[$type->type];
     }
     // if
 
-    $operations = l(t('Edit'), 'admin/content/node-type/'. $type_url_str, array('query' => drupal_get_destination()));
+    $operations = l(t('Edit'), 'admin/content/node-type/' . $type_url_str, array('query' => drupal_get_destination()));
 
     if (module_exists('merci_inventory') && merci_inventory_node_type_menu_access($type->type)) {
 
-      $operations .= ' | '. l(t('Inventory Sync'), 'admin/content/node-type/'. $type_url_str .'/merci_inventory', array('query' => drupal_get_destination()));
+      $operations .= ' | ' . l(t('Inventory Sync'), 'admin/content/node-type/' . $type_url_str . '/merci_inventory', array('query' => drupal_get_destination()));
     }
     // if
 
@@ -90,8 +91,7 @@ function merci_admin_settings() {
     '#description' => t('Maximum number of days a Reservation can be made in advance.  Set to 0 if to allow Reservations to be made an unlimitted time into the future.'),
   );
 
-  /*
-$form['merci_general']['merci_email_receipt'] = array(
+  $form['merci_general']['merci_email_receipt'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send Email Receipt'),
     '#default_value' => variable_get('merci_email_receipt', 0),
@@ -104,57 +104,55 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#default_value' => variable_get('merci_email_confirmation', 0),
     '#description' => t('Add link to change reservations from Unconfirmed to Confirmed'),
   );
-*/
 
-
-  // Weekend became push in 2.x
+  // Weekend
 
   $form['merci_general']['merci_saturday_is_weekend'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Push forward if checkout is closed when Reservation ends on Saturday'),
+    '#title' => t('Saturday is a considered weekend'),
     '#default_value' => variable_get('merci_saturday_is_weekend', 1),
   );
   $form['merci_general']['merci_sunday_is_weekend'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Push forward if checkout is closed when Reservation ends on Sunday'),
+    '#title' => t('Sunday is a considered weekend'),
     '#default_value' => variable_get('merci_sunday_is_weekend', 1),
   );
   $form['merci_general']['merci_monday_is_weekend'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Push forward if checkout is closed when Reservation ends on Monday'),
+    '#title' => t('Monday is considered a weekend'),
     '#default_value' => variable_get('merci_monday_is_weekend', 0),
   );
   $form['merci_general']['merci_tuesday_is_weekend'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Push forward if checkout is closed when Reservation ends on Tuesday'),
+    '#title' => t('Tuesday is considered a weekend'),
     '#default_value' => variable_get('merci_tuesday_is_weekend', 0),
   );
   $form['merci_general']['merci_wednesday_is_weekend'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Push forward if checkout is closed when Reservation ends on Wednesday'),
+    '#title' => t('Wednesday is considered a weekend'),
     '#default_value' => variable_get('merci_wednesday_is_weekend', 0),
   );
   $form['merci_general']['merci_thursday_is_weekend'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Push forward if checkout is closed when Reservation ends on Thursday'),
+    '#title' => t('Thursday is considered a weekend'),
     '#default_value' => variable_get('merci_thursday_is_weekend', 0),
   );
   $form['merci_general']['merci_friday_is_weekend'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Push forward if checkout is closed when Reservation ends on Friday'),
+    '#title' => t('Firday is a considered weekend'),
     '#default_value' => variable_get('merci_friday_is_weekend', 0),
   );
 
   // Hours of operation
 
-  $hours_description = t('<div>Enter military time for both opening and closing time, separated by a dash, in the format <em>hh:mm-hh:mm</em></div>ex. <em>09:00-17:00</em> would be open at 9AM, close at 5PM. Leave blank to indicate not being open.');
-
+  $hours_description = '<div>' . t('Enter military time for both opening and closing time, separated by a dash, in the format') . ' <em>hh:mm-hh:mm</em></div>' . t('ex.') . ' <em>09:00-17:00</em> ' . t('would be open at 9AM, close at 5PM. Leave blank to indicate not being open.');
+  
   $form['merci_general']['merci_hours_mon'] = array(
     '#type' => 'textfield',
     '#title' => t('Monday hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_mon', ''),
+    '#default_value' => variable_get('merci_hours_mon', '09:00-17:00'),
     '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_tue'] = array(
@@ -162,7 +160,7 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#title' => t('Tuesday hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_tue', ''),
+    '#default_value' => variable_get('merci_hours_tue', '09:00-17:00'),
     '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_wed'] = array(
@@ -170,7 +168,7 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#title' => t('Wednesday hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_wed', ''),
+    '#default_value' => variable_get('merci_hours_wed', '09:00-17:00'),
     '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_thu'] = array(
@@ -178,7 +176,7 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#title' => t('Thursday hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_thu', ''),
+    '#default_value' => variable_get('merci_hours_thu', '09:00-17:00'),
     '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_fri'] = array(
@@ -186,7 +184,7 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#title' => t('Friday hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_fri', ''),
+    '#default_value' => variable_get('merci_hours_fri', '09:00-17:00'),
     '#description' => $hours_description,
   );
   $form['merci_general']['merci_hours_sat'] = array(
@@ -211,7 +209,7 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#title' => t('Admin hours'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_hours_admin', ''),
+    '#default_value' => variable_get('merci_hours_admin', '07:00-22:00'),
     '#description' => t('This setting controls the hours shown on the conflict grid for users with Adminster MERCI permessions.  The conflict grid is normally limited to the days and hours the set above.  Because users with Admister MERCI rights can create Resevervations outside the normal hours of operation, they need to see conflicts during those times as well.'),
   );
 
@@ -222,7 +220,7 @@ $form['merci_general']['merci_email_receipt'] = array(
     // TODO: this doesn't seem to work...
     '#cols' => 5,
     '#default_value' => variable_get('merci_closed_dates', ''),
-    '#description' => t('<div>Enter dates which are closed regardless of the day of the week, one date per line, in the format <em>mm-dd</em></div>ex. <em>07-04</em> would mean July 4th is always closed, regardless of what day of the week it falls on.'),
+    '#description' => '<div>' . t('Enter dates which are closed regardless of the day of the week, one date per line, in the format') . ' <em>mm-dd</em></div>' . t('ex.') . ' <em>07-04</em> ' . t('would mean July 4th is always closed, regardless of what day of the week it falls on.'),
   );
 
   $form['merci_general']['merci_membership_discount'] = array(
@@ -231,52 +229,54 @@ $form['merci_general']['merci_email_receipt'] = array(
     '#size' => 11,
     '#maxlength' => 11,
     '#default_value' => variable_get('merci_membership_discount', ''),
-    '#description' => t('Percent comercial rate is reduced for users in a role with member discount permission. Enter as decimal.  60% would be .60.  An item with a commercial rate of $100 would cost a member $40 for any hours beyond the fee free hours for that reservation.'),
+    '#description' => t('Fraction of commercial rate users in a role with member discount permission pays. Enter as decimal.  60% would be .60.  An item with a commercial rate of $100 would cost a member $60 for any hours beyond the fee free hours for that reservation.'),
+  );
+  
+   $form['merci_general']['merci_debug'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Run in Debug Mode'),
+    '#default_value' => variable_get('merci_debug', 0),
   );
 
-  $form['merci_general']['merci_contract_header'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Contract header'),
-    '#rows' => 10,
-    // TODO: this doesn't seem to work...
-    '#cols' => 5,
-    '#default_value' => variable_get('merci_contract_header', ''),
-    '#description' => t('Header portion of printable contract.  Allows HTML.'),
-  );
-
-  $form['merci_general']['merci_contract_boilerplate'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Contract boilerplate'),
-    '#rows' => 10,
-    // TODO: this doesn't seem to work...
-    '#cols' => 5,
-    '#default_value' => variable_get('merci_contract_boilerplate', ''),
-    '#description' => t('Legalese that makes the contract legally binding.'),
-  );
-
-  $form['merci_general']['merci_contract_footer'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Contract footer'),
-    '#rows' => 10,
-    // TODO: this doesn't seem to work...
-    '#cols' => 5,
-    '#default_value' => variable_get('merci_contract_footer', ''),
-    '#description' => t('Footer portion of printable contract. Normally includes signature lines. HTML allowed.'),
-  );
-
-  if (module_exists('token')) {
-    $form['merci_general']['token_help'] = array(
-      '#title' => t('Replacement patterns'),
-      '#type' => 'fieldset',
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-
-    $form['merci_general']['token_help']['help'] = array(
-      '#value' => theme('token_help', 'node'),
-    );
+  //check to see if the fields are locked
+  $result = db_query("SELECT locked FROM {content_node_field} WHERE field_name = '%s'", 'field_merci_date');  
+  
+  $message = t('MERCI uses several CCK fields. These fields are locked by default when modules are installed.  Altering or deleting these locked fields could cause serious problems.  Always backup before altering these fields!') . '<br /><br />';
+  $field_state = db_fetch_object($result);
+  if ($field_state->locked) {
+    $value = t('Core MERCI fields are currently locked.') . ' ' . l(t('Unlock them.'), 'admin/merci/unlock',  array('query' => drupal_get_destination()));
+    
+  } 
+  else {
+    $value = t('Core MERCI fields are currently unlocked.') . ' ' . l(t('Lock them.'), 'admin/merci/lock',  array('query' => drupal_get_destination()));
   }
-
+  
+  $form['merci_general']['merci_unlock'] = array(
+    '#type' => 'markup',
+    '#title' => t('Unlock Fields'),
+    '#value' => '<div>' . $message . $value . '</div>'
+  );
+  
   return system_settings_form($form);
+}
+
+
+
+function merci_unlock() {
+  db_query("UPDATE {content_node_field} SET locked = 0 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
+  $return = $_GET["destination"];
+  if (!$return) {
+    $return = 'admin/settings/merci';
+  }
+  drupal_goto($return);
+}
+
+function merci_lock() {
+  db_query("UPDATE {content_node_field} SET locked = 1 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
+  $return = $_GET["destination"];
+  if (!$return) {
+    $return = 'admin/settings/merci';
+  }
+  drupal_goto($return);
 }
 
