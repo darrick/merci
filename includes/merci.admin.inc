@@ -95,14 +95,14 @@ function merci_admin_settings() {
     '#type' => 'checkbox',
     '#title' => t('Send Email Receipt'),
     '#default_value' => variable_get('merci_email_receipt', 0),
-    '#description' => t('Use when default Reservation Status is Unconfirmed'),
+    '#description' => t('Sends an email summarizing the Reservation'),
   );
 
   $form['merci_general']['merci_email_confirmation'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Send Email Confirmation'),
+    '#title' => t('Include Confirmation Link'),
     '#default_value' => variable_get('merci_email_confirmation', 0),
-    '#description' => t('Add link to change reservations from Unconfirmed to Confirmed'),
+    '#description' => t('Adds link to the email allowing user to change Reservation\'s status from Unconfirmed to Confirmed'),
   );
 
   // Weekend

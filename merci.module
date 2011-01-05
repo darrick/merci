@@ -3767,7 +3767,8 @@ function merci_email_user($node) {
       }
     } //foreach
     //add confirmation link to message
-    if (variable_get('merci_email_confirmation', 0)) {
+    if (variable_get('merci_email_confirmation', 0) && $node->merci_status == 1) {
+      dsm($node);
       $destination = 'destination=node/' . $node->nid;
       $body .= "Click this link to confirm your Reservation: \n " . url('merci/confirm/' . $node->nid, array('query' => $destination, 'absolute' => TRUE));
     }
