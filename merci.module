@@ -3792,7 +3792,7 @@ function merci_user_load($form = NULL, $node = NULL) {
   //check the logged in user unless merci_staff is enabled
   if (module_exists('merci_staff')) {
     if (!$form['override']['#value'] || !$node->override) {
-      $name = $node->name ? $node->name : ($form['name'] ? $form['name'] : $_POST['name']);
+      $name = $node->name ? $node->name : ($form['name']['#value'] ? $form['name']['#value'] : $_POST['name']);
       $account = user_load(array('name' => check_plain($name)));
     }
   } 
