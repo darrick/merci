@@ -507,9 +507,6 @@ function merci_validate_merci_choices($form, &$form_state) {
  */
 function merci_node_validate($form, &$form_state) {
   
-  error_reporting(E_ALL);
-  ini_set('display_errors', TRUE);
-  ini_set('display_startup_errors', TRUE);
 
   $account = merci_user_load($form);
   
@@ -748,7 +745,14 @@ function merci_form_alter(&$form, $form_state, $form_id) {
     $type = $form['type']['#value'];
     if ("{$type}_node_form" == $form_id && $form_id != 'merci_reservation_node_form') {
 
-      merci_add_settings_form(&$form, $form_state);
+      $node = (object) $form['#node'];
+      if (isset($node->merci_sub_type)) {
+        $sub_type = $node->merci_sub_type;
+        $default_availability = $node->merci_default_availability;
+      } else {
+        $sub_type = MERCI_SUB_TYPE_ITEM;
+        $default_availability = MERCI_AVA_F;
+      }
       if($sub_type == MERCI_SUB_TYPE_ITEM) {
         $form['merci']['merci_default_availability'] = array(
           '#title' => t('Default booking availability'),
@@ -758,6 +762,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#default_value' => $default_availability,
         );
       }
+      merci_add_settings_form(&$form, $form_state);
     }
   }
   switch ($form_id) {
@@ -2098,32 +2103,34 @@ function merci_node_type_save_submit($form, &$form_state) {
       }
     }
     $settings['type'] = $node['type'];
-    if(!drupal_write_record('merci_node_type',$settings,'type')) {
-      drupal_write_record('merci_node_type',$settings);
+    if(!merci_load_content_type_settings($node['type'])){
+      $return = drupal_write_record('merci_node_type',$settings);
+    } else {
+      $return = drupal_write_record('merci_node_type',$settings,'type');
     }
-    cache_clear_all('merci_' . $settings['type'] . '_data','cache');
-  }
-  // This hack is necessary because the node type form submit
-  // automatically saves all remaining form items to {variable}
-  // We're doing custom storage, so remove these.
-  $variables = array(
-    'merci_type_setting_',
-    'merci_max_hours_per_reservation_',
-    'merci_allow_overnight_',
-    'merci_allow_weekends_',
-    'merci_late_fee_per_hour_',
-    'merci_rate_per_hour_',
-    'merci_fee_free_hours_',
-    'merci_status_',
-    'merci_spare_items_',
-    'merci_min_cancel_hours_',
-    'merci_autocheckout_',
-    'merci_autocheckin_',
-    'merci_selfcheckout_',
-    'merci_grouping_',
-  );
-  foreach ($variables as $variable) {
-    variable_del($variable . $merci['type']);
+    cache_clear_all('merci_' . $node['type'] . '_data','cache');
+    // This hack is necessary because the node type form submit
+    // automatically saves all remaining form items to {variable}
+    // We're doing custom storage, so remove these.
+    $variables = array(
+      'merci_type_setting_',
+      'merci_max_hours_per_reservation_',
+      'merci_allow_overnight_',
+      'merci_allow_weekends_',
+      'merci_late_fee_per_hour_',
+      'merci_rate_per_hour_',
+      'merci_fee_free_hours_',
+      'merci_status_',
+      'merci_spare_items_',
+      'merci_min_cancel_hours_',
+      'merci_autocheckout_',
+      'merci_autocheckin_',
+      'merci_selfcheckout_',
+      'merci_grouping_',
+    );
+    foreach ($variables as $variable) {
+      variable_del($variable . $node['type']);
+    }
   }
 
 }
@@ -2440,6 +2447,7 @@ function merci_get_available_bucket_items($node, $bucket_type) {
  */
 function merci_get_reservable_items($merci_type, $content_type, $start, $end, $reservation_nid = NULL) {
 
+
   // Determine CCK table and columns the date data is stored in.
   $field             = content_fields('field_merci_date');
   $db_info           = content_database_info($field);
@@ -2498,6 +2506,7 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
 
   return $options;
 }
+
 function merci_get_suggested_bucket_item($content_type, $start = NULL, $end = NULL, $items = array()) {
   //if there are no dates, return the active total
   
@@ -2686,10 +2695,10 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
     //if user is admin/manager and merci template is installed
     if (module_exists('merci_template') && user_access("administer MERCI")) {
 
-      $count = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM {node} 
-      LEFT JOIN {merci_bucket_node} ON node.vid = merci_bucket_node.vid 
-        WHERE node.type = '%s' AND node.status = 1 
-          AND merci_bucket_node.default_availability IN (%d, %d)",
+      $count = db_fetch_object(db_query("SELECT COUNT(n.nid) as total FROM {node} n
+      LEFT JOIN {merci_bucket_node} mbn ON n.vid = mbn.vid 
+        WHERE n.type = '%s' AND n.status = 1 
+          AND mbn.default_availability IN (%d, %d)",
         $content_type, MERCI_AVA_F, MERCI_AVA_T
       ));
       
@@ -2697,10 +2706,10 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
     }
     else{
     
-      $count = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM {node} 
-      LEFT JOIN {merci_bucket_node} ON node.vid = merci_bucket_node.vid 
-        WHERE node.type = '%s' AND node.status = 1 
-          AND merci_bucket_node.default_availability = 1",
+      $count = db_fetch_object(db_query("SELECT COUNT(n.nid) as total FROM {node} n 
+      LEFT JOIN {merci_bucket_node} mbn ON n.vid = mbn.vid 
+        WHERE n.type = '%s' AND n.status = 1 
+          AND mbn.default_availability = 1",
         $content_type
       ));
       
@@ -2877,10 +2886,10 @@ function merci_get_available_resource_count($content_type) {
   if (!$start) {
 
     $count = db_fetch_object(
-      db_query("SELECT COUNT(node.nid) as total FROM {node} 
-      LEFT JOIN {merci_resource_node} ON node.vid = merci_resource_node.vid 
-        WHERE node.type = '%s' AND node.status = 1 
-          AND merci_resource_node.default_availability = 1", $content_type)
+      db_query("SELECT COUNT(n.nid) as total FROM {node} n 
+      LEFT JOIN {merci_resource_node} mrn ON n.vid = mrn.vid 
+        WHERE n.type = '%s' AND n.status = 1 
+          AND mrn.default_availability = 1", $content_type)
      );
   }
  return $count->total;
@@ -2893,9 +2902,9 @@ function merci_get_available_resource_count($content_type) {
  */
  
 function merci_get_reservation_count($content_type) {
-  $count = db_fetch_object(db_query("SELECT COUNT(node.nid) as total FROM {node} 
-  JOIN merci_reservation_detail ON merci_reservation_detail.item_nid = node.nid 
-  WHERE type = '%s' and item_status = 2", $content_type));
+  $count = db_fetch_object(db_query("SELECT COUNT(n.nid) as total FROM {node} n 
+  JOIN merci_reservation_detail mrd ON mrd.item_nid = n.nid 
+  WHERE n.type = '%s' and mrd.item_status = 2", $content_type));
 
   return $count->total;     
 }
@@ -3011,6 +3020,7 @@ function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, 
 
   foreach ($reservation_times as $reservation_time) {
 
+    //TODO force start and end times to nearest 15 minute increment.
     $tz_start_date = strtotime($reservation_time->start) + $timezone_offset;
     $tz_end_date   = strtotime($reservation_time->end)   + $timezone_offset;
 
@@ -3594,7 +3604,7 @@ function merci_get_rate($content_type) {
 function merci_total_usage($id, $type = 'user', $date = NULL) {
 
   if ($type == 'project') {
-    $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN og_ancestry ON og_ancestry.nid = node.nid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE group_nid = %d", $id);
+    $result = db_query("SELECT * FROM {merci_reservation} mr JOIN node n ON n.vid = mr.vid JOIN og_ancestry og ON og.nid = n.nid JOIN content_type_merci_reservation ct ON n.vid = ct.vid WHERE group_nid = %d", $id);
   }
   else {
     if ($date) {
@@ -3798,7 +3808,7 @@ function merci_user_load($form = NULL, $node = NULL) {
     }
   } 
 
-  if($account->uid){
+  if($account){
     return $account;
   }
   return $user;

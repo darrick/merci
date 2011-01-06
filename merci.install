@@ -911,7 +911,7 @@ function merci_create_cck_fields() {
   module_load_include('inc', 'content', 'includes/content.crud');
   // Create the Costs field group.
   
-  $group = array('label' => 'Costs', 'group_name' => 'group_merci_costs', 'weight'  => -3, 'settings' => array('form' => array('style' => 'fieldset')));
+  $group = array('group_type' => 'standard', 'label' => 'Costs', 'group_name' => 'group_merci_costs', 'weight'  => -3, 'settings' => array('form' => array('style' => 'fieldset')));
   
   fieldgroup_save_group('merci_reservation', $group);
   
@@ -921,7 +921,9 @@ function merci_create_cck_fields() {
     // Create the fields
     if (!content_field_instance_read(array('field_name' => $field['field_name']), TRUE)) {
       content_field_instance_create($field, FALSE);
-      fieldgroup_update_fields($field);
+      if($field['group']){
+        fieldgroup_update_fields($field);
+      }
 
     }
   }
