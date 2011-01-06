@@ -324,10 +324,12 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
     else {
       $start_time = date_format($start_object, 'H:i');
       if ($start_time < $start_hours['open']) {
-        form_set_error('field_merci_date][0][value][time', t('Reservations cannot start on a %day before %start.', array('%day' => $start_name, '%start' => merci_format_time($start_hours['open']))));
+        form_set_error('field_merci_date][0][value][time', t('Reservations cannot start at a time before %start.', 
+          array('%start' => merci_format_time($start_hours['open']))));
       }
       elseif ($start_time > $start_hours['close']) {
-        form_set_error('field_merci_date][0][value][time', t('Reservations cannot start on a %day after %end.', array('%day' => $start_name, '%end' => merci_format_time($start_hours['close']))));
+        form_set_error('field_merci_date][0][value][time', t('Reservations cannot start at a time after %end.', 
+          array('%end' => merci_format_time($start_hours['close']))));
       }
     }
 
@@ -338,11 +340,13 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
     else {
       $end_time = date_format($end_object, 'H:i');
       if ($end_time < $end_hours['open']) {
-        form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end on a %day before %start.', array('%day' => $end_name, '%start' => merci_format_time($end_hours['open']))));
+        form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end at a time before %start.', 
+          array('%start' => merci_format_time($end_hours['open']))));
       }
       elseif ($end_time > $end_hours['close']) {
 
-        form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end on a %day after %end.', array('%day' => $end_name, '%end' => merci_format_time($end_hours['close']))));
+        form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end at a time after %end.', 
+          array('%end' => merci_format_time($end_hours['close']))));
       }
     } 
   } // Hours of operation restrictions, max days, and closed dates checks
