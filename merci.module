@@ -3818,7 +3818,7 @@ function merci_user_load($form = NULL, $node = NULL) {
 function merci_add_settings_form(&$form, $form_state) {
   // Only admin can edit these values.
 
-  $type = $form['old_type']['#value'] ? $form['old_type']['#value'] : $form['type']['#value'];
+  $type = array_key_exists('old_type',$form) ? $form['old_type']['#value'] : $form['type']['#value'];
   $merci_settings = merci_content_types($type);
   if(!$merci_settings) return;
   $node = (object) $form['#node'];

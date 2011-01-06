@@ -921,7 +921,7 @@ function merci_create_cck_fields() {
     // Create the fields
     if (!content_field_instance_read(array('field_name' => $field['field_name']), TRUE)) {
       content_field_instance_create($field, FALSE);
-      if($field['group']){
+      if  (array_key_exists('group',$field)) {
         fieldgroup_update_fields($field);
       }
 
