@@ -13,10 +13,6 @@
  */
 class MerciTestCase extends DrupalWebTestCase {
 
-  public $bucket1;
-  public $bucket2;
-  public $bucket3;
-  public $resource;
 
   public static function getInfo() {
     return array(
@@ -85,6 +81,69 @@ class MerciTestCase extends DrupalWebTestCase {
       );
     $this->drupalPost('admin/settings/date-time' , $settings, t('Save configuration'));
     $this->assertText(t("The configuration options have been saved."));
+  }
+
+
+  function merciCreateContentType($settings,$merci_type,$merci_settings=NULL) {
+    // Create resource content type
+    // Disable the rating for this content type: 0 for Disabled, 1 for Enabled.
+    $content_type = $this->drupalCreateContentType($settings);
+    $type = $content_type->type;
+    $settings = array(
+        'merci_type_setting' => $merci_type,
+        'merci_max_hours_per_reservation' => 5
+    );
+    if($merci_settings) {
+      $settings = $settings + $merci_settings;
+    }
+    $this->drupalPost('admin/content/node-type/' . $type, $settings, t('Save content type'));
+    $this->assertResponse(200);
+    $this->assertRaw(' has been updated.', t('Settings modified successfully for content type.'));
+    return $type;
+  }
+
+  function merciCreateNode($type,$settings,$pass=TRUE) {
+    $this->drupalPost('node/add/' . $type, $settings, t('Save'));
+    if($pass) {
+      $this->assertText(t("@title has been created", array('@title' => $settings['title'])));
+    }
+    $node = node_load(array('title' => $settings['title']));
+    //$this->verbose('Node created: ' . var_export($node, TRUE));
+    return $node;
+  }
+
+  function merciUpdateNode($nid,$settings,$pass=TRUE) {
+    $this->drupalPost("node/$nid/edit", $settings, t('Save'));
+    if($pass) {
+      $this->assertText(t("@title has been updated.", array('@title' => $settings['title'])));
+    }
+    $node = node_load($nid);
+    return $node;
+  }
+
+  function merciCreateConfig($settings) {
+    $this->drupalPost('admin/settings/merci' , $settings, t('Save configuration'));
+    $this->assertText(t("The configuration options have been saved."));
+  }
+
+}
+
+class MerciUserTestCase extends MerciTestCase {
+  public $bucket1;
+  public $bucket2;
+  public $bucket3;
+  public $resource;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'MERCI user level tesing',
+      'description' => 'Verify MERCI node type.',
+      'group' => 'Merci',
+    );
+  }
+  function setUp() {
+    // Enable the module.
+    parent::setUp();
     $settings = array (
         'type'  => 'bucket'
         );
@@ -132,68 +191,16 @@ class MerciTestCase extends DrupalWebTestCase {
 
   }
 
-
-  function merciCreateContentType($settings,$merci_type) {
-    // Create resource content type
-    // Disable the rating for this content type: 0 for Disabled, 1 for Enabled.
-    $content_type = $this->drupalCreateContentType($settings);
-    $type = $content_type->type;
-    $settings = array(
-        'merci_type_setting' => $merci_type,
-        'merci_max_hours_per_reservation' => 5
-    );
-    $this->drupalPost('admin/content/node-type/' . $type, $settings, t('Save content type'));
-    $this->assertResponse(200);
-    $this->assertRaw(' has been updated.', t('Settings modified successfully for content type.'));
-    return $type;
-  }
-
-  function merciCreateNode($type,$settings,$pass=TRUE) {
-    $this->drupalPost('node/add/' . $type, $settings, t('Save'));
-    if($pass) {
-      $this->assertText(t("@title has been created", array('@title' => $settings['title'])));
-    }
-    $node = node_load(array('title' => $settings['title']));
-    //$this->verbose('Node created: ' . var_export($node, TRUE));
-    return $node;
-  }
-
-  function merciUpdateNode($nid,$settings,$pass=TRUE) {
-    $this->drupalPost("node/$nid/edit", $settings, t('Save'));
-    if($pass) {
-      $this->assertText(t("@title has been updated.", array('@title' => $settings['title'])));
-    }
-    $node = node_load($nid);
-    return $node;
-  }
-
-  function merciCreateConfig($settings) {
-    $this->drupalPost('admin/settings/merci' , $settings, t('Save configuration'));
-    $this->assertText(t("The configuration options have been saved."));
-  }
-
-  function testMerciBucketContent() {
-    // TODO test creating a bukcet content item and all the settings are correct.
-  }
-
-  function testMerciResourceContent() {
-    // TODO test creating a resource content item and all the settings are correct.
-  }
-
-  function testMerciTypeSettings() {
-    // TODO test creating a bucket and reource type and all the settings are correct (saved == retrieved).
-  }
-
-  function testMerciStatus() {
+  function _testMerciStatus() {
     //TODO check merci_validate_status function. 
   }
 
-  function testMerciMaxHoursPerReservation() {
+  function _testMerciMaxHoursPerReservation() {
     // with/without override max hours over closed days permission.
     // with/without allow_weekends setting.
   }
 
-  function testMerciAllowOvernight() {
+  function _testMerciAllowOvernight() {
   }
 
   function testMerciHoursOfOperation() {
@@ -427,4 +434,76 @@ class MerciTestCase extends DrupalWebTestCase {
     $pass = $this->merciCreateNode('merci-reservation',$edit);
   }
 }
+class MerciAdminTestCase extends MerciTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'MERCI admin level testing',
+      'description' => 'Verify MERCI node type.',
+      'group' => 'Merci',
+    );
+  }
+  function setUp() {
+    // Enable the module.
+    parent::setUp();
+  }
+  function testMerciBucketContent() {
+    // TODO test creating a bukcet content item and all the settings are correct.
+    $settings = array (
+        'type'  => 'bucket',
+        );
+    // Create resource content type
+    // Disable the rating for this content type: 0 for Disabled, 1 for Enabled.
+    $merci_settings = array(
+        'merci_max_hours_per_reservation' => 5,
+        'merci_allow_overnight' => TRUE,
+        'merci_allow_weekends' => TRUE,
+        'merci_spare_items' => 3 ,
+        'merci_min_cancel_hours' => 3,
+        'merci_autocheckout' => TRUE,
+        'merci_autocheckin' => TRUE,
+        'merci_selfcheckout' => TRUE,
+        'merci_auto_assign_bucket_item' => TRUE,
+        'merci_status' => MERCI_STATUS_ACTIVE,
+    );
+    $type = $this->merciCreateContentType($settings,'bucket',$merci_settings);
 
+    $content_settings = merci_content_types($type);
+    $settings = array();
+
+    foreach($merci_settings as $key => $value) {
+      if(substr($key,0,6) == 'merci_'){
+        $settings[substr($key,6)] = $value;
+      }
+    }
+    $this->_compareArrayForChanges($settings,$content_settings,"!key matches");
+    //$this->verbose('Node created: ' . var_export($content_settings, TRUE));
+    // Create resource item
+    $edit = array(
+      'title' => $this->randomName()
+    );
+
+    $this->bucket1 = $this->merciCreateNode($type,$edit);
+  }
+
+  function _compareArrayForChanges($fields, $data, $message, $prefix = '') {
+    foreach ($fields as $key => $value) {
+      $newprefix = ($prefix == '') ? $key : $prefix .']['. $key;
+      if (is_array($value)) {
+        $compare_to = isset($data[$key]) ? $data[$key] : array();
+        $this->_compareArrayForChanges($value, $compare_to, $message, $newprefix);
+      }
+      else {
+        $this->assertEqual($value, $data[$key], t($message, array('!key' => $newprefix)));
+      }
+    }
+  }
+  /*
+  function testMerciResourceContent() {
+    // TODO test creating a resource content item and all the settings are correct.
+  }
+
+  function testMerciTypeSettings() {
+    // TODO test creating a bucket and reource type and all the settings are correct (saved == retrieved).
+  }
+   */
+}

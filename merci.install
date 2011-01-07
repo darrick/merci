@@ -580,6 +580,19 @@ function merci_update_6205() {
   return $ret;
 }
 
+function merci_update_6206() {
+  $ret = array();
+
+
+  $results = db_query("SELECT type,type_setting FROM {merci_node_type}");
+
+  while($result = db_fetch_array($results)) {
+    variable_set('merci_type_setting_'.$result['type'],$result['type_setting']);
+  }
+
+  return $ret;
+}
+
 
 function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
