@@ -2333,7 +2333,6 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
     if ($edit_page && user_access("manage MERCI")) {
       $operations .= ' &nbsp;&nbsp;' . l(t('delete'), "node/$item->pnid/delete", array('query' => drupal_get_destination()));
     }
-    dpm($operations);
 
     $type_setting = merci_type_setting($item->type);
      
