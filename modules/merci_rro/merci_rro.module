@@ -36,9 +36,7 @@ function merci_rro_menu() {
 // merci_rro_menu
 function merci_rro_node_type_menu_access($type_name) {
 
-  $merci_settings = merci_load_content_type_settings($type_name);
-
-  if ($merci_settings->type_setting != 'disabled' && user_access('administer MERCI')) {
+  if (merci_is_merci_type($type_name) && user_access('administer MERCI')) {
 
     return TRUE;
   }

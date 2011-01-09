@@ -208,14 +208,15 @@ function merci_daypart_pricing($start, $end, $items, $response = 'json') {
       
     } else {
       //for buckets, load settings based on type
-      $type = merci_load_content_type_settings($item);
-      $fee_hours       = $hours - ($type->fee_free_hours);
-      $rate_per_hour   = $type->rate_per_hour;
+      //$type = merci_load_content_type_settings($item);
+      $type = merci_load_item_settings(NULL,$item);
+      $fee_hours       = $hours - ($type['fee_free_hours']);
+      $rate_per_hour   = $type['rate_per_hour'];
       
-      $daypart1_price  = $type->daypart1_price;
-      $daypart2_price  = $type->daypart2_price;
-      $daypart3_price  = $type->daypart3_price;
-      $weekend_price   = $type->weekend_price;
+      $daypart1_price  = $type['daypart1_price'];
+      $daypart2_price  = $type['daypart2_price'];
+      $daypart3_price  = $type['daypart3_price'];
+      $weekend_price   = $type['weekend_price'];
     }
     
     //START FRESH

@@ -133,9 +133,10 @@ function merci_ui_user_reservations_tab($user) {
 
 function merci_ui_list_reservations_access($node) {
 
-  $merci_settings = merci_load_content_type_settings($node->type);
+  //$merci_settings = merci_load_content_type_settings($node->type);
 
-  if ($merci_settings->type_setting == 'bucket' || $merci_settings->type_setting == 'resource') {
+  //if ($merci_settings->type_setting == 'bucket' || $merci_settings->type_setting == 'resource') {
+  if (merci_is_merci_type($node->type)) {
     global $user;
     if (user_access('manage MERCI') || user_access('administer MERCI')) {
 

@@ -38,7 +38,6 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
   if($form_id != 'merci_reservation_node_form') {
     return;
   }
-  drupal_add_js(drupal_get_path('module', 'merci_staff') . '/merci_staff.js');
   if (user_access('administer MERCI') || user_access('manage MERCI')) {
     $form['name'] = $form['author']['name'];
     $form['name']['#title'] = 'Reserve for';
