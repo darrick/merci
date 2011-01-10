@@ -58,7 +58,7 @@ class MerciTestCase extends DrupalWebTestCase {
     $this->drupalLogin($this->admin_user);
 
     $settings = array (
-      'merci_default_reservation_status' => '1',
+      'merci_default_reservation_status' => '2',
       'merci_max_days_advance_reservation' => '0',
       'merci_saturday_is_weekend' => '1',
       'merci_sunday_is_weekend' => '1',
@@ -133,6 +133,7 @@ class MerciUserTestCase extends MerciTestCase {
   public $bucket2;
   public $bucket3;
   public $resource;
+  public $resource2;
 
   public static function getInfo() {
     return array(
@@ -175,10 +176,16 @@ class MerciUserTestCase extends MerciTestCase {
 
     $this->resource = $this->merciCreateNode($type,$edit);
 
+    $edit = array(
+      'title' => $this->randomName()
+    );
+    $this->resource2 = $this->merciCreateNode($type,$edit);
+
     // Create merci user. 
     $this->merci_user = $this->drupalCreateUser(array(
       'view revisions',
       'revert revisions',
+      'create confirmed reservations',
       'edit own bucket content',
       'delete own bucket content',
       'edit own resource content',
@@ -203,7 +210,7 @@ class MerciUserTestCase extends MerciTestCase {
   function _testMerciAllowOvernight() {
   }
 
-  function testMerciHoursOfOperation() {
+  function _testMerciHoursOfOperation() {
 
     $today = date('Y-m-d');
 
@@ -263,7 +270,7 @@ class MerciUserTestCase extends MerciTestCase {
 
   }
 
-  function testMerciClosedDays() {
+  function _testMerciClosedDays() {
     // Create merci user. 
 
     $closed = variable_get('merci_closed_dates','12-25');
@@ -285,7 +292,7 @@ class MerciUserTestCase extends MerciTestCase {
     $this->assertText(t("Sorry, but we are closed on December 25th for a holiday or special event."));
   }
 
-  function testMerciMaxDays() {
+  function _testMerciMaxDays() {
 
     $max_days = 2;
     variable_set("merci_max_days_advance_reservation", $max_days);
@@ -324,7 +331,7 @@ class MerciUserTestCase extends MerciTestCase {
     variable_set("merci_max_days_advance_reservation", 0);
   }
 
-  function testMerciBucketAvailability() {
+  function _testMerciBucketAvailability() {
 
     // Test we can reserve our three bucket items all at the same time.
     // Test the fourth reservation at the same time will fail.
@@ -373,9 +380,9 @@ class MerciUserTestCase extends MerciTestCase {
     $edit = array(
       'title' => $this->randomName(),
       'field_merci_date[0][value][date]' => '2011-01-05',
-      'field_merci_date[0][value][time]' => '09:14',
+      'field_merci_date[0][value][time]' => '09:15',
       'field_merci_date[0][value2][date]' => '2011-01-05',
-      'field_merci_date[0][value2][time]' => '10:14',
+      'field_merci_date[0][value2][time]' => '10:15',
       'choice[0][item]' => $node->type
     );
 
@@ -388,9 +395,9 @@ class MerciUserTestCase extends MerciTestCase {
     $edit = array(
       'title' => $this->randomName(),
       'field_merci_date[0][value][date]' => '2011-01-06',
-      'field_merci_date[0][value][time]' => '09:14',
+      'field_merci_date[0][value][time]' => '09:15',
       'field_merci_date[0][value2][date]' => '2011-01-06',
-      'field_merci_date[0][value2][time]' => '10:14',
+      'field_merci_date[0][value2][time]' => '10:15',
       'choice[0][item]' => $node->type
     );
 
@@ -425,13 +432,51 @@ class MerciUserTestCase extends MerciTestCase {
     $edit = array(
       'title' => $this->randomName(),
       'field_merci_date[0][value][date]' => '2011-01-05',
-      'field_merci_date[0][value][time]' => '09:14',
+      'field_merci_date[0][value][time]' => '09:15',
       'field_merci_date[0][value2][date]' => '2011-01-05',
-      'field_merci_date[0][value2][time]' => '10:14',
+      'field_merci_date[0][value2][time]' => '10:15',
       'choice[0][item]' => $node->type
     );
 
     $pass = $this->merciCreateNode('merci-reservation',$edit);
+
+  }
+  function _testMerciResourceAvailability() {
+    // Create our third reservation
+    $node = $this->resource;
+    $edit = array(
+      'title' => $this->randomName(),
+      'field_merci_date[0][value][date]' => '2011-01-05',
+      'field_merci_date[0][value][time]' => '09:15',
+      'field_merci_date[0][value2][date]' => '2011-01-05',
+      'field_merci_date[0][value2][time]' => '11:15',
+      'choice[0][item]' => $node->nid
+    );
+
+    $third = $this->merciCreateNode('merci-reservation',$edit);
+
+    // Try to create our fourth reservation.  This should FAIL
+    $node = $this->resource;
+    $edit = array(
+      'title' => $this->randomName(),
+      'field_merci_date[0][value][date]' => '2011-01-05',
+      'field_merci_date[0][value][time]' => '09:15',
+      'field_merci_date[0][value2][date]' => '2011-01-05',
+      'field_merci_date[0][value2][time]' => '10:15',
+      'choice[0][item]' => $node->nid
+    );
+
+    $fail = $this->merciCreateNode('merci-reservation',$edit,FALSE);
+    //$this->assertText(t("The dates and times for @title conflict with one or more existing reservations", array('@title' => $node->type)));
+    $this->assertText(t("conflict with one or more existing reservations"));
+
+  }
+  function testMerciUserCase() {
+    $this->_testMerciResourceAvailability();
+    $this->_testMerciBucketAvailability();
+    $this->_testMerciHoursOfOperation();
+    $this->_testMerciClosedDays();
+    $this->_testMerciMaxDays();
   }
 }
 class MerciAdminTestCase extends MerciTestCase {

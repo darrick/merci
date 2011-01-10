@@ -429,24 +429,29 @@ function merci_validate_merci_selected_items($form, &$form_state,$choices,$nid=N
       }
 
       // Do we have the item available at this time?
-      if(!isset($choice_count[$value])) {
+      if(!isset($total_counts[$type])) {
         if (is_numeric($value)) {
           $item_options = merci_get_reservable_items('resource', $type, $start, $end, $nid);
-          $total_counts[$value] = $choice_counts[$value] = count($item_options);
+          $total_counts[$type] = $choice_counts[$type] = $item_options;
+          /*
+          foreach($item_options as $nid => $item_nid){
+            $total_counts[$item_nid] = $choice_counts[$item_nid] = count($item_options);
+          }
+           */
         } else {
-          $total_counts[$value] = $choice_counts[$value] = merci_get_available_bucket_count($type, $start, $end, $nid) - $item['spare_items'];
+          $total_counts[$type][$value] = $choice_counts[$type][$value] = merci_get_available_bucket_count($type, $start, $end, $nid) - $item['spare_items'];
         }
       }
-      if (!$choice_counts[$value] and $total_counts[$value]) {
-        $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount available at the times you've selected.", array('%name' => $title, '%amount' => $total_counts[$value])) . '</div>';
+      if (!$choice_counts[$type][$value] and $total_counts[$type][$value]) {
+        $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount available at the times you've selected.", array('%name' => $title, '%amount' => $total_counts[$type][$value])) . '</div>';
       } 
-      elseif (!$choice_counts[$value]) {
+      elseif (!$choice_counts[$type][$value]) {
         $messages[$did] .= merci_conflict_grid($type, $title, $start, $end, $value);
       }
       else {
         //drupal_set_message(t('There are no time conflicts with this Reservation.'));
       }
-      $choice_counts[$value] --;
+      $choice_countsi[$type][$value] --;
 
       // Check item restrictions.  max hours, etc.
       $restrictions = merci_check_content_type_restrictions($type, $start, $end);
@@ -2417,7 +2422,6 @@ function merci_get_available_bucket_items($node, $bucket_type) {
  *   An array of reservable items, in select option format.
  */
 function merci_get_reservable_items($merci_type, $content_type, $start, $end, $reservation_nid = NULL) {
-
 
   // Determine CCK table and columns the date data is stored in.
   $field             = content_fields('field_merci_date');

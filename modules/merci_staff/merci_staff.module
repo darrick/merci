@@ -118,7 +118,7 @@ function merci_staff_update_name() {
   $args = $form['#parameters'];
   $form_id = array_shift($args);
   // We will run some of the submit handlers so we need to disable redirecting.
-  $form['#redirect'] = FALSE;
+  //$form['#redirect'] = FALSE;
   // We need to process the form, prepare for that by setting a few internals
   // variables.
   $form['#post'] = $_POST;
