@@ -274,7 +274,7 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
   $start_date         = date_format($start_object, 'm-d-Y');
   $max_days           = variable_get("merci_max_days_advance_reservation", '0');
 
-  $account = merci_user_load($form);
+  $account = merci_user_load($form,$node);
   
   // Hours of operation restrictions, max days, and closed dates checks
   // Users in role with Administer MERCI permssion or outside hours of operation skip these checks 
@@ -394,7 +394,8 @@ function merci_validate_merci_selected_items($form, &$form_state,$choices,$nid=N
   $start              = $node->field_merci_date[0]['value'];
   $end                = $node->field_merci_date[0]['value2'];
 
-  $account = merci_user_load($form);
+  //$account = merci_user_load($form);
+  $account = merci_user_load($form,$node);
   // Do this even for reservations with merci status of canceled and checked in.
   $choice_counts = array();
   $total_counts = array();
@@ -517,8 +518,10 @@ function merci_validate_merci_choices($form, &$form_state) {
  */
 function merci_node_validate($form, &$form_state) {
   
+  $node = (object) $form_state['values'];
 
-  $account = merci_user_load($form);
+  //$account = merci_user_load($form);
+  $account = merci_user_load($form,$node);
   
   if (user_access('suspend MERCI access', $account) && !user_access('administer MERCI', $account)) {
     form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
