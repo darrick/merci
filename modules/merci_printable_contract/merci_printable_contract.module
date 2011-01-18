@@ -21,7 +21,7 @@ function merci_printable_contract_menu() {
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
-  
+
    // Standard Administration settings.
   $items['admin/settings/merci/contract'] = array(
     'title' => 'Printable Contract',
