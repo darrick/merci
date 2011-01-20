@@ -22,6 +22,8 @@ class MerciTestCase extends DrupalWebTestCase {
     );
   }
 
+  public $admin_user;
+
   function setUp() {
     // Enable the module.
     parent::setUp(
@@ -104,9 +106,6 @@ class MerciTestCase extends DrupalWebTestCase {
 
   function merciCreateNode($type,$settings,$pass=TRUE) {
     $this->drupalPost('node/add/' . $type, $settings, t('Save'));
-    if($pass) {
-      $this->assertText(t("@title has been created", array('@title' => $settings['title'])));
-    }
     $node = node_load(array('title' => $settings['title']));
     //$this->verbose('Node created: ' . var_export($node, TRUE));
     return $node;
@@ -114,9 +113,6 @@ class MerciTestCase extends DrupalWebTestCase {
 
   function merciUpdateNode($nid,$settings,$pass=TRUE) {
     $this->drupalPost("node/$nid/edit", $settings, t('Save'));
-    if($pass) {
-      $this->assertText(t("@title has been updated.", array('@title' => $settings['title'])));
-    }
     $node = node_load($nid);
     return $node;
   }
@@ -134,6 +130,8 @@ class MerciUserTestCase extends MerciTestCase {
   public $bucket3;
   public $resource;
   public $resource2;
+  public $merci_user;
+  public $merci_role;
 
   public static function getInfo() {
     return array(
@@ -146,25 +144,31 @@ class MerciUserTestCase extends MerciTestCase {
     // Enable the module.
     parent::setUp();
     $settings = array (
-        'type'  => 'bucket'
+        'type'  => 'bucket',
         );
-    $type = $this->merciCreateContentType($settings,'bucket');
+    $merci_settings = array (
+    //    'merci_auto_assign_bucket_item' => TRUE 
+        );
+    $type = $this->merciCreateContentType($settings,'bucket',$merci_settings);
     // Create resource item
     $edit = array(
       'title' => $this->randomName()
     );
 
     $this->bucket1 = $this->merciCreateNode($type,$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
     $edit = array(
       'title' => $this->randomName()
     );
 
     $this->bucket2 = $this->merciCreateNode($type,$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
     $edit = array(
       'title' => $this->randomName()
     );
 
     $this->bucket3 = $this->merciCreateNode($type,$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
     $settings = array (
         'type'  => 'resource'
         );
@@ -175,12 +179,25 @@ class MerciUserTestCase extends MerciTestCase {
     );
 
     $this->resource = $this->merciCreateNode($type,$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
     $edit = array(
       'title' => $this->randomName()
     );
     $this->resource2 = $this->merciCreateNode($type,$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
+    $this->merci_role = $this->drupalCreateRole(array(
+      'view revisions',
+      'revert revisions',
+      'create confirmed reservations',
+      'edit own bucket content',
+      'delete own bucket content',
+      'edit own resource content',
+      'delete own resource content',
+      'create reservations',
+      'access devel information'
+    ));
     // Create merci user. 
     $this->merci_user = $this->drupalCreateUser(array(
       'view revisions',
@@ -193,6 +210,13 @@ class MerciUserTestCase extends MerciTestCase {
       'create reservations',
       'access devel information'
     ));
+//    $this->verbose('User created: ' . var_export($this->merci_user->roles, TRUE));
+//    $this->verbose('Role created: ' . var_export($this->merci_role, TRUE));
+    $edit = array('roles' => ($this->merci_user->roles + array($this->merci_role => $this->merci_role)));
+    user_save($this->merci_user, $edit);
+
+    $edit = array('roles' => ($this->admin_user->roles + array($this->merci_role => $this->merci_role)));
+    user_save($this->admin_user, $edit);
     // Login the merci user.
     $this->drupalLogin($this->merci_user);
 
@@ -314,6 +338,7 @@ class MerciUserTestCase extends MerciTestCase {
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
     // Create our first reservation
     $node = $this->bucket1;
@@ -348,6 +373,7 @@ class MerciUserTestCase extends MerciTestCase {
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
     // Create our second reservation
     $node = $this->bucket2;
@@ -361,6 +387,7 @@ class MerciUserTestCase extends MerciTestCase {
     );
 
     $second = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
     // Create our third reservation
     $node = $this->bucket3;
@@ -374,6 +401,7 @@ class MerciUserTestCase extends MerciTestCase {
     );
 
     $third = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
     // Try to create our fourth reservation.  This should FAIL
     $node = $this->bucket3;
@@ -402,6 +430,7 @@ class MerciUserTestCase extends MerciTestCase {
     );
 
     $fourth = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
     // Test updating current reservations.
     // Also set the times so they will share a bucket item.  Tetris
@@ -414,7 +443,10 @@ class MerciUserTestCase extends MerciTestCase {
       'field_merci_date[0][value2][time]' => '10:00',
     );
 
+    $title = $second->title;
+
     $second = $this->merciUpdateNode($second->nid,$edit);
+    $this->assertText(t("@title has been updated.", array('@title' => $title)));
 
     // Update our third reservation
     $edit = array(
@@ -424,7 +456,9 @@ class MerciUserTestCase extends MerciTestCase {
       'field_merci_date[0][value2][time]' => '11:15',
     );
 
+    $title = $third->title;
     $third = $this->merciUpdateNode($third->nid,$edit);
+    $this->assertText(t("@title has been updated.", array('@title' => $title)));
 
     // Now that the above two reservations are sharing an item ....
     // Try to create our fourth reservation.  This should now PASS 
@@ -439,6 +473,37 @@ class MerciUserTestCase extends MerciTestCase {
     );
 
     $pass = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
+
+    // Login the merci user.
+    $this->drupalLogin($this->admin_user);
+    // Cancel the last reservation.  This should Pass
+    $edit = array(
+      'merci_status' => 5,
+    );
+
+    $title = $pass->title;
+    $pass = $this->merciUpdateNode($pass->nid,$edit);
+    $this->assertText(t("@title has been updated.", array('@title' => $title)));
+    //
+    $title = $pass->title;
+    $pass = $this->merciUpdateNode($pass->nid,$edit);
+    $this->assertText(t("@title has been updated.", array('@title' => $title)));
+    // Login the merci user.
+    $this->drupalLogin($this->merci_user);
+    // Try to create our fifth reservation.  This should Pass
+    $node = $this->bucket3;
+    $edit = array(
+      'title' => $this->randomName(),
+      'field_merci_date[0][value][date]' => '2011-01-05',
+      'field_merci_date[0][value][time]' => '09:15',
+      'field_merci_date[0][value2][date]' => '2011-01-05',
+      'field_merci_date[0][value2][time]' => '10:15',
+      'choice[0][item]' => $node->type
+    );
+
+    $pass = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
   }
   function _testMerciResourceAvailability() {
@@ -454,6 +519,7 @@ class MerciUserTestCase extends MerciTestCase {
     );
 
     $third = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
     // Try to create our fourth reservation.  This should FAIL
     $node = $this->resource;
@@ -528,6 +594,7 @@ class MerciAdminTestCase extends MerciTestCase {
     );
 
     $this->bucket1 = $this->merciCreateNode($type,$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
   }
 
   function _compareArrayForChanges($fields, $data, $message, $prefix = '') {

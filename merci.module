@@ -30,6 +30,7 @@ define('MERCI_SUB_TYPE_ITEM', 1);
 define('MERCI_SUB_TYPE_RESERVATION', 2);
 
 // Item status for reservations.
+define('MERCI_ITEM_STATUS_CANCELED', -2);
 define('MERCI_ITEM_STATUS_CHECKED_IN', -1);
 define('MERCI_ITEM_STATUS_AVAILABLE', 0);
 define('MERCI_ITEM_STATUS_RESERVED', 1);
@@ -2270,14 +2271,17 @@ function merci_add_reservation_items($node) {
       break;
 
     case MERCI_STATUS_CANCELLED:
+      $item_status = MERCI_ITEM_STATUS_CANCELED;
+      break;
     case MERCI_STATUS_DENIED:
       $item_status = MERCI_ITEM_STATUS_AVAILABLE;
       break;
   }
 
 
-  db_query("UPDATE {merci_reservation_detail} SET item_status = %d WHERE vid = %d AND item_nid <> 0", $item_status, $node->vid);
+  //db_query("UPDATE {merci_reservation_detail} SET item_status = %d WHERE vid = %d AND item_nid <> 0", $item_status, $node->vid);
 
+  db_query("UPDATE {merci_reservation_detail} SET item_status = %d WHERE vid = %d", $item_status, $node->vid);
   //update commercial value
   //db_query("UPDATE {content_field_merci_commercial_cost} SET field_merci_commercial_cost_value = %d WHERE vid = %d", $commercial_total, $node->vid);
 
@@ -2592,7 +2596,7 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
     $total_items_array[$node->item_nid][] = $node;
   }
 
-  // pull reservations without assigned nodes and status of MERCI_ITEM_STATUS_RESERVED or MERCI_ITEM_STATUS_CHECKED_OUT
+  // pull reservations without assigned nodes and not status of MERCI_ITEM_STATUS_CHECKED_IN
   $reserved_nodes = db_query("
     SELECT ct.nid,field_merci_date_value,field_merci_date_value2,md.item_nid  
       FROM {" . $table . "} ct 
@@ -3050,17 +3054,15 @@ function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, 
   
   
   $type_settings = merci_type_setting($type);
-  if ($type_setting == 'bucket') {
-    return merci_reserved_bucket_items($type, $start_mysql, $end_mysql);
+  if ($type_settings == 'bucket') {
+    return merci_reserved_bucket_items($type, $start_date, $end_date);
   } 
   else {
-    $sql = "SELECT n.nid AS nid, r.nid AS reservation, r.field_merci_date_value , r.field_merci_date_value2 
-      FROM {merci_reservation_detail} d
-      JOIN {node} n
-      ON n.nid = d.placeholder_nid
-      JOIN {content_type_merci_reservation} r
-      ON r.vid = d.vid 
-      WHERE d.item_nid = %d
+    $sql = "SELECT n.nid AS item_nid, r.nid AS reservation, r.field_merci_date_value , r.field_merci_date_value2 
+      FROM {node} n
+      JOIN {merci_reservation_detail} d ON item_nid = d.item_nid
+      JOIN {content_type_merci_reservation} r ON d.vid = r.vid 
+      WHERE item_nid = %d
       AND r.field_merci_date_value < '%s'
       AND r.field_merci_date_value2 >= '%s'";
   }
@@ -3069,7 +3071,7 @@ function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, 
 
   $reservations = db_query($sql, $nid, $end_date, $start_date);
   while ($reservation = db_fetch_object($reservations)) {
-    $return[$nid][] = $reservation;
+    $return[$item_nid][] = $reservation;
   }
   
   return $return;
