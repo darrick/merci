@@ -2587,7 +2587,7 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
   while ($node = db_fetch_object($reserved_nodes)) {
     // If item is assigned then item is in use by this node.
     if (user_access("administer MERCI") || user_access("manage MERCI")) {
-      drupal_set_message(t('Warning: @title checked out by <a href="@reservation_link">@reservation_title</a> which was due back @date', array('@title' => $node->title, '@reservation_link' => url('node' . $node->reservation_nid), '@reservation_title' => $node->reservation_title, '@date' => $node->field_merci_date_value2)));
+      drupal_set_message(t('Warning: @title checked out by <a href="@reservation_link">@reservation_title</a> which was due back @date', array('@title' => $node->title, '@reservation_link' => url('node/' . $node->reservation_nid), '@reservation_title' => $node->reservation_title, '@date' => $node->field_merci_date_value2)));
     }
     $total_items_array[$node->item_nid][] = $node;
   }
@@ -2742,7 +2742,7 @@ function merci_get_suggested_bucket_item($content_type, $start = NULL, $end = NU
   while ($node = db_fetch_object($reserved_nodes)) {
     // If item is assigned then item is in use by this node.
     if (user_access("administer MERCI") || user_access("manage MERCI")) {
-      drupal_set_message(t('Warning: @title checked out by <a href="@reservation_link">@reservation_title</a> which was due back @date', array('@title' => $node->title, '@reservation_link' => url('node' . $node->reservation_nid), '@reservation_title' => $node->reservation_title, '@date' => $node->field_merci_date_value2)));
+      drupal_set_message(t('Warning: @title checked out by <a href="@reservation_link">@reservation_title</a> which was due back @date', array('@title' => $node->title, '@reservation_link' => url('node/' . $node->reservation_nid), '@reservation_title' => $node->reservation_title, '@date' => $node->field_merci_date_value2)));
     }
     $total_items_array[$node->item_nid][] = $node;
   }
@@ -2993,7 +2993,7 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
   while ($node = db_fetch_object($reserved_nodes)) {
     // If item is assigned then item is in use by this node.
     if (user_access("administer MERCI") || user_access("manage MERCI")) {
-      drupal_set_message(t('Warning: @title checked out by <a href="@reservation_link">@reservation_title</a> which was due back @date', array('@title' => $node->title, '@reservation_link' => url('node' . $node->reservation_nid), '@reservation_title' => $node->reservation_title, '@date' => $node->field_merci_date_value2)));
+      drupal_set_message(t('Warning: @title checked out by <a href="@reservation_link">@reservation_title</a> which was due back @date', array('@title' => $node->title, '@reservation_link' => url('node/' . $node->reservation_nid), '@reservation_title' => $node->reservation_title, '@date' => $node->field_merci_date_value2)));
     }
     $total_items_array[$node->item_nid][] = $node;
   }
