@@ -125,7 +125,8 @@ function merci_staff_update_name() {
   $form['#programmed'] = FALSE;
   $form_state['post'] = $_POST;
 
-  $dates = $_POST['field_merci_date'][0];
+  $dates = $form['#post']['field_merci_date'][0];
+
   // If a start and end date exist, we have to massage them
   // into the proper format from user input.
   // TODO: is there a more elegant way to do this?
@@ -204,6 +205,7 @@ function _merci_staff_potential_references_standard( $field, $string = '', $exac
     }
 
     require_once 'CRM/Contact/BAO/ContactType.php';
+    require_once 'CRM/Core/BAO/UFMatch.php';
     $basicTypes = CRM_Contact_BAO_ContactType::basicTypePairs( );
       
     foreach ( $basicTypes as $name => $label ) {
@@ -245,10 +247,9 @@ function _merci_staff_potential_references_standard( $field, $string = '', $exac
     }
       
     $q = "
-    SELECT users.name as dname, civicrm_contact.id, display_name
+    SELECT civicrm_contact.id, display_name
     FROM civicrm_contact
     JOIN civicrm_uf_match ON civicrm_contact.id = civicrm_uf_match.contact_id
-    JOIN users ON civicrm_uf_match.uf_id = users.uid
     WHERE $whereClause
     display_name IS NOT NULL
     AND display_name NOT LIKE ''
@@ -264,8 +265,10 @@ function _merci_staff_potential_references_standard( $field, $string = '', $exac
 
     $references = array();
     while ($dao->fetch()) {
+        $uid = CRM_Core_BAO_UFMatch::getUFId($dao->id);
+        $username = db_result(db_query("SELECT name FROM {users} WHERE uid=%d",$uid));
         $references[$dao->id] = array(
-                                      'title' => $dao->dname,
+                                      'title' => $username,
                                       'rendered' => $dao->display_name,
                                       );
     }
