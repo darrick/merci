@@ -234,7 +234,7 @@ function merci_load($node) {
     $reservation_items = array();
     // Pull both the general placeholder node and the item nid so we
     // can use whichever we need.
-    $items = db_query("SELECT m.did, m.item_status, pn.nid AS pnid, pn.title AS ptitle, tn.nid AS tnid, tn.title AS ttitle, nt.type, nt.name FROM {merci_reservation_detail} m INNER JOIN {node} pn ON m.placeholder_nid = pn.nid INNER JOIN {node_type} nt ON pn.type = nt.type LEFT JOIN {node} tn ON m.item_nid = tn.nid WHERE m.vid = %d", $node->vid);
+    $items = db_query("SELECT m.did, m.item_status, placeholder_nid, pn.title AS placeholder_title, item_nid, tn.title AS item_title, nt.type, nt.name FROM {merci_reservation_detail} m INNER JOIN {node} pn ON m.placeholder_nid = pn.nid INNER JOIN {node_type} nt ON pn.type = nt.type LEFT JOIN {node} tn ON m.item_nid = tn.nid WHERE m.vid = %d", $node->vid);
     while ($item = db_fetch_object($items)) {
       $reservation_items[$item->did] = $item;
     }
@@ -1287,16 +1287,16 @@ function merci_token_values($type, $object = NULL, $options = array()) {
         $hours = round(($endhour - $starthour) / 3600, 2);
         $titles = array();
         foreach ($node->merci['reservation_items'] as $item) {
-          $item_node = node_load($item->pnid);
+          $item_node = node_load($item->placeholder_nid);
 //          $type      = merci_load_content_type_settings($item->type);
           $fee_hours = $hours - ($item_node->merci['fee_free_hours']);
           $values['merci_commercial_cost'] += $item_node->merci['rate_per_hour'] * $hours;
           $values['merci_member_cost'] += ($fee_hours > 0) ? ($item_node->merci['rate_per_hour'] * $discount) * $fee_hours : 0;
-          if ($item->ttitle != '') {
-            $titles[] = $item->ttitle;
+          if ($item->item_title != '') {
+            $titles[] = $item->item_title;
           }
           else {
-            $titles[] = $item->ptitle;
+            $titles[] = $item->placeholder_title;
           }
         }
 
@@ -2278,6 +2278,23 @@ function merci_add_reservation_items($node) {
       break;
   }
 
+  //dpm($node);
+
+  // Add the items to the merci_reservation_detail table if we are reverting a revision or if only the reservation_items were passed to the node_save programatically.
+  // TOOD: may be a better way to do this.
+      //db_query("INSERT INTO {merci_reservation_detail} (nid, vid, placeholder_nid, item_nid, item_status) VALUES (%d, %d, %d, %d, %d)", $node->nid, $node->vid, $reservation->nid, $item_nid, $item_status);
+  if((!isset($node->existing_items['items']) and !isset($node->choice)) and ($node->is_new or $node->revision)) {
+    foreach($node->merci['reservation_items'] as $item) {
+      $values = array(
+        'nid' => $node->nid,
+        'vid' => $node->vid,
+        'placeholder_nid' => $item->placeholder_nid,
+        'item_nid' => $item->item_nid,
+        'item_status' => $item->item_status,
+      );
+      drupal_write_record('merci_reservation_detail',$values);
+    }
+  }
 
   //db_query("UPDATE {merci_reservation_detail} SET item_status = %d WHERE vid = %d AND item_nid <> 0", $item_status, $node->vid);
 
@@ -2341,21 +2358,21 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
   $items = $node->merci['reservation_items'];
   foreach ($items as $did => $item) {
     // Use item title, fall back to bucket/resource content type name.
-    $title            = isset($item->ttitle) ? $item->ttitle : $item->name;
-    $nid              = isset($item->tnid) ? $item->tnid : $item->pnid;
+    $title            = isset($item->item_title) ? $item->item_title : $item->name;
+    $nid              = isset($item->item_nid) ? $item->item_nid : $item->placeholder_nid;
     $operations       = '';
-    $placeholder_node = node_load($item->pnid);
+    $placeholder_node = node_load($item->placeholder_nid);
     
     //if (node_access('update', $placeholder_node)) {
     if (user_access("manage MERCI")) {
       if (merci_has_accessories($item->type)) {
 
-        $operations .= '<span class="edit-details" id="merci-id-' . $item->pnid . '">' . l(t('Add accessories'), "node/$item->pnid/edit", array('query' => drupal_get_destination())) . '</span>';
+        $operations .= '<span class="edit-details" id="merci-id-' . $item->placeholder_nid . '">' . l(t('Add accessories'), "node/$item->placeholder_nid/edit", array('query' => drupal_get_destination())) . '</span>';
       }
     }
     //if ($edit_page && node_access('delete', $placeholder_node)) {
     if ($edit_page && user_access("manage MERCI")) {
-      $operations .= ' &nbsp;&nbsp;' . l(t('delete'), "node/$item->pnid/delete", array('query' => drupal_get_destination()));
+      $operations .= ' &nbsp;&nbsp;' . l(t('delete'), "node/$item->placeholder_nid/delete", array('query' => drupal_get_destination()));
     }
 
     $type_setting = merci_type_setting($item->type);
@@ -2365,7 +2382,7 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
       if (user_access('administer MERCI') || user_access('manage MERCI')) {
 
         $options = array(0 => t('<Select>'));
-        $default = isset($item->tnid) ? $item->tnid : 0;
+        $default = isset($item->item_nid) ? $item->item_nid : 0;
         $options += merci_get_available_bucket_items($node, $item->type);
         $form['items'][$did] = array(
           '#type' => 'select',
@@ -2377,7 +2394,7 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
     else {
       $form['items'][$did] = array(
         '#type' => 'value',
-        '#value' => $item->tnid,
+        '#value' => $item->item_nid,
       );
       //$form['#table'][$did]['display_item'] = l($title, "node/$item->pnid");
       $form['#table'][$did]['display_item'] = $title;
@@ -2385,10 +2402,10 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
 
     $form['placeholders'][$did] = array(
       '#type' => 'value',
-      '#value' => $item->pnid,
+      '#value' => $item->placeholder_nid,
     );
 
-    $bucket_resource = $type_setting == 'bucket' ? $item->type : $item->tnid;
+    $bucket_resource = $type_setting == 'bucket' ? $item->type : $item->item_nid;
     $form['bucket_resource'][$did] = array(
       '#type' => 'value',
       '#value' => $bucket_resource,
