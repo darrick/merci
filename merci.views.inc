@@ -206,11 +206,49 @@ function merci_views_data() {
   );
 
   // merci_reservation_detail
+  $data['merci_reservation_detail3']['table']['group'] = t('MERCI');
+  $data['merci_reservation_detail3']['table']['join']['node'] = array(
+    'left_field' => 'vid',
+    'field' => 'item_nid',
+    //'type' => 'INNER',
+    'table' => 'merci_reservation_detail',
+  );
+  $data['merci_reservation_detail3']['date_argument'] = array(
+    'group' => t('Date'),
+    'title' => t('Date for reservation detail (for item nid)'),
+    'help' => t('Filter any Views date field by a date argument'),
+    'argument' => array(
+      'handler' => 'date_api_argument_handler',
+      'empty name field' => t('Undated'),
+    ),
+  );
+  $data['merci_reservation_detail3']['nid'] = array(
+    'title' => t('Reservation nid (for item nid)'),
+    'help' => t('The node id of the reservation for this item id.'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => TRUE,
+      'skip base' => array('node'),
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_in_operator',
+    ),
+    'relationship' => array(
+      'base' => 'node',
+      'field' => 'nid',
+      'label' => t('Reservation for placeholder item node id'),
+    ),
+  );
+
+  // merci_reservation_detail
   $data['merci_reservation_detail2']['table']['group'] = t('MERCI');
   $data['merci_reservation_detail2']['table']['join']['node'] = array(
     'left_field' => 'vid',
     'field' => 'placeholder_nid',
-    'type' => 'INNER',
+    //'type' => 'INNER',
     'table' => 'merci_reservation_detail',
   );
   $data['merci_reservation_detail2']['date_argument'] = array(
@@ -249,7 +287,7 @@ function merci_views_data() {
   $data['merci_reservation_detail']['table']['join']['node'] = array(
     'left_field' => 'vid',
     'field' => 'vid',
-    'type' => 'INNER',
+    //'type' => 'INNER',
   );
   $data['merci_reservation_detail']['placeholder_nid'] = array(
     'title' => t('Reserved placeholder nid'),
@@ -311,44 +349,6 @@ function merci_views_data() {
     'field' => 'vid',
     'type' => 'LEFT',
   );
-  $data['merci_bucket_node']['default_availability'] = array(
-    'title' => t('Default booking availability -- bucket'),
-    'help' => t('The default booking availability of a Bucket type (ex. Available|Unavailable).'),
-    'field' => array(
-      'handler' => 'merci_handler_field_merci_bucket_resource_node_default_availability',
-      'click sortable' => TRUE,
-    ),
-    'argument' => array(
-      // TODO: this needs a custom handler.
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'filter' => array(
-      'handler' => 'merci_handler_filter_merci_bucket_resource_node_default_availability',
-    ),
-    'sort' => array(
-      // TODO: this needs a custom handler.
-      'handler' => 'views_handler_sort',
-    ),
-  );
-  $data['merci_bucket_node']['sub_type'] = array(
-    'title' => t('Sub type -- bucket'),
-    'help' => t('The sub type of the Bucket (Item|Reservation placeholder).'),
-    'field' => array(
-      'handler' => 'merci_handler_field_merci_bucket_resource_node_sub_type',
-      'click sortable' => TRUE,
-    ),
-    // TODO: there really should be a custom handler for this.
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'filter' => array(
-      'handler' => 'merci_handler_filter_merci_bucket_resource_node_sub_type',
-    ),
-    'sort' => array(
-      // TODO: this needs a custom handler.
-      'handler' => 'views_handler_sort',
-    ),
-  );
 
   // merci_resource_node
   $data['merci_resource_node']['table']['group'] = t('MERCI');
@@ -356,25 +356,6 @@ function merci_views_data() {
     'left_field' => 'vid',
     'field' => 'vid',
     'type' => 'LEFT',
-  );
-  $data['merci_resource_node']['default_availability'] = array(
-    'title' => t('Default booking availability -- resource'),
-    'help' => t('The default booking availability of a Resource type (ex. Available|Unavailable).'),
-    'field' => array(
-      'handler' => 'merci_handler_field_merci_bucket_resource_node_default_availability',
-      'click sortable' => TRUE,
-    ),
-    'argument' => array(
-      // TODO: this needs a custom handler.
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'filter' => array(
-      'handler' => 'merci_handler_filter_merci_bucket_resource_node_default_availability',
-    ),
-    'sort' => array(
-      // TODO: this needs a custom handler.
-      'handler' => 'views_handler_sort',
-    ),
   );
   $data['merci_resource_node']['late_fee_per_hour'] = array(
     'title' => t('Late fee per hour -- resource'),
@@ -427,9 +408,36 @@ function merci_views_data() {
       'handler' => 'views_handler_sort',
     ),
   );
-  $data['merci_resource_node']['sub_type'] = array(
-    'title' => t('Sub type -- resource'),
-    'help' => t('The sub type of the Resource (Item|Reservation placeholder).'),
+
+  // merci_resource_node
+  $data['merci_reservation_item_node']['table']['group'] = t('MERCI');
+  $data['merci_reservation_item_node']['table']['join']['node'] = array(
+    'left_field' => 'vid',
+    'field' => 'vid',
+    'type' => 'LEFT',
+  );
+  $data['merci_reservation_item_node']['default_availability'] = array(
+    'title' => t('Default booking availability -- resource/bucket'),
+    'help' => t('The default booking availability of a Resource or Bucket type (ex. Available|Unavailable).'),
+    'field' => array(
+      'handler' => 'merci_handler_field_merci_bucket_resource_node_default_availability',
+      'click sortable' => TRUE,
+    ),
+    'argument' => array(
+      // TODO: this needs a custom handler.
+      'handler' => 'views_handler_argument_numeric',
+    ),
+    'filter' => array(
+      'handler' => 'merci_handler_filter_merci_bucket_resource_node_default_availability',
+    ),
+    'sort' => array(
+      // TODO: this needs a custom handler.
+      'handler' => 'views_handler_sort',
+    ),
+  );
+  $data['merci_reservation_item_node']['sub_type'] = array(
+    'title' => t('Sub type -- resource/bucket'),
+    'help' => t('The sub type of the Resource or Bucket (Item|Reservation placeholder).'),
     'field' => array(
       'handler' => 'merci_handler_field_merci_bucket_resource_node_sub_type',
       'click sortable' => TRUE,
@@ -446,7 +454,25 @@ function merci_views_data() {
       'handler' => 'views_handler_sort',
     ),
   );
-
+  $data['merci_reservation_item_node']['item_status'] = array(
+    'title' => t('Reservation Status of Item'),
+    'help' => t('Is the reservatble item currently checked out.'),
+    'field' => array(
+      'handler' => 'merci_handler_field_merci_reservation_item_node_item_status',
+      'click sortable' => TRUE,
+    ),
+    // TODO: there really should be a custom handler for this.
+    'argument' => array(
+      'handler' => 'views_handler_argument_numeric',
+    ),
+    'filter' => array(
+      'handler' => 'merci_handler_filter_merci_reservation_item_node_item_status',
+    ),
+    'sort' => array(
+      // TODO: this needs a custom handler.
+      'handler' => 'views_handler_sort',
+    ),
+  );
   return $data;
 }
 

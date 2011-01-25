@@ -295,34 +295,54 @@ function merci_confirm_via_email($nid) {
  * TODO: change this to a views view.
  */
 function merci_current_inventory() {
-  $output .= '<b>' . t('type (currently out/total in MERCI/total should be available)') . '</b><br />';
 
-  $result = db_query("SELECT type, type_setting FROM {merci_node_type} 
-    WHERE type_setting = 'resource' OR type_setting = 'bucket' 
-    ORDER BY type");
+  $header = array (
+    t('Item'),
+    t('Available'),
+    t('Unavailable'),
+    t('Checked Out'),
+    t('Total'),
+    t('Operations')
+  );
 
-  while ($mercitype = db_fetch_object($result)) {
+  $merci_types = merci_content_types();
 
-    $currentlyout = merci_get_reservation_count($mercitype->type);
+  $rows   = array();
 
-    if ($mercitype->type_setting == 'bucket') {
-      $currentlyactive = merci_get_available_bucket_count($mercitype->type);
-    }
-    else {
-      // TODO: Check if resource is available.
-      
-      $currentlyactive = merci_get_available_resource_count($mercitype->type);
-    }
+
+  foreach ($merci_types as $merci_type) { 
+
+    $info = content_types($merci_type['type']);
+
+    $operations = l(t('Edit'),'admin/content/node-type/'.$info['url_str'],array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+    $operations .= " ";
+    $operations .= l(t('Add Item'),'node/add/'.$info['url_str'],array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+
+    $checked_out = merci_get_reservation_count($merci_type['type']);
+
+    $available = merci_get_count($merci_type,MERCI_AVA_F);
+
+    $unavailable = merci_get_count($merci_type,MERCI_UNA_F);
+    $available = l($available,'admin/merci/manage/current_inventory/'.$info['type'].'/Available');
+    $checked_out = l($checked_out,'admin/merci/manage/current_inventory/'.$info['type'].'/checked-out');
+    $unavailable = l($unavailable,'admin/merci/manage/current_inventory/'.$info['type'].'/Unavailable');
+
     // TODO: Check if the View exists... not the module that normally creates it.
-    if (module_exists('merci_inventory')) {
-      $output .= l($mercitype->type, 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'type[0]=' . $mercitype->type)) . ' (' . $currentlyout . '/' . $currentlyactive . '/' . ($currentlyactive - $currentlyout) . ')<br />';
-    } 
-    else {
-      $output .= $mercitype->type . ' (' . $currentlyout . '/' . $currentlyactive . '/' . ($currentlyactive - $currentlyout) . ')<br />';
-    }
-  }
-  //while
+    $title = module_exists('merci_inventory') 
+      ? l($info['name'], 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'type[0]=' . $merci_type['type'])) 
+      : l($info['name'],'admin/merci/manage/current_inventory/'. $info['type'] .'/all');
 
+    $rows[] = array(
+      $title,
+      $available,
+      $unavailable,
+      $checked_out,
+      $available-$checked_out,
+      $operations,
+    );
+  }
+  $output = theme('table', $header, $rows);
+  $output .= l(t('Add Merci Type'),'admin/content/types/add',array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
   return $output;
 }
 

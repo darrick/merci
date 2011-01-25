@@ -109,6 +109,8 @@ class merci_handler_field_merci_bucket_resource_node_default_availability extend
  * Bucket|Resource sub type.
  */
 class merci_handler_field_merci_bucket_resource_node_sub_type extends views_handler_field {
+
+
   function construct() {
     parent::construct();
     $this->additional_fields['sub_type'] = 'sub_type';
@@ -135,3 +137,24 @@ class merci_handler_field_merci_bucket_resource_node_sub_type extends views_hand
   }
 }
 
+/**
+ * Bucket/resource default availability.
+ */
+class merci_handler_field_merci_reservation_item_node_item_status extends views_handler_field {
+  function construct() {
+    parent::construct();
+    $this->additional_fields['item_status'] = 'item_status';
+  }
+
+  function query() {
+    $this->ensure_my_table();
+    $this->add_additional_fields();
+  }
+
+  function render($values) {
+    parent::render($values);
+    $availabilities =  merci_item_reservation_status();
+    $availability = $values->{$this->aliases['item_status']};
+    return $availabilities[$availability];
+  }
+}

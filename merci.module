@@ -95,7 +95,7 @@ function merci_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['admin/merci/manage/current-inventory'] = array(
+  $items['admin/merci/manage/current_inventory'] = array(
     'title' => 'Current Inventory',
     'description' => 'Displays list',
     'page callback' => 'merci_current_inventory',
@@ -770,7 +770,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
 
     if (isset($node->merci['sub_type'])) {
       $sub_type = $node->merci['sub_type'];
-      $default_availability = $node->merci_default_availability;
+      $default_availability = $node->merci['default_availability'];
     } else {
       $sub_type = MERCI_SUB_TYPE_ITEM;
       $default_availability = MERCI_AVA_F;
@@ -1043,10 +1043,12 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
           $settings['vid'] = $node->vid;
           $settings['nid'] = $node->nid;
           if ($op == 'insert' || $node->revision) {
-              drupal_write_record('merci_'.$type.'_node',$settings);
+            drupal_write_record('merci_'.$type.'_node',$settings);
+            drupal_write_record('merci_reservation_item_node',$settings);
           }
           else {
-              drupal_write_record('merci_'.$type.'_node',$settings,'vid');
+            drupal_write_record('merci_'.$type.'_node',$settings,'vid');
+            drupal_write_record('merci_reservation_item_node',$settings,'vid');
           }
         }
         break;
@@ -1060,10 +1062,12 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         switch ($type) {
           case 'bucket':
             db_query("DELETE FROM {merci_bucket_node} WHERE nid = %d", $node->nid);
+            db_query("DELETE FROM {merci_reservation_item_node} WHERE nid = %d", $node->nid);
             break;
 
           case 'resource':
             db_query("DELETE FROM {merci_resource_node} WHERE nid = %d", $node->nid);
+            db_query("DELETE FROM {merci_reservation_item_node} WHERE nid = %d", $node->nid);
             break;
         }
         break;
@@ -1072,10 +1076,12 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         switch ($type) {
           case 'bucket':
             db_query("DELETE FROM {merci_bucket_node} WHERE vid = %d", $node->vid);
+            db_query("DELETE FROM {merci_reservation_item_node} WHERE nid = %d", $node->vid);
             break;
 
           case 'resource':
             db_query("DELETE FROM {merci_resource_node} WHERE vid = %d", $node->vid);
+            db_query("DELETE FROM {merci_reservation_item_node} WHERE nid = %d", $node->vid);
             break;
 
           case 'reservation':
@@ -1375,6 +1381,14 @@ function merci_views_handlers() {
         'file' => 'merci_handler_field.inc',
       ),
       'merci_handler_filter_merci_bucket_resource_node_sub_type' => array(
+        'parent' => 'views_handler_filter_in_operator',
+        'file' => 'merci_handler_filter_in_operator.inc',
+      ),
+      'merci_handler_field_merci_reservation_item_node_item_status' => array(
+        'parent' => 'views_handler_field',
+        'file' => 'merci_handler_field.inc',
+      ),
+      'merci_handler_filter_merci_reservation_item_node_item_status' => array(
         'parent' => 'views_handler_filter_in_operator',
         'file' => 'merci_handler_filter_in_operator.inc',
       ),
@@ -1788,31 +1802,48 @@ function merci_is_merci_type($type) {
 function merci_type_setting($type) {
   return variable_get('merci_type_setting_'.$type,'disabled') ;
 }
-/**
- * Loads the settings for a single MERCI content type.
- *
- * @param $type_name
- *   The type to load.
- *
- * @return
- *   An object of type settings.
- */
-function merci_content_types($type_name) {
-  if(empty($type_name)) return;
 
-  if (($cache = cache_get('merci_' . $type_name . '_data')) && !empty($cache->data)) {
-    $merci_settings = $cache->data;
-  }
+/**
+ * Return a list of all merci content types.
+ *
+ * @param $content_type_name
+ *   If set, return information on just this type.
+ *
+ * Do some type checking and set up empty arrays for missing
+ * info to avoid foreach errors elsewhere in the code.
+ */
+
+function merci_content_types($type_name = NULL) {
+  // handle type name with either an underscore or a dash
+  $type_name = !empty($type_name) ? str_replace('-', '_', $type_name) : NULL;
+
+  $info = _merci_content_type_info();
+  if(!isset($type_name)){
+    return $info;
+  } 
   else {
-    // Load MERCI node type settings.
-    $merci_settings = db_fetch_array(db_query("SELECT * FROM {merci_node_type} WHERE type = '%s' AND type_setting <> 'disabled'", $type_name));
-    // Do your expensive calculations here, and populate $my_data
-    // with the correct stuff..
-    if ($merci_settings) {
-      cache_set('merci_' . $type_name . '_data', $merci_settings);
+    return $info[$type_name];
+  }
+}
+
+function _merci_content_type_info($reset=FALSE) {
+  static $info;
+  if ($reset || !isset($info)) {
+    if (!$reset && $cached = cache_get('merci_content_type_info')) {
+      $info = $cached->data;
+    }
+    else {
+      $info = array();
+      // Load MERCI node type settings.
+      $merci_settings = db_query("SELECT * FROM {merci_node_type} WHERE type_setting <> 'disabled'");
+      // with the correct stuff..
+      while($merci_setting = db_fetch_array($merci_settings)) {
+        $info[$merci_setting['type']] = $merci_setting;
+      }
+      cache_set('merci_content_type_info', $info);
     }
   }
-  return $merci_settings;
+  return $info;
 }
 /**
  * Loads the settings for an entire MERCI type (bucket/resource).
@@ -2049,6 +2080,20 @@ function merci_item_status($code = NULL) {
   }
 }
 
+
+function merci_item_reservation_status($code = NULL) {
+// Item status for reservations.
+  $statuses = array(
+    MERCI_ITEM_STATUS_AVAILABLE => t('Available'),
+    MERCI_ITEM_STATUS_CHECKED_OUT => t('Checked Out'),
+  );
+  if (isset($code)) {
+    return $statuses[$code];
+  }
+  else {
+    return $statuses;
+  }
+}
 /**
  * Return the name of a status code.
  *
@@ -2096,6 +2141,7 @@ function merci_node_type_save_submit($form, &$form_state) {
       $return = drupal_write_record('merci_node_type',$settings,'type');
     }
     cache_clear_all('merci_' . $node['type'] . '_data','cache');
+    cache_clear_all('merci_content_type_info','cache');
     // This hack is necessary because the node type form submit
     // automatically saves all remaining form items to {variable}
     // We're doing custom storage, so remove these.
@@ -2305,6 +2351,19 @@ function merci_add_reservation_items($node) {
   db_query("UPDATE {content_type_merci_reservation} SET field_merci_member_cost_value = %d WHERE vid = %d", $commercial_total, $node->vid);
   //print 'UPDATE {content_type_merci_reservation} SET field_merci_member_cost_value = '.$commercial_total . ' WHERE vid = ' . $node->vid;
   // die;
+  // Update the merci_reservation_item_node table with the current status.
+  if($item_status == MERCI_ITEM_STATUS_CHECKED_OUT) {
+    $results = db_query("SELECT item_nid FROM {merci_reservation_detail} WHERE item_nid <> 0 AND vid = %d", $node->vid); 
+    while ($result = db_fetch_array($results)) {
+      db_query("UPDATE {merci_reservation_item_node} SET item_status = %d WHERE nid = %d", $item_status, $result['item_nid']);
+    }
+  } else {
+    $results = db_query("SELECT item_nid FROM {merci_reservation_detail} WHERE item_nid <> 0 AND vid = %d", $node->vid); 
+    $item_status = MERCI_ITEM_STATUS_AVAILABLE;
+    while ($result = db_fetch_array($results)) {
+      db_query("UPDATE {merci_reservation_item_node} SET item_status = %d WHERE nid = %d", $item_status, $result['item_nid']);
+    }
+  }
 }
 
 /**
@@ -3029,36 +3088,31 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
 }
 
 /** 
- * merci_get_available_resource_count($content_type[string])
- * returns total number of resources 
+ * merci_get_count ($content_type, $default_availability)
+ * returns total number of items available for check out. 
  * @ $content_type resource to be counted
+ * @ $default_availability
  */
 
-function merci_get_available_resource_count($content_type) {
-  if (!$start) {
-
-    $count = db_fetch_object(
-      db_query("SELECT COUNT(n.nid) as total FROM {node} n 
-      LEFT JOIN {merci_resource_node} mrn ON n.vid = mrn.vid 
-        WHERE n.type = '%s' AND n.status = 1 
-          AND mrn.default_availability = 1", $content_type)
-     );
-  }
- return $count->total;
+function merci_get_count($type,$default_availability=MERCI_AVA_F) {
+    return db_result(db_query("SELECT COUNT(n.nid) as total FROM {node} n 
+      LEFT JOIN {merci_". $type['type_setting'] ."_node} mbn ON n.vid = mbn.vid 
+      WHERE n.type = '%s' 
+      AND mbn.default_availability = %d
+      AND mbn.sub_type = %d",
+      $type['type'],$default_availability,MERCI_SUB_TYPE_ITEM
+    ));
 }
-
 /** 
  * merci_get_reservation_count($content_type[string])
- * returns total number of reservations 
+ * returns total number of checked out items for content type. 
  * @ $content_type resource to be counted
  */
  
 function merci_get_reservation_count($content_type) {
-  $count = db_fetch_object(db_query("SELECT COUNT(n.nid) as total FROM {node} n 
+  return db_result(db_query("SELECT COUNT(n.nid) as total FROM {node} n 
   JOIN merci_reservation_detail mrd ON mrd.item_nid = n.nid 
-  WHERE n.type = '%s' and mrd.item_status = 2", $content_type));
-
-  return $count->total;     
+  WHERE n.type = '%s' and mrd.item_status = %d", $content_type, MERCI_ITEM_STATUS_CHECKED_OUT));
 }
 
 /**

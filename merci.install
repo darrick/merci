@@ -505,6 +505,43 @@ function merci_schema() {
     'primary key' => array('nid', 'vid'),
   );
 
+  $schema['merci_reservation_item_node'] = array(
+    'description' => t('Stores information on bookable resource and bucket nodes.'),
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t("The bookable resource nid."),
+      ),
+      'vid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t("The bookable resource vid."),
+      ),
+      'default_availability' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'size' => 'tiny',
+        'default' => 0,
+        'description' => t('Default availability of the item .'),
+      ),
+      'sub_type' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("The subtype of resource node, either item or reservation."),
+      ),
+      'item_status' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t('The status of the item associated in the item_nid column.'),
+      ),
+    ),
+    'primary key' => array('nid', 'vid'),
+  );
   return $schema;
 }
 
@@ -593,6 +630,37 @@ function merci_update_6206() {
   return $ret;
 }
 
+function merci_update_6207() {
+  $ret = array();
+
+  $schemas = merci_schema();
+
+  db_create_table($ret, 'merci_reservation_item_node', $schemas['merci_reservation_item_node']);
+
+  $results = db_query("SELECT * FROM {merci_bucket_node}");
+
+  // Migrate default_availability and sub_type to new table.
+  while($result = db_fetch_array($results)) {
+    drupal_write_record('merci_reservation_item_node',$result);
+  }
+
+  $results = db_query("SELECT * FROM {merci_resource_node}");
+
+  while($result = db_fetch_array($results)) {
+    drupal_write_record('merci_reservation_item_node',$result);
+  }
+
+  // Migrate reservation to new table.
+  // Pull the merci_item_status for items which are in the CHECKED OUT state for the current reservation revision.
+  $results = db_query("SELECT item_nid, item_status 
+    FROM {merci_reservation_detail} md JOIN {node} n ON md.vid = n.vid WHERE item_nid <> 0 AND item_status = %d", 
+    MERCI_ITEM_STATUS_CHECKED_OUT); 
+  while ($result = db_fetch_array($results)) {
+    db_query("UPDATE {merci_reservation_item_node} SET item_status = %d WHERE nid = %d", $result['item_status'], $result['item_nid']);
+  }
+
+  return $ret;
+}
 
 function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
