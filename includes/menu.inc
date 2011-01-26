@@ -298,7 +298,7 @@ function merci_current_inventory() {
 
   $header = array (
     t('Item'),
-    t('Available'),
+    t('On Hand'),
     t('Unavailable'),
     t('Checked Out'),
     t('Total'),
@@ -321,9 +321,11 @@ function merci_current_inventory() {
     $checked_out = merci_get_reservation_count($merci_type['type']);
 
     $available = merci_get_count($merci_type,MERCI_AVA_F);
+    $onhand = $available - $checked_out;
 
     $unavailable = merci_get_count($merci_type,MERCI_UNA_F);
-    $available = l($available,'admin/merci/manage/current_inventory/'.$info['type'].'/Available');
+    $total = $onhand + $unavailable + $checked_out;
+    $available = l($onhand,'admin/merci/manage/current_inventory/'.$info['type'].'/Available');
     $checked_out = l($checked_out,'admin/merci/manage/current_inventory/'.$info['type'].'/checked-out');
     $unavailable = l($unavailable,'admin/merci/manage/current_inventory/'.$info['type'].'/Unavailable');
 
@@ -337,7 +339,7 @@ function merci_current_inventory() {
       $available,
       $unavailable,
       $checked_out,
-      $available-$checked_out,
+      $total,
       $operations,
     );
   }

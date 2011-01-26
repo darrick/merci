@@ -520,6 +520,7 @@ function merci_validate_merci_choices($form, &$form_state) {
     }
   }
 }
+
 /**
  * Implementation of hook_validate().
  */
@@ -3111,8 +3112,8 @@ function merci_get_count($type,$default_availability=MERCI_AVA_F) {
  
 function merci_get_reservation_count($content_type) {
   return db_result(db_query("SELECT COUNT(n.nid) as total FROM {node} n 
-  JOIN merci_reservation_detail mrd ON mrd.item_nid = n.nid 
-  WHERE n.type = '%s' and mrd.item_status = %d", $content_type, MERCI_ITEM_STATUS_CHECKED_OUT));
+  JOIN {merci_reservation_item_node} mrin ON mrin.vid = n.vid 
+  WHERE n.type = '%s' and mrin.item_status = %d", $content_type, MERCI_ITEM_STATUS_CHECKED_OUT));
 }
 
 /**

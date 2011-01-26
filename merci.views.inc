@@ -208,9 +208,8 @@ function merci_views_data() {
   // merci_reservation_detail
   $data['merci_reservation_detail3']['table']['group'] = t('MERCI');
   $data['merci_reservation_detail3']['table']['join']['node'] = array(
-    'left_field' => 'vid',
+    'left_field' => 'nid',
     'field' => 'item_nid',
-    //'type' => 'INNER',
     'table' => 'merci_reservation_detail',
   );
   $data['merci_reservation_detail3']['date_argument'] = array(
@@ -222,7 +221,7 @@ function merci_views_data() {
       'empty name field' => t('Undated'),
     ),
   );
-  $data['merci_reservation_detail3']['nid'] = array(
+  $data['merci_reservation_detail3']['vid'] = array(
     'title' => t('Reservation nid (for item nid)'),
     'help' => t('The node id of the reservation for this item id.'),
     'field' => array(
@@ -238,8 +237,8 @@ function merci_views_data() {
     ),
     'relationship' => array(
       'base' => 'node',
-      'field' => 'nid',
-      'label' => t('Reservation for placeholder item node id'),
+      'base field' => 'vid',
+      'label' => t('Reservation for item node id'),
     ),
   );
 
@@ -276,7 +275,7 @@ function merci_views_data() {
     ),
     'relationship' => array(
       'base' => 'node',
-      'field' => 'nid',
+      'base field' => 'vid',
       'label' => t('Reservation for placeholder item node id'),
     ),
   );
