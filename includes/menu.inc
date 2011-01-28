@@ -28,21 +28,20 @@ function merci_choice_js() {
     $node = new stdClass();
   }
   
-  $account = merci_user_load(NULL, $node);
-
   $dates = $_POST['field_merci_date'][0];
   // If a start and end date exist, we have to massage them
   // into the proper format from user input.
   // TODO: is there a more elegant way to do this?
   if ($dates['value']['date'] && $dates['value']['time'] && $dates['value2']['date'] && $dates['value2']['time']) {
-    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates);
+    $default_format = $form['#field_info']['field_merci_date']['widget']['input_format'];
+    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates, $default_format);
   }
   else {
     $form_state = array();
   }
 
   // Build our new form element.
-  $form_element = _merci_choice_form($node, $form_state, $delta, $default, $account);
+  $form_element = _merci_choice_form($node, $form_state, $delta, $default);
   drupal_alter('form', $form_element, array(), 'merci_choice_js');
 
   /*
@@ -101,14 +100,13 @@ function merci_date_filter_js() {
     $node = new stdClass();
   }
   
-  $account = merci_user_load(NULL, $node);
-  
   $dates = $_POST['field_merci_date'][0];
   // If a start and end date exist, we have to massage them
   // into the proper format from user input.
   // TODO: is there a more elegant way to do this?
   if ($dates['value']['date'] && $dates['value']['time'] && $dates['value2']['date'] && $dates['value2']['time']) {
-    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates);
+    $default_format = $form['#field_info']['field_merci_date']['widget']['input_format'];
+    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates, $default_format);
   }
   else {
     $form_state = array();
@@ -118,7 +116,7 @@ function merci_date_filter_js() {
   for ($delta = 0; $delta < $choice_count; $delta++) {
     $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
 
-    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default, $account);
+    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default);
   }
 
   /*

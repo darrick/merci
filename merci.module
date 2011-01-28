@@ -281,12 +281,10 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
   $start_date         = date_format($start_object, 'm-d-Y');
   $max_days           = variable_get("merci_max_days_advance_reservation", '0');
 
-  $account = merci_user_load($form,$node);
-  
   // Hours of operation restrictions, max days, and closed dates checks
   // Users in role with Administer MERCI permssion or outside hours of operation skip these checks 
-  if (user_access('administer MERCI', $account) 
-    || user_access('create reservations outside hours of operation', $account)) {
+  if (user_access('administer MERCI') 
+    || user_access('create reservations outside hours of operation')) {
     
     merci_debug('merci', 'SKIP Hours of Operation Check');
     merci_debug('merci', 'SKIP Max Days Check');
@@ -401,8 +399,6 @@ function merci_validate_merci_selected_items($form, &$form_state,$choices,$nid=N
   $start              = $node->field_merci_date[0]['value'];
   $end                = $node->field_merci_date[0]['value2'];
 
-  //$account = merci_user_load($form);
-  $account = merci_user_load($form,$node);
   // Do this even for reservations with merci status of canceled and checked in.
   $choice_counts = array();
   $total_counts = array();
@@ -431,7 +427,7 @@ function merci_validate_merci_selected_items($form, &$form_state,$choices,$nid=N
       }
 
       // Does the user have access to this content type?
-      if(!merci_check_content_type_user_permissions($type, $account)) {
+      if(!merci_check_content_type_user_permissions($type)) {
         $messages[$did] = '<div> ' . t("You do not have permission to reserve %name.", array('%name' => $title)) . '</div>';
         continue;
       }
@@ -528,10 +524,7 @@ function merci_node_validate($form, &$form_state) {
   
   $node = (object) $form_state['values'];
 
-  //$account = merci_user_load($form);
-  $account = merci_user_load($form,$node);
-  
-  if (user_access('suspend MERCI access', $account) && !user_access('administer MERCI', $account)) {
+  if (user_access('suspend MERCI access') && !user_access('administer MERCI')) {
     form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
     return;
   }
@@ -549,16 +542,6 @@ function merci_node_validate($form, &$form_state) {
   merci_validate_existing_items($form, $form_state);
   merci_validate_merci_choices($form, $form_state);
   
-   // Allow other modules to add validation.
-  foreach (module_implements('merci_validation') as $module) {
-    $function = $module .'_merci_validation';
-    $message = $function($form);
-    //custom validation functions should return nothing if the reservation is valid
-    //or a string explaining why the reservation can't be saved with these settings
-    if ($message) {
-      form_set_error('merci_status', $message);
-    }
-  }
 }
 
 
@@ -639,9 +622,14 @@ function merci_form(&$node, $form_state) {
 
   merci_check_default_timezone();
   $form = node_content_form($node, $form_state);
-  //$form = array();
    
-  $account = merci_user_load(NULL, $node);
+  if (isset($form_state['node'])) {
+      $node = $form_state['node'] + (array)$node;
+  }
+  $node = (object) $node;
+
+  //TODO get rid of the merci array.  status should just be loaded as merci_status.
+  $merci_status_default = $node->merci_status ? $node->merci_status : $node->merci['status'];
   
   if (user_access('suspend MERCI access') && !user_access('administer MERCI')) {
     form_set_error('merci_status', t('Your access to make new Reservations or edit existing Reservations has been suspended.'));
@@ -699,7 +687,7 @@ function merci_form(&$node, $form_state) {
   for ($delta = 0; $delta < $choice_count; $delta++) {
     $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
 
-    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default, $account);
+    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $defaul);
   }
 
   // We name our button 'merci_more' to avoid conflicts with other modules using
@@ -731,14 +719,14 @@ function merci_form(&$node, $form_state) {
       '#title' => t('Status'),
       '#type' => 'radios',
       '#options' => merci_record_status(),
-      '#default_value' => $node->merci['status'],
+      '#default_value' => $merci_status_default,
       '#description' => t('Finalized bookings can not have time conflicts with each other.'),
     );
   }
   else {
     $form['merci_status'] = array(
       '#type' => 'value',
-      '#value' => $node->merci['status'],
+      '#value' => $merci_status_default,
     );
   }
 
@@ -1408,7 +1396,7 @@ function merci_more_choices_submit($form, &$form_state) {
 
   // Make the changes we want to the form state.
   if ($form_state['values']['merci_more']) {
-    $form_state['choice_count'] = count($form_state['values']['choice']) + 5;
+    $form_state['choice_count'] = count($form_state['values']['choice']) + 1;
   }
 }
 
@@ -1437,7 +1425,7 @@ function merci_date_filter($form, &$form_state) {
  * @return
  *   The form array for the selector.
  */
-function _merci_choice_form($node, $form_state, $delta, $default = '', $account = NULL) {
+function _merci_choice_form($node, $form_state, $delta, $default = '', $reset = NULL) {
   
   static $options = array();
   $form = array(
@@ -1446,10 +1434,10 @@ function _merci_choice_form($node, $form_state, $delta, $default = '', $account 
 
   // We'll manually set the #parents property of these fields so that
   // their values appear in the $form_state['values']['choice'] array.
-  if (empty($options)) {
+  if (empty($options) or $reset) {
     // NOTE: we don't filter by node here because we only want items not
     //reserved by any node including the node calling the function.
-    $options = merci_build_reservable_items($node, $form_state, NULL, $account);
+    $options = merci_build_reservable_items($node, $form_state, NULL);
   }
   $form['item'] = array(
     '#type' => 'select',
@@ -1486,7 +1474,7 @@ function merci_get_user_reservable_nodes($type=NULL) {
 
       // Only include active buckets, and content types the user
       // can reserve.
-      if ($bucket->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($bucket->type, $account)) {
+      if ($bucket->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($bucket->type)) {
 
         // Get all assignable nodes for this bucket item.
         $bucket_nodes = db_query("SELECT n.title, n.nid FROM {node} n INNER JOIN {merci_bucket_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.sub_type = %d AND m.default_availability IN (%d, %d)", $bucket->type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_T);
@@ -1546,7 +1534,7 @@ function merci_get_user_reservable_nodes($type=NULL) {
  *     'flat_options' => An array of available items, whose values are the
  *                       nids of the items.
  */
-function merci_build_reservable_items($node, $form_state, $reservation_nid = NULL, $account = NULL) {
+function merci_build_reservable_items($node, $form_state, $reservation_nid = NULL) {
   
   // Newly set dates take precedence.
   if (isset($form_state['values']['field_merci_date'])) {
@@ -1578,7 +1566,7 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
 
     // Only include active buckets, and content types the user
     // can reserve.
-    if ($bucket->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($bucket->type, $account)) {
+    if ($bucket->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($bucket->type)) {
 
       // Check for available items in the bucket.
       $available_bucket_items = merci_get_available_bucket_count($bucket->type, $start, $end, $reservation_nid) - $bucket->spare_items;
@@ -1617,7 +1605,7 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
     $item_options = array();
 
     // Only include active resources, and content types the user can reserve.
-    if ($resource->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($resource->type, $account)) {
+    if ($resource->status == MERCI_STATUS_ACTIVE && merci_check_content_type_user_permissions($resource->type)) {
 
       // No filtering for new reservations.
       if (isset($is_new)) {
@@ -1690,8 +1678,8 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
  */
 
 
-function merci_check_content_type_restrictions($content_type, $start, $end, $account = NULL) {
-  if (user_access("administer MERCI", $account) || user_access("manage MERCI", $account)) {
+function merci_check_content_type_restrictions($content_type, $start, $end) {
+  if (user_access("administer MERCI") || user_access("manage MERCI")) {
     //$return[] = t('You are making a reservation as a user with permissions to Manage or Administer MERCI.  This allows you to override the normal content type restrictions.');
   } 
   else {
@@ -1735,7 +1723,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end, $acc
           }
         }
         // Do we allow extending a reservtion over days we are closed?
-        if (user_access('override max hours over closed days', $account)) {
+        if (user_access('override max hours over closed days')) {
           $hours_of_operation = merci_load_hours_of_operation($content_type);
           for ($i = 1; $i <= 6; $i++) {
             if (empty($hours_of_operation[$i])) {
@@ -1792,8 +1780,8 @@ function merci_check_content_type_restrictions($content_type, $start, $end, $acc
  * @return TRUE if the user has access to reserve the content type, FALSE
  *   otherwise.
  */
-function merci_check_content_type_user_permissions($type, $account = NULL) {
-  return user_access("edit own $type content", $account) && user_access("delete own $type content", $account);
+function merci_check_content_type_user_permissions($type) {
+  return user_access("edit own $type content") && user_access("delete own $type content");
 }
 
 function merci_is_merci_type($type) {
@@ -3506,25 +3494,6 @@ function merci_email_user($node) {
   }
   
 }
-
-function merci_user_load($form = NULL, $node = NULL) {
-
-  global $user;
-  //check the logged in user unless merci_staff is enabled
-  if (module_exists('merci_staff')) {
-    if (!$form['override']['#value'] || !$node->override) {
-      $name = $node->name ? $node->name : ($form['name']['#value'] ? $form['name']['#value'] : $_POST['name']);
-      $account = user_load(array('name' => check_plain($name)));
-    }
-  } 
-
-  if($account){
-    return $account;
-  }
-  return $user;
-
-}
-  
 
 function merci_add_settings_form(&$form, $form_state) {
   // Only admin can edit these values.

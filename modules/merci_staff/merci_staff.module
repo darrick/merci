@@ -26,7 +26,51 @@ function merci_staff_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  // Callback for AJAX adding of item selectors.
+  $items['mercistaff/js'] = array(
+    'title' => 'Javascript Choice Form',
+    'page callback' => 'merci_staff_choice_js',
+    'access arguments' => array('access content'),
+    'file' => 'includes/menu.inc',
+    'file path' => drupal_get_path('module', 'merci'), 
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['mercistaff/datefilter'] = array(
+    'title' => 'Javascript Choice Form',
+    'page callback' => 'merci_staff_date_filter_js',
+    'access arguments' => array('access content'),
+    'file' => 'includes/menu.inc',
+    'file path' => drupal_get_path('module', 'merci'), 
+    'type' => MENU_CALLBACK,
+  );
+
   return $items;
+}
+
+function merci_staff_user_load($post = NULL) {
+  static $admin_user;
+  global $user;
+  if(empty($admin_user)) {
+    $admin_user = $user;
+  }
+  if($post and !$post['override'] and ($newuser = user_load(array('name' => $post['name'])))){
+    $user = $newuser;
+  } else {
+    $user = $admin_user;
+  }
+}
+
+function merci_staff_choice_js() {
+  merci_staff_user_load($_POST);
+  merci_choice_js(); 
+  merci_staff_user_load();
+}
+
+function merci_staff_date_filter_js() {
+  merci_staff_user_load($_POST);
+  merci_date_filter_js(); 
+  merci_staff_user_load();
 }
 
 
@@ -35,14 +79,23 @@ function merci_staff_menu() {
 **/
 
 function merci_staff_form_alter(&$form, &$form_state,$form_id) {
+
   if($form_id != 'merci_reservation_node_form') {
     return;
   }
+  if (isset($form_state['node'])) {
+      $node = $form_state['node'] + (array)$form['#node'];
+  } else {
+    $node = $form['#node'];
+  }
+  $node = (object) $node;
+  //merci_staff_user_load();
   if (user_access('administer MERCI') || user_access('manage MERCI')) {
+    // Move the author field and set autocomplete and ahah handlers.
     $form['name'] = $form['author']['name'];
     $form['name']['#title'] = 'Reserve for';
     $form['name']['#weight'] = -99;
-    $form['name']['#default_value'] = $form_state['values']['name'] ? $form_state['values']['name'] : $form['author']['name']['#default_value'];
+    $form['name']['#default_value'] = $node->name ? $node->name : '';
     if (module_exists('civicrm')) {
       $form['name']['#autocomplete_path'] = 'user/autocompletecivi';
     }
@@ -57,33 +110,86 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
 
     unset($form['author']['name']);
 
+    // We need our own ahah handler to filter by the submitted name.
+    // The submit handler can remain the same as this function is called from that to rebuild the choices filtered by the submitted name.
+    $form['field_merci_date'][0]['merci_date_filter'] = array(
+      '#type' => 'submit',
+      '#value' => t('Limit Lists to Available Items'),
+      '#weight' => 10,
+      '#submit' => array('merci_date_filter'),
+      '#ahah' => array(
+        'path' => 'mercistaff/datefilter',
+        'wrapper' => 'merci-choices',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+
+    );
+
+    // We name our button 'merci_more' to avoid conflicts with other modules using
+    // AHAH-enabled buttons with the id 'more'.
+    // We need our own ahah handler to filter by the submitted name.
+    // The submit handler can remain the same as this function is called from that to rebuild the choices filtered by the submitted name.
+    $form['choice_wrapper']['merci_more'] = array(
+      '#type' => 'submit',
+      '#value' => t('Add more items'),
+      '#description' => t("If the number of items above isn't enough, click here to add more items."),
+      '#weight' => 1,
+      // If no javascript action.
+      '#submit' => array('merci_more_choices_submit'),
+      '#ahah' => array(
+        'path' => 'mercistaff/js',
+        'wrapper' => 'merci-choices',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+    );
+
     //create override checkbox          
     $form['override'] = array(
       //'#type' => 'optionwidgets_onoff',
       '#type' => 'checkbox',
       '#title' => 'Override Validation',
+      '#default_value' => $node->override,
       '#weight' => -97,
       '#columns' => 0
     );
     $form['#prefix'] = '<div id="merci-staff-edit-form-wrapper">';
     $form['#suffix'] = '</div>';
 
+    // Override the validation function so we can validate as the submitted user.
+    $key = array_search('merci_node_validate',$form['#validate']);
+    $form['#validate'][$key] = 'merci_staff_node_validate';
+
+    // Recreate the groups and choices based on the submitted name.
+    merci_staff_user_load((array)$node);
+
     if (module_exists('og')) {
       if(!isset($form['og_nodeapi'])) {
         db_query("UPDATE {system} SET weight = 10 WHERE name = 'merci_staff'");
       }
       unset($form['og_nodeapi']);
-      global $user;
-      $current_user = $user;
-      $newuser = user_load(array('name' => $form['name']['#default_value']));
-      $user = $newuser;
-
       og_form_add_og_audience($form,$form_state);
-      $user = $current_user;
     }
+
+    // Add the current choices to the form.
+    $reset = true;
+    foreach($form['choice_wrapper']['choice'] as $delta => $choice){
+      $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
+      if(is_numeric($delta)){
+        $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default, $reset);
+        unset($reset);
+      }
+    }
+    merci_staff_user_load();
   }
 }
 
+function merci_staff_node_validate($form, &$form_state) {
+  merci_staff_user_load($form_state['values']);
+  merci_node_validate($form, &$form_state);
+  merci_staff_user_load();
+}
 /**
  ** Menu callback; Retrieve a JSON object containing autocomplete suggestions for existing users.
  **/
@@ -107,6 +213,8 @@ function merci_staff_autocomplete($string = '') {
   drupal_json($matches);
 }
 
+// Update the groups and choices when the name is changed.
+//
 function merci_staff_update_name() {
   //module_load_include('inc', 'node', 'node.pages');
   $choice_count = count($_POST['choice']);
@@ -131,31 +239,29 @@ function merci_staff_update_name() {
   // into the proper format from user input.
   // TODO: is there a more elegant way to do this?
   if ($dates['value']['date'] && $dates['value']['time'] && $dates['value2']['date'] && $dates['value2']['time']) {
-    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates);
+    $default_format = $form['#field_info']['field_merci_date']['widget']['input_format'];
+    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates, $default_format);
   }
   else {
     $form_state['values']['field_merci_date'][0]['value'] = NULL;
     $form_state['values']['field_merci_date'][0]['value2'] = NULL;
   }
 
-  global $user;
-  $current_user = $user;
-  $newuser = user_load(array('name' => $form['#post']['name']));
-  $user = $newuser;
+  merci_staff_user_load($form['#post']);
 
   if (module_exists('og')) {
     unset($form['og_nodeapi']);
     og_form_add_og_audience($form,$form_state);
   }
-  $user = $current_user;
   // Add the current choices to the form.
   for ($delta = 0; $delta < $choice_count; $delta++) {
     $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
 
-    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default, $newuser);
+    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default);
   }
 
-  //$form['choice_wrapper']['choice'] = $form_element;
+  merci_staff_user_load();
+
   form_set_cache($form_build_id, $form, $form_state);
   $form += array(
     '#post' => $_POST,
@@ -164,14 +270,6 @@ function merci_staff_update_name() {
   $form = form_builder($form_id, $form, $form_state);
 
   unset($form['#prefix'], $form['#suffix']);
-  // Get the JS settings so we can merge them.
-//  $javascript = drupal_add_js(NULL, NULL, 'header');
-//  $settings = call_user_func_array('array_merge_recursive', $javascript['setting']);
-  /*
-  for ($delta = 0; $delta < $choice_count; $delta++) {
-    $form['choice_wrapper']['choice'][$delta]['#attributes']['class'] = empty($form['choice_wrapper']['choice'][$delta]['#attributes']['class']) ? 'ahah-new-content' : $form['choice_wrapper']['choice'][$delta]['#attributes']['class'] . ' ahah-new-content';
-  }
-   */
 
   drupal_json(array(
     'status'   => TRUE,

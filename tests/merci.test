@@ -41,7 +41,8 @@ class MerciTestCase extends DrupalWebTestCase {
         'date_popup',
         'text',
         'views',
-        'merci'
+        'merci',
+        'merci_staff'
 
         );
 
@@ -83,6 +84,15 @@ class MerciTestCase extends DrupalWebTestCase {
       );
     $this->drupalPost('admin/settings/date-time' , $settings, t('Save configuration'));
     $this->assertText(t("The configuration options have been saved."));
+
+    //db_query("UPDATE {content_node_field} SET locked = 0 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
+    $this->drupalGet('admin/merci/unlock');
+    node_types_rebuild();
+    $settings = array ( 
+      'input_format' => 'Y-m-d H:i',
+    );
+    $this->drupalPost('admin/content/node-type/merci-reservation/fields/field_merci_date', $settings, t('Save field settings'));
+    $this->assertText(t("Saved field Reservation."));
   }
 
 
@@ -220,6 +230,94 @@ class MerciUserTestCase extends MerciTestCase {
     // Login the merci user.
     $this->drupalLogin($this->merci_user);
 
+  }
+
+  function _testMerciStaffModule() {
+    $this->drupalLogin($this->admin_user);
+
+    // Create a contenty type only staff can reserve.
+    $settings = array (
+        'type'  => 'bucketstaff',
+        );
+    $merci_settings = array (
+    //    'merci_auto_assign_bucket_item' => TRUE 
+        );
+    $type = $this->merciCreateContentType($settings,'bucket',$merci_settings);
+    // Create resource item
+    $edit = array(
+      'title' => $this->randomName()
+    );
+
+    $bucketstaff = $this->merciCreateNode($type,$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
+
+    // Create merci staff user. 
+    $staff_user = $this->drupalCreateUser(array(
+      'view revisions',
+      'revert revisions',
+      'create confirmed reservations',
+      'edit own bucket content',
+      'delete own bucket content',
+      'edit own bucketstaff content',
+      'delete own bucketstaff content',
+      'edit own resource content',
+      'delete own resource content',
+      'create reservations',
+      'access devel information',
+      'administer MERCI'
+    ));
+    $this->drupalLogin($staff_user);
+
+    $today = date('Y-m-d');
+    // Create our first reservation for staff.  Should pass.
+    $node = $bucketstaff;
+    $edit = array(
+      'title' => $this->randomName(),
+      'field_merci_date[0][value][date]' => $today,
+      'field_merci_date[0][value][time]' => '09:15',
+      'field_merci_date[0][value2][date]' => $today,
+      'field_merci_date[0][value2][time]' => '11:15',
+      'choice[0][item]' => $node->type
+    );
+
+    $first = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
+
+    $this->verbose('Node created: ' . print_r($node, TRUE));
+    // Update reservation with merci user as author.  Should Fail.
+    $edit = array(
+      'name' => $this->merci_user->name,
+    );
+
+    $title = $first->title;
+
+    $second = $this->merciUpdateNode($first->nid,$edit);
+    $name = node_get_types('name',$type);
+    $this->assertText(t("You do not have permission to reserve @title.", array('@title' => $name)));
+
+    // Update reservation with merci user as author with override on.  Should Pass.
+    $edit = array(
+      'name' => $this->merci_user->name,
+      'override' => 1,
+    );
+
+    $title = $first->title;
+
+    $second = $this->merciUpdateNode($first->nid,$edit);
+    $name = node_get_types('name',$type);
+    $this->assertText(t("@title has been updated", array('@title' => $title)));
+
+    // Update reservation status with merci user as author with override off.  Should Pass as status should be validated by the admin user.
+    $edit = array(
+      'name' => $this->merci_user->name,
+      'merci_status' => 5,
+    );
+
+    $title = $first->title;
+
+    $second = $this->merciUpdateNode($first->nid,$edit);
+    $name = node_get_types('name',$type);
+    $this->assertText(t("@title has been updated", array('@title' => $title)));
   }
 
   function _testMerciStatus() {
@@ -538,6 +636,7 @@ class MerciUserTestCase extends MerciTestCase {
 
   }
   function testMerciUserCase() {
+    $this->_testMerciStaffModule();
     $this->_testMerciResourceAvailability();
     $this->_testMerciBucketAvailability();
     $this->_testMerciHoursOfOperation();
