@@ -168,7 +168,6 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
       if(!isset($form['og_nodeapi'])) {
         db_query("UPDATE {system} SET weight = 10 WHERE name = 'merci_staff'");
       }
-      unset($form['og_nodeapi']);
       og_form_add_og_audience($form,$form_state);
     }
 
@@ -250,7 +249,6 @@ function merci_staff_update_name() {
   merci_staff_user_load($form['#post']);
 
   if (module_exists('og')) {
-    unset($form['og_nodeapi']);
     og_form_add_og_audience($form,$form_state);
   }
   // Add the current choices to the form.
