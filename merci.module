@@ -709,7 +709,7 @@ function merci_form(&$node, $form_state) {
     ),
   );
 
-  if (user_access('administer MERCI')) {
+  if (user_access('manage MERCI')) {
     $form['merci'] = array(
       '#type' => 'fieldset',
       '#title' => t('MERCI settings'),
