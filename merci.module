@@ -689,7 +689,7 @@ function merci_form(&$node, $form_state) {
   for ($delta = 0; $delta < $choice_count; $delta++) {
     $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
 
-    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $defaul);
+    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default);
   }
 
   // We name our button 'merci_more' to avoid conflicts with other modules using
@@ -1658,7 +1658,6 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
     $options['flat_options'] = array();
   }
 
-
   return $options;
 }
 
@@ -2314,8 +2313,6 @@ function merci_add_reservation_items($node) {
       $item_status = MERCI_ITEM_STATUS_AVAILABLE;
       break;
   }
-
-  //dpm($node);
 
   // Add the items to the merci_reservation_detail table if we are reverting a revision or if only the reservation_items were passed to the node_save programatically.
   // TOOD: may be a better way to do this.
