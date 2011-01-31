@@ -42,7 +42,7 @@ function merci_ui_menu() {
     'page arguments' => array(1),
     'access callback' => 'merci_ui_my_reservations_tab_access',
     'access arguments' => array(1),
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_NORMAL_ITEM,
     'weight' => 15,
   );
 
