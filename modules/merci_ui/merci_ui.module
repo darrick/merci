@@ -42,7 +42,7 @@ function merci_ui_menu() {
     'page arguments' => array(1),
     'access callback' => 'merci_ui_my_reservations_tab_access',
     'access arguments' => array(1),
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_LOCAL_TASK,
     'weight' => 15,
   );
 
@@ -56,7 +56,14 @@ function merci_ui_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 15,
   );
-
+ 
+  $items['user/reservations'] = array(
+    'title' => 'My Reservations',
+    'description' => 'Redirects to My Reservations tab',
+    'page callback' => 'merci_ui_my_reservations_redirect',
+    'access arguments' => array('access content'),
+    'type' => MENU_SUGGESTED_ITEM,
+  );
 
 
   return $items;
@@ -209,3 +216,11 @@ function merci_ui_list_reservations($node, $start, $end) {
   print theme('page', $output);
 }
 
+function merci_ui_my_reservations_redirect($uid) {
+  global $user;
+  if($user->uid){
+    drupal_goto('user/' . $user->uid . '/my-reservations');
+  } else {
+    drupal_access_denied();
+  }
+}
