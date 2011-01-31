@@ -80,7 +80,7 @@ function merci_menu() {
     'description' => 'Takes a node ID and returns taxonomy data as JSON',
     'page arguments' => array(2),
     'page callback' => 'merci_taxonomy_json',
-    'access arguments' => array('access content'),
+    'access arguments' => array('manage MERCI'),
     'file' => 'includes/menu.inc',
     'type' => MENU_CALLBACK,
   );
@@ -95,6 +95,18 @@ function merci_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  // Adds Manage Equipment to Admin Interfaces
+  $items['admin/merci/manage'] = array(
+    'title' => 'Manage Equipment',
+    'description' => 'Manage Equipment Reservations, Checkout and Inventory (MERCI)',
+    'position' => 'right',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('manage MERCI'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+    'weight' => -19,
+  );
+  
   $items['admin/merci/manage/current_inventory'] = array(
     'title' => 'Current Inventory',
     'description' => 'Displays list',
@@ -147,18 +159,6 @@ function merci_menu() {
     'title' => 'Edit',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
-  );
-
-  // Adds Manage Equipment to Admin Interface
-  $items['admin/merci/manage'] = array(
-    'title' => 'Manage Equipment',
-    'description' => 'Manage Equipment Reservations, Checkout and Inventory (MERCI)',
-    'position' => 'right',
-    'page callback' => 'system_admin_menu_block_page',
-    'access arguments' => array('manage MERCI'),
-    'file' => 'system.admin.inc',
-    'file path' => drupal_get_path('module', 'system'),
-    'weight' => -19,
   );
 
   return $items;
@@ -216,6 +216,8 @@ function merci_access($op, $node, $account) {
       return TRUE;
     }
     elseif (user_access('create reservations')) {
+      //users working with their own reservations access reservation
+      //additional check in merci_form permission to edit confirmed reservations
       if ($uid === FALSE || $uid == $account->uid) {
         return TRUE;
       }
@@ -637,7 +639,7 @@ function merci_form(&$node, $form_state) {
 
   }
   // Users without administer or manage MERCI permission can only alter their own Unconfirmed Reservations.
-  if ($node->merci['status'] != MERCI_STATUS_UNCONFIRMED && !user_access('create confirmed reservations')) {
+  if ($node->merci['status'] != MERCI_STATUS_UNCONFIRMED && !user_access('create confirmed reservations')&& !user_access('manage MERCI') && !user_access('administer MERCI') && !user_access('create confirmed reservations')) {
 
     form_set_error('merci_status', t('You can only edit reservations which are unconfirmed.'));
     drupal_access_denied();
