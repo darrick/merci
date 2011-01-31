@@ -164,7 +164,7 @@ function merci_taxonomy_json($node_id) {
   $node = node_load($node_id);
   $output = array();
 
-  if (node_access('update', $node)) {
+  if (user_access('manage MERCI')) {
 
     // Current user has access to update this node
 
