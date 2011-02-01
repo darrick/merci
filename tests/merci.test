@@ -55,7 +55,8 @@ class MerciTestCase extends DrupalWebTestCase {
       'view revisions',
       'revert revisions',
       'access devel information',
-      'administer MERCI'
+      'administer MERCI',
+      'manage MERCI'
     ));
     // Login the admin user.
     $this->drupalLogin($this->admin_user);
@@ -264,6 +265,7 @@ class MerciUserTestCase extends MerciTestCase {
       'delete own resource content',
       'create reservations',
       'access devel information',
+      'manage MERCI',
       'administer MERCI'
     ));
     $this->drupalLogin($staff_user);

@@ -438,12 +438,9 @@ function merci_validate_merci_selected_items($form, &$form_state,$choices,$nid=N
       if(!isset($total_counts[$type])) {
         if (is_numeric($value)) {
           $item_options = merci_get_reservable_items('resource', $type, $start, $end, $nid);
-          $total_counts[$type] = $choice_counts[$type] = $item_options;
-          /*
           foreach($item_options as $nid => $item_nid){
-            $total_counts[$item_nid] = $choice_counts[$item_nid] = count($item_options);
+            $total_counts[$type][$nid] = $choice_counts[$type][$nid] = 1;
           }
-           */
         } else {
           $total_counts[$type][$value] = $choice_counts[$type][$value] = merci_get_available_bucket_count($type, $start, $end, $nid) - $item['spare_items'];
         }
@@ -457,7 +454,7 @@ function merci_validate_merci_selected_items($form, &$form_state,$choices,$nid=N
       else {
         //drupal_set_message(t('There are no time conflicts with this Reservation.'));
       }
-      $choice_countsi[$type][$value] --;
+      $choice_counts[$type][$value] --;
 
       // Check item restrictions.  max hours, etc.
       $restrictions = merci_check_content_type_restrictions($type, $start, $end);
