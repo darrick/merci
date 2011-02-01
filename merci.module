@@ -817,8 +817,14 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         return;
       }
       $type     = $form['old_type']['#value'];
+
+      // If any nodes have already been created, lock the type setting.
+      $nodes = db_result(db_query("SELECT COUNT(nid) FROM {node} WHERE type = '%s'",$type));
       $settings = merci_content_types($type);
 
+      if(!$settings and $nodes) {
+        return;
+      }
 
       $warning  = '<div>' . t('<strong> WARNING:</strong> changing this setting has no effect on existing reserved items.') . '</div>';
 
@@ -836,7 +842,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       );
 
       // If any nodes have already been created, lock the type setting.
-      if (merci_check_existing_bucket_items($type)) {
+      if ($nodes) {
         $form['merci']['merci_type_setting'] = array(
           '#type' => 'value',
           '#value' => $settings['type_setting'],
@@ -936,6 +942,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
 
       $form['#validate'][] = 'merci_node_type_save_validate';
       $form['#submit'][]   = 'merci_node_type_save_submit';
+
       break;
 
     case 'node_delete_confirm':
@@ -1986,7 +1993,7 @@ function merci_node_type_save_validate($form, &$form_state) {
     $type_setting = $values['merci_type_setting'];
 
     // Pull all active reservations that use the node type.
--    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {" . $table . "} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.vid = ctn.vid INNER JOIN {merci_{$type_setting}_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = '%s' AND m.sub_type = %d AND $column_end_date >= '%s' AND NOT (md.item_status <= %d)", $values['old_type'], MERCI_SUB_TYPE_RESERVATION, $time, MERCI_ITEM_STATUS_CHECKED_IN);
+    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {" . $table . "} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.vid = ctn.vid INNER JOIN {merci_{$type_setting}_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = '%s' AND m.sub_type = %d AND $column_end_date >= '%s' AND NOT (md.item_status <= %d)", $values['old_type'], MERCI_SUB_TYPE_RESERVATION, $time, MERCI_ITEM_STATUS_CHECKED_IN);
 
     $bad_reservations = array();
     while ($reservation = db_fetch_object($reservations)) {
