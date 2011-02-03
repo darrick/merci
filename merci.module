@@ -41,7 +41,7 @@ define('MERCI_ITEM_STATUS_CHECKED_OUT', 2);
  */
 function merci_init() {
   drupal_add_css(drupal_get_path('module', 'merci') . '/merci.css');
-  drupal_add_js(drupal_get_path('module', 'merci') . '/merci.js');
+  //drupal_add_js(drupal_get_path('module', 'merci') . '/merci.js');
 }
 
 /**
@@ -75,12 +75,13 @@ function merci_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['merci/taxonomy'] = array(
+  $items['merci/taxonomy/%node/%'] = array(
     'title' => 'JSON interface for node taxonomy',
     'description' => 'Takes a node ID and returns taxonomy data as JSON',
     'page arguments' => array(2),
     'page callback' => 'merci_taxonomy_json',
     'access arguments' => array('manage MERCI'),
+    'page arguments' => array(2,3),
     'file' => 'includes/menu.inc',
     'type' => MENU_CALLBACK,
   );
@@ -2379,6 +2380,31 @@ function merci_display_reservation_status(&$form_state, $status) {
   return $form;
 }
 
+function merci_build_accessory_form($form_state,$node) {
+
+  $vocabularies = taxonomy_get_vocabularies($node->type);
+
+  $form = array();
+
+  foreach ($node->taxonomy as $tid => $term) {
+    $value[] = $tid;
+  }
+  foreach ($vocabularies as $vocabulary) {
+
+    $taxonomy_form   = taxonomy_form($vocabulary->vid,$value);
+    $taxonomy_form['#title'] = '';
+    unset($taxonomy_form['#theme']);
+    $taxonomy_form['#ahah'] = array(
+      'path' => 'merci/taxonomy/'.$node->nid.'/'.$vocabulary->vid,
+      'wrapper' => 'merci-accessories-'.$node->nid,
+      'method' => 'prepend',
+      'effect' => 'fade',
+    );
+    $form[$vocabulary->vid] = $taxonomy_form;
+  }
+  return $form;
+}
+
 /**
  * Builds the table of existing reserved items.
  *
@@ -2393,7 +2419,7 @@ function merci_display_reservation_status(&$form_state, $status) {
  *   The form array.
  */
 function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FALSE) {
-  
+
   $form            = array();
   $form['#theme']  = 'merci_build_reservation_table_form';
   $form['#node']   = $node;
@@ -2402,7 +2428,6 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
   $form['#header'] = array(
     t('Item'),
     t('Type'),
-    t('Operations'),
   );
 
   $reservation_items = array();
@@ -2418,12 +2443,25 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
     if (user_access("manage MERCI")) {
       if (merci_has_accessories($item->type)) {
 
-        $operations .= '<span class="edit-details" id="merci-id-' . $item->placeholder_nid . '">' . l(t('Add accessories'), "node/$item->placeholder_nid/edit", array('query' => drupal_get_destination())) . '</span>';
+        if (!in_array(t('Accessories'), $form['#header'])) {
+          $form['#header'][] = t('Accessories');
+        }
+
+        $did = $placeholder_node->nid;
+        // Container for just the item selector.
+        $form['accessories'][$did] = array(
+          '#prefix' => '<div id="merci-accessories-'.$placeholder_node->nid.'">',
+          '#suffix' => '</div>',
+          'choices' => merci_build_accessory_form($form_state, $placeholder_node),
+        );
       }
     }
-    //if ($edit_page && node_access('delete', $placeholder_node)) {
     if ($edit_page && user_access("manage MERCI")) {
+      if (!in_array(t('Operations'), $form['#header'])) {
+        $form['#header'][] = t('Operations');
+      }
       $operations .= ' &nbsp;&nbsp;' . l(t('delete'), "node/$item->placeholder_nid/delete", array('query' => drupal_get_destination()));
+      $operations .= ' &nbsp;&nbsp;' . l(t('edit'), "node/$item->placeholder_nid/edit", array('query' => drupal_get_destination()));
     }
 
     $type_setting = merci_type_setting($item->type);
@@ -2464,6 +2502,7 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
 
     $form['#table'][$did]['type'] = check_plain($item->name);
     $form['#table'][$did]['ops'] = $operations;
+    //$form['#table'][$did]['accessories'] = $accessories;
   }
 
   return $form;

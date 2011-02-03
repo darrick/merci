@@ -150,122 +150,21 @@ function merci_date_filter_js() {
   drupal_json(array('status' => TRUE, 'data' => $output));
 }
 
-/**
- * Get taxonomy data as JSON for a node
- *
- * @param $node_id
- *   The node ID.
- *
- * @return
- *   JSON string of taxonomy data
- */
-function merci_taxonomy_json($node_id) {
+function merci_taxonomy_json($node,$vid) {
 
-  $node = node_load($node_id);
-  $output = array();
+  db_query("DELETE FROM {term_node} WHERE vid = %d and tid IN (SELECT tid FROM {term_data} td WHERE td.vid = %d)",$node->vid,$vid); 
 
-  if (user_access('manage MERCI')) {
+  $choices = $_POST['existing_items'] 
+    ? $_POST['existing_items']['accessories'][$node->nid]['choices'][$vid]  : $_POST['accessories'][$node->nid]['choices'][$vid] ;
 
-    // Current user has access to update this node
-
-    $vocabularies = taxonomy_get_vocabularies($node->type);
-
-    if (isset($_POST['taxonomy'])) {
-
-      // Changes to taxonomy sent
-
-      $required_sent = TRUE;
-
-      // Make sure all required vocabularies were sent
-
-      foreach ($vocabularies as $vocabulary) {
-
-        if (
-          ($vocabulary->required) &&
-          (!isset($_POST['taxonomy'][$vocabulary->vid]))
-        ) {
-
-          $required_sent = FALSE;
-        }
-        // if
-      }
-      // foreach
-
-      if ($required_sent) {
-
-        // Save new node revision, clear taxonomy, and re-add sent term
-
-        node_save($node);
-        taxonomy_node_delete_revision($node);
-
-        foreach ($_POST['taxonomy'] as $vocabulary => $terms) {
-          foreach ($terms as $id => $term_id) {
-            db_query('INSERT INTO {term_node} (nid, vid, tid) VALUES (%d, %d, %d)', $node->nid, $node->vid, $term_id);
-          }
-          // foreach
-        }
-        // foreach
-
-        $output['status'] = 'success';
-        $output['node'] = $node_id;
-      }
-      // if
-      else {
-
-        // Missing required vocabulary
-
-        $output['status'] = 'failed';
-        $output['error'] = 'Required fields not selected.';
-
-      }
-      // else
-    }
-    // if
-    else {
-
-      // Get last author admin status and node ID
-
-      $user = user_load($node->revision_uid);
-
-      $output['node'] = $node_id;
-      $output['vocabularies'] = array();
-      $output['admin'] = user_access('administer MERCI', $user);
-
-      usort($vocabularies, 'merci_by_vid');
-
-      // Get the select HTML and previously selected options for each vocabulary
-
-      foreach ($vocabularies as $vocabulary) {
-
-        $select             = taxonomy_form($vocabulary->vid);
-        $select['#name']    = 'taxonomy[' . $vocabulary->vid . ']';
-        $select['#parents'] = array();
-        $select_html        = theme_select($select);
-
-        $vocabulary_output = array(
-          'select' => $select_html,
-          'selected' => array(),
-        );
-
-        foreach ($node->taxonomy as $tid => $term) $vocabulary_output['selected'][] = $tid;
-
-        $output['vocabularies'][] = $vocabulary_output;
-      }
-      // foreach
-    }
-    // else
+  foreach($choices as $tid) {
+    db_query('INSERT INTO {term_node} (nid, vid, tid) VALUES (%d, %d, %d)', $node->nid, $node->vid, $tid);
   }
-  // if
-  else {
 
-    // No permission
-    $output['error'] = 'Permission denied.';
-  }
-  // else
-
-  drupal_json($output);
+  $output = theme('status_messages') ;
+  drupal_json(array('status' => TRUE, 'data' => $output));
 }
-// merci_taxonomy_json
+
 
 
 // Changes the reservation from UNCONFIRMED to CONFIRMED.
@@ -287,6 +186,7 @@ function merci_confirm_via_email($nid) {
   drupal_goto($return);
   
 }
+
 // merci_confirm_via_email
 /**
  * returns the number of items currently checked out for each content type

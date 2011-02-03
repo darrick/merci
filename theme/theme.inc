@@ -129,11 +129,20 @@ function theme_merci_build_reservation_table_form($form) {
       $item .= $columns['display_item'];
     }
    
-    $rows[] = array(
+    $rows[$did] = array(
       $item,
       $form['#table'][$did]['type'],
-      $form['#table'][$did]['ops'],
     );
+
+    foreach($form['#header'] as $index => $value) {
+      if ($value == t('Accessories')) {
+        $rows[$did][$index] = drupal_render($form['accessories'][$did]);
+      }
+      else if ($value == t('Operations')) {
+        $rows[$did][$index] = $form['#table'][$did]['ops'];
+      }
+    }
+
   }
 
   if (!empty($rows)) {
