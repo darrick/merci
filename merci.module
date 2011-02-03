@@ -2450,6 +2450,10 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
         $did = $placeholder_node->nid;
         // Container for just the item selector.
         $form['accessories'][$did] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Add accessories'),
+          '#collapsible' => TRUE,
+          '#collapsed' => TRUE,
           '#prefix' => '<div id="merci-accessories-'.$placeholder_node->nid.'">',
           '#suffix' => '</div>',
           'choices' => merci_build_accessory_form($form_state, $placeholder_node),
