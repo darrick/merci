@@ -708,14 +708,7 @@ function merci_form(&$node, $form_state) {
   );
 
   if (user_access('manage MERCI')) {
-    $form['merci'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('MERCI settings'),
-      '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
-    );
-
-    $form['merci']['merci_status'] = array(
+    $form['merci_status'] = array(
       '#title' => t('Status'),
       '#type' => 'radios',
       '#options' => merci_record_status(),

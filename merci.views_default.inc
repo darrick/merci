@@ -640,6 +640,19 @@ function merci_views_default_views() {
     'name' => 'navigation',
   ));
   $handler = $view->new_display('page', 'Checked Out Items', 'page_2');
+  $handler->override_option('relationships', array(
+    'vid' => array(
+      'label' => 'Reservation for placeholder item node id',
+      'required' => 1,
+      'id' => 'vid',
+      'table' => 'merci_reservation_detail3',
+      'field' => 'vid',
+      'override' => array(
+        'button' => 'Use default',
+      ),
+      'relationship' => 'none',
+    ),
+  ));
   $handler->override_option('fields', array(
     'nid' => array(
       'label' => 'Nid',
@@ -769,7 +782,7 @@ function merci_views_default_views() {
       'override' => array(
         'button' => 'Use default',
       ),
-      'relationship' => 'nid',
+      'relationship' => 'vid',
     ),
     'field_merci_date_value' => array(
       'label' => 'Reservation Date',
@@ -871,6 +884,25 @@ function merci_views_default_views() {
         'button' => 'Use default',
       ),
       'relationship' => 'none',
+    ),
+    'status' => array(
+      'operator' => 'in',
+      'value' => array(
+        '3' => '3',
+      ),
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'status',
+      'table' => 'merci_reservation',
+      'field' => 'status',
+      'override' => array(
+        'button' => 'Use default',
+      ),
+      'relationship' => 'vid',
     ),
   ));
   $handler->override_option('path', 'admin/merci/manage/current_inventory/%/checked-out');

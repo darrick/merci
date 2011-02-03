@@ -637,27 +637,14 @@ function merci_update_6207() {
 
   db_create_table($ret, 'merci_reservation_item_node', $schemas['merci_reservation_item_node']);
 
-  $results = db_query("SELECT * FROM {merci_bucket_node}");
-
   // Migrate default_availability and sub_type to new table.
-  while($result = db_fetch_array($results)) {
-    drupal_write_record('merci_reservation_item_node',$result);
-  }
+  $ret[] = update_sql("INSERT INTO {merci_reservation_item_node} mrn (nid,vid,`default_availability`,`sub_type`) SELECT nid,vid,default_availability,sub_type FROM {merci_bucket_node} ON DUPLICATE KEY UPDATE mrn.nid = mrn.nid");
 
-  $results = db_query("SELECT * FROM {merci_resource_node}");
-
-  while($result = db_fetch_array($results)) {
-    drupal_write_record('merci_reservation_item_node',$result);
-  }
+  $ret[] = update_sql("INSERT INTO {merci_reservation_item_node} mrn (nid,vid,`default_availability`,`sub_type`) SELECT nid,vid,default_availability,sub_type FROM {merci_resource_node} ON DUPLICATE KEY UPDATE mrn.nid = mrn.nid");
 
   // Migrate reservation to new table.
   // Pull the merci_item_status for items which are in the CHECKED OUT state for the current reservation revision.
-  $results = db_query("SELECT item_nid, item_status 
-    FROM {merci_reservation_detail} md JOIN {node} n ON md.vid = n.vid WHERE item_nid <> 0 AND item_status = %d", 
-    MERCI_ITEM_STATUS_CHECKED_OUT); 
-  while ($result = db_fetch_array($results)) {
-    db_query("UPDATE {merci_reservation_item_node} SET item_status = %d WHERE nid = %d", $result['item_status'], $result['item_nid']);
-  }
+  $ret[] = update_sql("UPDATE {merci_reservation_item_node} mrn LEFT JOIN {merci_reservation_detail} md ON mrn.nid = md.item_nid SET mrn.item_status = md.item_status WHERE md.item_nid <> 0 AND md.item_status =2");
 
   return $ret;
 }
