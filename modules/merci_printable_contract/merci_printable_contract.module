@@ -13,13 +13,14 @@ function merci_printable_contract_menu() {
 
   $admin = array('administer MERCI');
   
-  $items['merci/contract/%node'] = array(
+  $items['node/%node/contract'] = array(
     'title' => 'Printable contract',
     'description' => 'Takes a node object and returns a printable contract',
-    'page arguments' => array(2),
+    'page arguments' => array(1),
     'page callback' => 'merci_printable_contract',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
+    'access callback' => 'merci_printable_contract_content_access',
+    'access arguments' => array(1, 'manage MERCI'),
+    'type' => MENU_LOCAL_TASK,
   );
 
    // Standard Administration settings.
@@ -35,6 +36,10 @@ function merci_printable_contract_menu() {
 
 
   return $items;
+}
+
+function merci_printable_contract_content_access($node, $perm) {
+  return (user_access($perm) and $node->type == 'merci_reservation');
 }
 
 function merci_printable_contract_theme() {

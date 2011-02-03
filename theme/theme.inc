@@ -140,11 +140,6 @@ function theme_merci_build_reservation_table_form($form) {
     $table_caption = in_array((int) $node->merci['status'], array(MERCI_STATUS_CHECKED_OUT, MERCI_STATUS_CHECKED_IN)) ? t('Checked out items') : t('Currently reserved items');
     $output .= '<div class="existing-items-table-header">' . $table_caption . '</div>';
     $output .= theme('table', $header, $rows);
-    if (module_exists('merci_printable_contract')) {
-    if (user_access('administer MERCI') || user_access('manage MERCI')) {
-      $output .= '<div>' . l('Printable Contract', 'merci/contract/' . $node->nid, array('attributes' => array('target' => '_blank'))) . ' </div>';
-    }
-    }
   }
 
   return $output;
