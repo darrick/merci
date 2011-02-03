@@ -158,7 +158,9 @@ function merci_taxonomy_json($node,$vid) {
     ? $_POST['existing_items']['accessories'][$node->nid]['choices'][$vid]  : $_POST['accessories'][$node->nid]['choices'][$vid] ;
 
   foreach($choices as $tid) {
-    db_query('INSERT INTO {term_node} (nid, vid, tid) VALUES (%d, %d, %d)', $node->nid, $node->vid, $tid);
+    if($tid) {
+      db_query('INSERT INTO {term_node} (nid, vid, tid) VALUES (%d, %d, %d)', $node->nid, $node->vid, $tid);
+    }
   }
 
   $output = theme('status_messages') ;
