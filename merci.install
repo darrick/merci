@@ -649,6 +649,19 @@ function merci_update_6207() {
   return $ret;
 }
 
+function merci_update_6208() {
+  $ret = array();
+
+
+  $results = db_query("SELECT type,grouping FROM {merci_node_type}");
+
+  while($result = db_fetch_array($results)) {
+    variable_set('merci_grouping_'.$result['type'],$result['grouping']);
+  }
+
+  return $ret;
+}
+
 function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
   $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');

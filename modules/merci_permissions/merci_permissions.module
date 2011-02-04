@@ -15,7 +15,7 @@ function merci_permissions_menu() {
       'page callback' => 'drupal_get_form',
       'page arguments' => array('merci_permissions_form'),
       'access callback' => 'user_access',
-      'access arguments' => array('administer site configuration'),
+      'access arguments' => array('administer permissions'),
       'description' => t('Configure reservation permissions for MERCI.'),
       'type' => MENU_LOCAL_TASK,
       'weight' => 3,

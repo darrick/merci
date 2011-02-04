@@ -883,23 +883,14 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         );
       }
 
-      //Grouping
-      $items = array();
+      $vid = variable_get('merci_equipment_grouping_vid', 0);
 
-      $terms = taxonomy_get_tree(variable_get('merci_equipment_grouping_vid', 37));
-
-      $groupings[0] = t('None');
-      foreach ($terms as $term) {
-        $groupings[$term->tid] = $term->name;
-      }
-
-      $form['merci']['merci_grouping'] = array(
-        '#type' => 'select',
-        '#title' => t('Grouping'),
-        '#default_value' => $settings ? $settings['grouping'] : 0,
-        '#options' => $groupings,
-        '#description' => t('This will alter order the content types are displayed to users reserving items from buckets.  Terms added to the MERCI Equipment Groupings taxonomy will appear here.'),
-      );
+      $form['merci']['merci_grouping'] = taxonomy_form(
+        $vid,
+        variable_get('merci_grouping_'.$type,0),
+        t('This will alter order the content types are displayed to users reserving items from buckets.  Terms added to the MERCI Equipment Groupings taxonomy will appear here.'),
+        t('Grouping')
+      ); 
 
       $form['merci']['merci_max_hours_per_reservation'] = array(
         '#type' => 'textfield',
@@ -1434,11 +1425,49 @@ function _merci_choice_form($node, $form_state, $delta, $default = '', $reset = 
 
   // We'll manually set the #parents property of these fields so that
   // their values appear in the $form_state['values']['choice'] array.
+  //$buckets = t('Buckets');
   if (empty($options) or $reset) {
     // NOTE: we don't filter by node here because we only want items not
     //reserved by any node including the node calling the function.
     $options = merci_build_reservable_items($node, $form_state, NULL);
+
+    // Group the buckets.
+    $vid = variable_get('merci_equipment_grouping_vid', 0);
+
+    $sorted = array();
+    foreach ($options['options'] as $grouping => $items) {
+      if(!is_array($items)) {
+        continue;
+      }
+      foreach($items as $id => $name) {
+        if(is_numeric($id)) {
+        // Resource
+          $type = db_result(db_query('SELECT type FROM {node} WHERE nid = %d', $id)); 
+        } else {
+          $type = $id;
+        }
+
+        $tid = variable_get('merci_grouping_'.$type,0);
+
+        if ($tid) {
+          $term = taxonomy_get_term($tid);
+          $sorted[$term->name][$id] = $name;
+          unset ($options['options'][$grouping][$id]);
+        }
+      }
+      if(empty($options['options'][$grouping])) {
+        unset($options['options'][$grouping]);
+      }
+    }
+    // Order them.
+    $terms = taxonomy_get_tree($vid);
+    foreach ($terms as $term) {
+      if(isset($sorted[$term->name])) {
+        $options['options'][$term->name] = $sorted[$term->name];
+      }
+    }
   }
+
   $form['item'] = array(
     '#type' => 'select',
     '#title' => t('Reserve item @n', array('@n' => ($delta + 1))),
@@ -2148,7 +2177,6 @@ function merci_node_type_save_submit($form, &$form_state) {
       'merci_autocheckout_',
       'merci_autocheckin_',
       'merci_selfcheckout_',
-      'merci_grouping_',
     );
     foreach ($variables as $variable) {
       variable_del($variable . $node['type']);
