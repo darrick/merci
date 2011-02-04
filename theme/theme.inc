@@ -13,9 +13,10 @@ function template_preprocess_merci_conflict_grid(&$variables) {
   $start = $variables['start'];
   $end = $variables['end'];
   $nid = $variables['nid'];
+  $reservation_vid = $variables['reservation_vid'];
 
   $hours = array();
-  if (user_access('administer MERCI') || user_access('create reservations outside hours of operation')) {
+  if (user_access('manage MERCI') || user_access('create reservations outside hours of operation')) {
     $adminhours = explode('-', variable_get('merci_hours_admin', '07:00-23:00'));
 
     for($day=0; $day < 7; $day++) {
@@ -47,7 +48,7 @@ function template_preprocess_merci_conflict_grid(&$variables) {
   $start_mysql = $dates['value'];
   $end_mysql = $dates['value2'];
 
-  $reservations = merci_load_reservations_for_node_in_timespan($nid, $type, $start_mysql, $end_mysql);
+  $reservations = merci_load_reservations_for_node_in_timespan($nid, $type, $start_mysql, $end_mysql,$reservation_vid);
 
   $reservations_by_date = array();
 
@@ -56,39 +57,42 @@ function template_preprocess_merci_conflict_grid(&$variables) {
   //for each day we are looking at.
   while($start_date <= $end_date){
 
-    $reservations_by_date[$start_date] = array();
 
     $day = date('w',strtotime($start_date));
 
     // loop through all the items.
-    foreach($reservations as $item => $values) {
+    if(!empty($hours[$day])) {
+      $reservations_by_date[$start_date] = array();
+      foreach($reservations as $item => $values) {
 
-      $reservations_by_date[$start_date][$item] = array();
+        $reservations_by_date[$start_date][$item] = array();
 
-      $time = strtotime($start_date.' '.$hours[$day]['open']);
-      $close = strtotime($start_date.' '.$hours[$day]['close']);
+        $time = strtotime($start_date.' '.$hours[$day]['open']);
+        $close = strtotime($start_date.' '.$hours[$day]['close']);
 
-      // all the reservations for that item.
-      foreach($values as $reservation) {
+        // all the reservations for that item.
+        foreach($values as $reservation) {
 
-        // Convert to site timezone.
-        $tz_start_date = strtotime($reservation->field_merci_date_value) + $timezone_offset;
-        $tz_end_date   = strtotime($reservation->field_merci_date_value2)   + $timezone_offset;
-        $tz_start_date = $tz_start_date < $close ? $tz_start_date : $close;
-        $tz_end_date   = $tz_end_date < $close ? $tz_end_date : $close; 
-        while($time < $tz_start_date) {
-          $reservations_by_date[$start_date][$item][date('H:i',$time)] = 'available';
-          $time += 15*60;
-        }
-        while($time >= $tz_start_date && $time < $tz_end_date) { 
-            $reservations_by_date[$start_date][$item][date('H:i',$time)] = 'unavailable';
+          // Convert to site timezone.
+          $tz_start_date = strtotime($reservation->field_merci_date_value) + $timezone_offset;
+          $tz_end_date   = strtotime($reservation->field_merci_date_value2)   + $timezone_offset;
+          $tz_start_date = $tz_start_date < $close ? $tz_start_date : $close;
+          $tz_end_date   = $tz_end_date < $close ? $tz_end_date : $close; 
+          if($tz_end_date <= $time) continue;
+          while($time < $tz_start_date) {
+            $reservations_by_date[$start_date][$item][date('H:i',$time)] = array('class' => 'available', 'data' => '');
             $time += 15*60;
           }
-        $time = $tz_end_date;
-      }
-      while($time < $close) {
-        $reservations_by_date[$start_date][$item][date('H:i',$time)] = 'available';
-        $time += 15*60;
+          while($time >= $tz_start_date && $time < $tz_end_date) { 
+            $reservations_by_date[$start_date][$item][date('H:i',$time)] = array('class' => 'unavailable', 'data' => $reservation->nid);
+            $time += 15*60;
+          }
+          $time = $tz_end_date;
+        }
+        while($time < $close) {
+          $reservations_by_date[$start_date][$item][date('H:i',$time)] = array('class' => 'available', 'data' => '');
+          $time += 15*60;
+        }
       }
     }
     $start_date = date('Y-m-d', strtotime($start_date . ' +1 day'));

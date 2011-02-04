@@ -33,8 +33,8 @@
       <tr><th> <?php print htmlspecialchars($title); ?> </th>
         <?php foreach ($times as $time => $available): ?>
 
-         <td class="<?php print $available . ' '; print strstr($time, ':45') ? 'hourborder' : ''; ?>">
-            <?php print $available == 'available' ? 0 : l('X', 'node/' . $times[$time . ':00']['nid'], array('attributes' => array('class' => 'unavailable'))); ?>
+         <td class="<?php print $available['class'] . ' '; print strstr($time, ':45') ? 'hourborder' : ''; ?>">
+            <?php print $available['class'] == 'available' ? 0 : l('X', 'node/' . $available['data'], array('attributes' => array('class' => 'unavailable'))); ?>
         </td>
 
         <?php endforeach; ?>

@@ -450,7 +450,7 @@ function merci_validate_merci_selected_items($form, &$form_state,$choices,$nid=N
         $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount available at the times you've selected.", array('%name' => $title, '%amount' => $total_counts[$type][$value])) . '</div>';
       } 
       elseif (!$choice_counts[$type][$value]) {
-        $messages[$did] .= theme('merci_conflict_grid', $type, $title, $start, $end, $value);
+        $messages[$did] .= theme('merci_conflict_grid', $type, $title, $start, $end, $value,$node->vid);
       }
       else {
         //drupal_set_message(t('There are no time conflicts with this Reservation.'));
@@ -1088,7 +1088,7 @@ function merci_theme() {
     ),
     'merci_conflict_grid' => array (
       'template' => 'merci_conflict_grid',
-      'arguments' => array('type' => NULL, 'title' => NULL, 'start' => NULL, 'end' => NULL, 'nid' => NULL),
+      'arguments' => array('type' => NULL, 'title' => NULL, 'start' => NULL, 'end' => NULL, 'nid' => NULL, 'reservation_vid' => NULL),
       'path' => drupal_get_path('module', 'merci') . '/theme',
       'file' => 'theme.inc',
     ),
@@ -2633,7 +2633,7 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
   return $options;
 }
 
-function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, $items = array()) {
+function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, $reservation_vid = NULL) {
   //if there are no dates, return the active total
   
 
@@ -2655,9 +2655,9 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
 
   // If we're checking an existing reservation, exclude it from the
   // reserved items.
-  if (isset($reservation)) {
-    $where = ' AND ct.nid <> %d';
-    $args[] = $reservation;
+  if (isset($reservation_vid)) {
+    $where = ' AND ct.vid <> %d';
+    $args[] = $reservation_vid;
   }
   else {
     $where = '';
@@ -2694,8 +2694,8 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
 
   // If we're checking an existing reservation, exclude it from the
   // reserved items.
-  if (isset($reservation)) {
-    $args2[] = $reservation;
+  if (isset($reservation_vid)) {
+    $args2[] = $reservation_vid;
   }
   $reserved_nodes = db_query("
     SELECT  ctn.title as reservation_title, ctn.nid as reservation_nid, mn.title, 
@@ -3177,12 +3177,12 @@ function merci_get_reservation_count($content_type) {
  * @return
  *   An associative array with keys as times (in MySQL datetime format) and values as number of reservations.
  */
-function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, $end_date) {
+function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, $end_date,$reservation_vid=NULL) {
   
   
   $type_settings = merci_type_setting($type);
   if ($type_settings == 'bucket') {
-    return merci_reserved_bucket_items($type, $start_date, $end_date);
+    return merci_reserved_bucket_items($type, $start_date, $end_date,$reservation_vid);
   } 
   else {
     $sql = "SELECT n.nid AS item_nid, r.nid AS reservation, r.field_merci_date_value , r.field_merci_date_value2 
@@ -3194,9 +3194,15 @@ function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, 
       AND r.field_merci_date_value2 >= '%s'";
   }
 
+  $args = array($nid,$start_date,$end_date);
+
+  if ($reservation_nid) {
+    $sql .= " AND d.vid = %d";
+    $args[] = $reservation_vid;
+  }
   $sql .= " ORDER BY r.field_merci_date_value ";
 
-  $reservations = db_query($sql, $nid, $end_date, $start_date);
+  $reservations = db_query($sql, $args);
   while ($reservation = db_fetch_object($reservations)) {
     $return[$item_nid][] = $reservation;
   }
