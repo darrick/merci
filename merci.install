@@ -638,9 +638,9 @@ function merci_update_6207() {
   db_create_table($ret, 'merci_reservation_item_node', $schemas['merci_reservation_item_node']);
 
   // Migrate default_availability and sub_type to new table.
-  $ret[] = update_sql("INSERT INTO {merci_reservation_item_node} mrn (nid,vid,`default_availability`,`sub_type`) SELECT nid,vid,default_availability,sub_type FROM {merci_bucket_node} ON DUPLICATE KEY UPDATE mrn.nid = mrn.nid");
+  $ret[] = update_sql("INSERT INTO {merci_reservation_item_node} (nid,vid,`default_availability`,`sub_type`) SELECT nid,vid,default_availability,sub_type FROM {merci_bucket_node} ON DUPLICATE KEY UPDATE merci_reservation_item_node.nid = merci_reservation_item_node.nid");
 
-  $ret[] = update_sql("INSERT INTO {merci_reservation_item_node} mrn (nid,vid,`default_availability`,`sub_type`) SELECT nid,vid,default_availability,sub_type FROM {merci_resource_node} ON DUPLICATE KEY UPDATE mrn.nid = mrn.nid");
+  $ret[] = update_sql("INSERT INTO {merci_reservation_item_node} (nid,vid,`default_availability`,`sub_type`) SELECT nid,vid,default_availability,sub_type FROM {merci_resource_node} ON DUPLICATE KEY UPDATE merci_reservation_item_node.nid = merci_reservation_item_node.nid");
 
   // Migrate reservation to new table.
   // Pull the merci_item_status for items which are in the CHECKED OUT state for the current reservation revision.
