@@ -3177,12 +3177,12 @@ function merci_get_reservation_count($content_type) {
  * @return
  *   An associative array with keys as times (in MySQL datetime format) and values as number of reservations.
  */
-function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, $end_date,$reservation_vid=NULL) {
+function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, $end_date, $reservation_vid = NULL) {
   
   
   $type_settings = merci_type_setting($type);
   if ($type_settings == 'bucket') {
-    return merci_reserved_bucket_items($type, $start_date, $end_date,$reservation_vid);
+    return merci_reserved_bucket_items($type, $start_date, $end_date, $reservation_vid);
   } 
   else {
     $sql = "SELECT n.nid AS item_nid, r.nid AS reservation, r.field_merci_date_value , r.field_merci_date_value2 
@@ -3194,9 +3194,9 @@ function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, 
       AND r.field_merci_date_value2 >= '%s'";
   }
 
-  $args = array($nid,$start_date,$end_date);
+  $args = array($nid, $start_date, $end_date);
 
-  if ($reservation_nid) {
+  if ($reservation_vid) {
     $sql .= " AND d.vid = %d";
     $args[] = $reservation_vid;
   }
