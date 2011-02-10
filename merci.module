@@ -971,7 +971,7 @@ function merci_load_item_settings($node, $type = NULL) {
     switch ($merci_type) {
       case 'bucket':
         // TODO: move to seperate module.
-        $item_settings == db_fetch_array(db_query("SELECT default_availability, sub_type FROM {merci_bucket_node} WHERE vid = %d", $node->vid));
+        $item_settings = db_fetch_array(db_query("SELECT default_availability, sub_type FROM {merci_bucket_node} WHERE vid = %d", $node->vid));
         if($item_settings['sub_type'] == MERCI_SUB_TYPE_RESERVATION) {
           $item_settings += db_fetch_array(db_query("SELECT late_fee_per_hour, rate_per_hour, fee_free_hours FROM {merci_bucket_node} WHERE vid = %d", $node->vid));
         }
