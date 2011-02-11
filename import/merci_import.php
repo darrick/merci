@@ -165,7 +165,8 @@ function merci_import_2() {
       $item->sticky  = 0;
 
       // MERCI specific data.
-      $merci_settings = merci_load_content_type_settings($item->type);
+      //$merci_settings = merci_load_content_type_settings($item->type);
+      $merci_settings = merci_load_item_settings(NULL,$item->type);
       $is_resource = $merci_settings->type_setting == 'resource' ? TRUE : FALSE;
       $item->merci_default_availability = $data[3];
       $item->merci_sub_type = MERCI_SUB_TYPE_ITEM;
