@@ -75,13 +75,13 @@ function merci_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['merci/taxonomy/%node/%'] = array(
+  $items['merci/taxonomy/%node/%/%'] = array(
     'title' => 'JSON interface for node taxonomy',
     'description' => 'Takes a node ID and returns taxonomy data as JSON',
     'page arguments' => array(2),
     'page callback' => 'merci_taxonomy_json',
     'access arguments' => array('manage MERCI'),
-    'page arguments' => array(2,3),
+    'page arguments' => array(2,3,4),
     'file' => 'includes/menu.inc',
     'type' => MENU_CALLBACK,
   );
@@ -2206,8 +2206,6 @@ function merci_add_reservation_items($node) {
   $commercial_total = 0;
 
   $hours = round(strtotime($node->field_merci_date[0]['value2']) - strtotime($node->field_merci_date[0]['value'])) / 3600;
-  //print $hours . '<br / >';
-
 
   // Update existing items.
   if (isset($node->existing_items['items'])) {
@@ -2401,7 +2399,7 @@ function merci_display_reservation_status(&$form_state, $status) {
   return $form;
 }
 
-function merci_build_accessory_form($form_state,$node) {
+function merci_build_accessory_form($form_state,$node,$did) {
 
   $vocabularies = taxonomy_get_vocabularies($node->type);
 
@@ -2416,7 +2414,7 @@ function merci_build_accessory_form($form_state,$node) {
     $taxonomy_form['#title'] = '';
     unset($taxonomy_form['#theme']);
     $taxonomy_form['#ahah'] = array(
-      'path' => 'merci/taxonomy/'.$node->nid.'/'.$vocabulary->vid,
+      'path' => 'merci/taxonomy/'.$node->nid . '/' . $vocabulary->vid . '/' . $did,
       'wrapper' => 'merci-accessories-'.$node->nid,
       'method' => 'prepend',
       'effect' => 'fade',
@@ -2468,7 +2466,6 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
           $form['#header'][] = t('Accessories');
         }
 
-        $did = $placeholder_node->nid;
         // Container for just the item selector.
         $form['accessories'][$did] = array(
           '#type' => 'fieldset',
@@ -2477,7 +2474,7 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
           '#collapsed' => TRUE,
           '#prefix' => '<div id="merci-accessories-'.$placeholder_node->nid.'">',
           '#suffix' => '</div>',
-          'choices' => merci_build_accessory_form($form_state, $placeholder_node),
+          'choices' => merci_build_accessory_form($form_state, $placeholder_node,$did),
         );
       }
     }

@@ -150,12 +150,13 @@ function merci_date_filter_js() {
   drupal_json(array('status' => TRUE, 'data' => $output));
 }
 
-function merci_taxonomy_json($node,$vid) {
+function merci_taxonomy_json($node,$vid,$did) {
+
 
   db_query("DELETE FROM {term_node} WHERE vid = %d and tid IN (SELECT tid FROM {term_data} td WHERE td.vid = %d)",$node->vid,$vid); 
 
   $choices = $_POST['existing_items'] 
-    ? $_POST['existing_items']['accessories'][$node->nid]['choices'][$vid]  : $_POST['accessories'][$node->nid]['choices'][$vid] ;
+    ? $_POST['existing_items']['accessories'][$did]['choices'][$vid]  : $_POST['accessories'][$did]['choices'][$vid] ;
 
   foreach($choices as $tid) {
     if($tid) {
