@@ -3187,22 +3187,33 @@ function merci_get_reservation_count($content_type) {
  */
 function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, $end_date, $reservation_vid = NULL) {
   
+  // Determine CCK table and columns the date data is stored in.
+  $field             = content_fields('field_merci_date');
+  $db_info           = content_database_info($field);
+  $table             = $db_info['table'];
+  $column_start_date = $db_info['columns']['value']['column'];
+  $column_end_date   = $db_info['columns']['value2']['column'];
+  /*
+   */
   
   $type_settings = merci_type_setting($type);
   if ($type_settings == 'bucket') {
     return merci_reserved_bucket_items($type, $start_date, $end_date, $reservation_vid);
   } 
   else {
-    $sql = "SELECT n.nid AS item_nid, r.nid AS reservation, r.field_merci_date_value , r.field_merci_date_value2 
+    $sql = "SELECT item_nid, r.nid AS reservation, r.field_merci_date_value , r.field_merci_date_value2 
       FROM {node} n
-      JOIN {merci_reservation_detail} d ON item_nid = d.item_nid
+      JOIN {merci_reservation_detail} d ON n.nid = d.item_nid
       JOIN {content_type_merci_reservation} r ON d.vid = r.vid 
-      WHERE item_nid = %d
-      AND r.field_merci_date_value < '%s'
-      AND r.field_merci_date_value2 >= '%s'";
+      WHERE n.nid = %d
+        AND
+                    (($column_start_date >= '%s' AND $column_start_date <= '%s') 
+                    OR ($column_end_date >= '%s' AND $column_end_date <= '%s') 
+                    OR ($column_start_date <= '%s' AND $column_end_date >= '%s'))  
+      ";
   }
 
-  $args = array($nid, $start_date, $end_date);
+  $args = array($nid, $start_date, $end_date, $start_date, $end_date, $start_date, $end_date);
 
   if ($reservation_vid) {
     $sql .= " AND d.vid = %d";

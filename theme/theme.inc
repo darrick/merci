@@ -52,8 +52,6 @@ function template_preprocess_merci_conflict_grid(&$variables) {
 
   $reservations_by_date = array();
 
-  $timezone_offset = variable_get('date_default_timezone', 0);
-
   //for each day we are looking at.
   while($start_date <= $end_date){
 
@@ -74,8 +72,13 @@ function template_preprocess_merci_conflict_grid(&$variables) {
         foreach($values as $reservation) {
 
           // Convert to site timezone.
-          $tz_start_date = strtotime($reservation->field_merci_date_value) + $timezone_offset;
-          $tz_end_date   = strtotime($reservation->field_merci_date_value2)   + $timezone_offset;
+          $tz_start_date = date_make_date($reservation->field_merci_date_value, "UTC");
+          $tz_end_date = date_make_date($reservation->field_merci_date_value2,"UTC");
+          date_timezone_set($tz_start_date, timezone_open($timezone));
+          date_timezone_set($tz_end_date, timezone_open($timezone));
+          $tz_start_date = date_format($tz_start_date,"U");
+          $tz_end_date = date_format($tz_end_date,"U");
+
           $tz_start_date = $tz_start_date < $close ? $tz_start_date : $close;
           $tz_end_date   = $tz_end_date < $close ? $tz_end_date : $close; 
           if($tz_end_date <= $time) continue;
