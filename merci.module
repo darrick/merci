@@ -393,7 +393,7 @@ function merci_validate_status($form, &$form_state) {
   }
 }
 
-function merci_validate_merci_selected_items($form, &$form_state,$choices,$nid=NULL) {
+function merci_validate_merci_selected_items($form, &$form_state,$choices,$reservation_nid=NULL) {
   $node = (object) $form_state['values'];
 
   // ****
@@ -438,12 +438,12 @@ function merci_validate_merci_selected_items($form, &$form_state,$choices,$nid=N
       // Do we have the item available at this time?
       if(!isset($total_counts[$type])) {
         if (is_numeric($value)) {
-          $item_options = merci_get_reservable_items('resource', $type, $start, $end, $nid);
+          $item_options = merci_get_reservable_items('resource', $type, $start, $end, $reservation_nid);
           foreach($item_options as $nid => $item_nid){
             $total_counts[$type][$nid] = $choice_counts[$type][$nid] = 1;
           }
         } else {
-          $total_counts[$type][$value] = $choice_counts[$type][$value] = merci_get_available_bucket_count($type, $start, $end, $nid) - $item['spare_items'];
+          $total_counts[$type][$value] = $choice_counts[$type][$value] = merci_get_available_bucket_count($type, $start, $end, $reservation_nid) - $item['spare_items'];
         }
       }
       if (!$choice_counts[$type][$value] and $total_counts[$type][$value]) {
@@ -2476,9 +2476,17 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
           '#suffix' => '</div>',
           'choices' => merci_build_accessory_form($form_state, $placeholder_node,$did),
         );
+        // Only allow editing or deletion if unconfirmed or confirmed.
+        if ($node->merci['status'] >= MERCI_STATUS_CHECKED_OUT) {
+          foreach ($form['accessories'][$did]['choices'] as $vid => $values) {
+            $form['accessories'][$did]['choices'][$vid]['#disabled'] = TRUE;
+          }
+          $form['accessories'][$did]['#title'] = t('Accessories');
+        }
       }
     }
-    if ($edit_page && user_access("manage MERCI")) {
+    // Only allow editing or deletion if unconfirmed or confirmed.
+    if ($edit_page && user_access("manage MERCI") && $node->merci['status'] < MERCI_STATUS_CHECKED_OUT) {
       if (!in_array(t('Operations'), $form['#header'])) {
         $form['#header'][] = t('Operations');
       }
@@ -2500,6 +2508,9 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
           '#options' => $options,
           '#default_value' => $default,
         );
+        if ($node->merci['status'] >= MERCI_STATUS_CHECKED_OUT) {
+          $form['items'][$did]['#disabled'] = true;
+        }
       }
     }
     else {
