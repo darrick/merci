@@ -1150,7 +1150,7 @@ function merci_cron() {
   // Select reservation nodes where all reserved items and resources are autocheckout.
   $reservations = db_query("SELECT n.nid FROM {node} AS n 
         INNER JOIN {" . $table . "} ct ON ct.vid = n.vid
-        INNER JOIN { merci_reservation } AS mr ON n.vid = mr.vid
+        INNER JOIN {merci_reservation} AS mr ON n.vid = mr.vid
           WHERE $column_start_date <= '%s'  
             AND mr.status IN (%d, %d) 
             AND n.nid", $args);
@@ -1186,7 +1186,7 @@ function merci_cron() {
   // Select reservation nodes where all reserved items and resources are autocheckin.
   $reservations = $reservations = db_query("SELECT n.nid FROM {node} AS n 
         INNER JOIN {" . $table . "} ct ON ct.vid = n.vid
-        INNER JOIN { merci_reservation } AS mr ON n.vid = mr.vid
+        INNER JOIN {merci_reservation} AS mr ON n.vid = mr.vid
           WHERE $column_end_date <= '%s'  
             AND mr.status IN (%d) 
             AND n.nid", $args);
