@@ -637,7 +637,7 @@ function merci_form(&$node, $form_state) {
 
   }
   // Users without administer or manage MERCI permission can only alter their own Unconfirmed Reservations.
-  if ($node->merci['status'] != MERCI_STATUS_UNCONFIRMED && !user_access('create confirmed reservations')&& !user_access('manage MERCI') && !user_access('administer MERCI') && !user_access('create confirmed reservations')) {
+  if ($merci_status_default != MERCI_STATUS_UNCONFIRMED && !user_access('create confirmed reservations')&& !user_access('manage MERCI') && !user_access('administer MERCI') && !user_access('create confirmed reservations')) {
 
     form_set_error('merci_status', t('You can only edit reservations which are unconfirmed.'));
     drupal_access_denied();
