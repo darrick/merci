@@ -1135,9 +1135,8 @@ function merci_node_operations($return=NULL) {
  */
 function merci_cron() {
 
-  
   // 2009-05-22 20:45:00
-  $time = gmdate('Y-m-j H:m:s');
+  $time = gmdate('Y-m-j H:i:s');
 
   // Determine CCK table and columns the date data is stored in.
   $field             = content_fields('field_merci_date');
@@ -1146,37 +1145,31 @@ function merci_cron() {
   $column_start_date = $db_info['columns']['value']['column'];
   $column_end_date   = $db_info['columns']['value2']['column'];
 
-  $args = array($time, MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING);
+  $args = array($time, $time, MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING);
   // Select reservation nodes where all reserved items and resources are autocheckout.
-  $reservations = db_query("SELECT n.nid FROM {node} AS n 
+  $reservations = db_query("SELECT n.nid, n.vid FROM {node} AS n 
         INNER JOIN {" . $table . "} ct ON ct.vid = n.vid
         INNER JOIN {merci_reservation} AS mr ON n.vid = mr.vid
-          WHERE $column_start_date <= '%s'  
-            AND mr.status IN (%d, %d) 
-            AND n.nid", $args);
-                    
-  while ($nid = db_fetch_array($reservations)) {
-    //$node = node_load($nid['nid']);
-    
-    $reservation_items = db_query("SELECT placeholder_nid, n.type FROM {merci_reservation_detail} mrd 
-        INNER JOIN {node} n ON mrd.placeholder_nid = n.nid
-        INNER JOIN {merci_node_type} mnt ON n.type = mnt.type
-        WHERE mrd.nid = %d", $nid['nid']);
-    
+          WHERE $column_start_date <= '%s' AND $column_end_date > '%s' 
+            AND mr.status IN (%d, %d)", $args);
+
+  while ($reservation = db_fetch_array($reservations)) {
+
+    $reservation_items = db_query("SELECT item_nid FROM {merci_reservation_detail} mrd 
+        WHERE mrd.vid = %d", $reservation['vid']);
+
     //check child items of that reservations for autocheckout
-    
-    while ($child = db_fetch_array($reservation_items)) {
-      $child['vid'] = $child['nid'];
-      $settings = merci_load_item_settings($child);
-      if (!$settings['autocheckout']) {
+    while ($child = db_result($reservation_items)) {
+      $node = node_load($child);
+      if (!$node->merci['autocheckout']) {
         // skip out to the next reservation.
         continue 2;
       }
     }
     
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
-    watchdog('merci', "Setting node " . $nid['nid'] . " to checked out");
-    $node = node_load($nid['nid']);
+    watchdog('merci', "Setting node " . $reservation['nid'] . " to checked out");
+    $node = node_load($reservation['nid']);
     $node->merci_status = MERCI_STATUS_CHECKED_OUT;
     node_save($node);
   }
@@ -1184,57 +1177,52 @@ function merci_cron() {
   
   $args = array($time, MERCI_STATUS_CHECKED_OUT);
   // Select reservation nodes where all reserved items and resources are autocheckin.
-  $reservations = $reservations = db_query("SELECT n.nid FROM {node} AS n 
+  $reservations = db_query("SELECT n.nid,n.vid FROM {node} AS n 
         INNER JOIN {" . $table . "} ct ON ct.vid = n.vid
         INNER JOIN {merci_reservation} AS mr ON n.vid = mr.vid
           WHERE $column_end_date <= '%s'  
-            AND mr.status IN (%d) 
-            AND n.nid", $args);
-  while ($nid = db_fetch_array($reservations)) {
-    //$node = node_load($nid['nid']);
-    
-    $reservation_items = db_query("SELECT placeholder_nid, n.type FROM {merci_reservation_detail} mrd 
-        INNER JOIN {node} n ON mrd.placeholder_nid = n.nid
-        INNER JOIN {merci_node_type} mnt ON n.type = mnt.type
-        WHERE mrd.nid = %d", $nid['nid']);
+            AND mr.status IN (%d)", $args);
+
+  while ($reservation = db_fetch_array($reservations)) {
     
     //check child items of that reservations for autocheckin
-    
-    while ($child = db_fetch_array($reservation_items)) {
-      $settings = merci_load_item_settings($child);
-      if (!$settings['autocheckin']) {
+    $reservation_items = db_query("SELECT item_nid FROM {merci_reservation_detail} mrd 
+        WHERE mrd.vid = %d", $reservation['vid']);
+
+    while ($child = db_result($reservation_items)) {
+      $node = node_load($child);
+      if (!$node->merci['autocheckin']) {
         // skip out to the next reservation.
         continue 2;
       }
     }
     
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
-    watchdog('merci', "Setting node " . $nid['nid'] . " to checked in");
-    $node = node_load($nid['nid']);
+    watchdog('merci', "Setting node " . $reservation['nid'] . " to checked in");
+    $node = node_load($reservation['nid']);
     $node->merci_status = MERCI_STATUS_CHECKED_IN;
     node_save($node);
   }
   
-  return;
-  
   // Give no shows a one hour grace period.
   // TODO: move grace period to admin option.
   // 2009-05-22 20:45:00
-  $time = gmdate('Y-m-j H:m:s', time() + 3600);
-  //find all unconfirmed and pending reservations that have started and set their stauts to no show
-  $args = array($time, MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING);
+  $time = gmdate('Y-m-j H:i:s', time() + 3600);
+  //find all pending reservations that have started and set their stauts to no show
+  $args = array($time, MERCI_STATUS_PENDING);
   // Select reservation nodes where all reserved items and resources are autocheckin.
   $reservations = db_query("SELECT n.nid FROM {node} AS n 
         INNER JOIN {" . $table . "} ct ON ct.vid = n.vid
         INNER JOIN { merci_reservation } AS mr ON n.vid = mr.vid
-          WHERE $column_end_date <= '%s' 
-            AND mr.status IN (%d,%d) 
+          WHERE $column_start_date <= '%s'
+            AND mr.status IN (%d) 
           ", $args);
 
-  while ($nid = db_fetch_array($reservations)) {
-    $node = node_load($nid['nid']);
-    print "Setting " . $node->nid . " to no show\n";
-    //$node->merci_status = MERCI_STATUS_CHECKED_IN;
+  while ($nid = db_result($reservations)) {
+    watchdog('merci', "Setting node " . $nid . " to no show");
+    $node = node_load($nid);
+    $node->merci_status = MERCI_STATUS_NO_SHOW;
+    node_save($node);
   }
 }
 
@@ -2045,7 +2033,7 @@ function merci_delete_node_type_validate($type) {
 
     // Join on nid here so that any version of the reservation that contain
     // the bucket/resource is caught.
-    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {" . $table . "} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.nid = ctn.nid INNER JOIN {merci_{$settings->type_setting}_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = '%s' AND m.sub_type = %d ORDER BY ct.nid, ct.vid", $settings->type, MERCI_SUB_TYPE_RESERVATION);
+    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {" . $table . "} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.nid = ctn.nid INNER JOIN {merci_{$settings['type_setting']}_node} m ON md.placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = '%s' AND m.sub_type = %d ORDER BY ct.nid, ct.vid", $settings['type'], MERCI_SUB_TYPE_RESERVATION);
 
     $bad_reservations = array();
     while ($reservation = db_fetch_object($reservations)) {
@@ -2053,7 +2041,7 @@ function merci_delete_node_type_validate($type) {
     }
 
     if (!empty($bad_reservations)) {
-      drupal_set_message(t('@type can not be deleted because it is associated with the following reservations:', array('@type' => $settings->name)) . theme('item_list', $bad_reservations), 'error');
+      drupal_set_message(t('@type can not be deleted because it is associated with the following reservations:', array('@type' => $settings['name'])) . theme('item_list', $bad_reservations), 'error');
       module_invoke_all('exit');
       drupal_access_denied();
     }
