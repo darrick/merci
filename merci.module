@@ -421,7 +421,7 @@ function merci_validate_merci_selected_items($form, &$form_state,$choices,$reser
       // can reserve.
       $messages[$did] = '';
       if (is_numeric($value)) {
-        $new_item = db_fetch_object(db_query("SELECT title, type FROM {node} WHERE nid = %d", $value));
+        $new_item = node_load($value);
         $title    = $new_item->title;
         $type     = $new_item->type;
       } else {
@@ -446,7 +446,7 @@ function merci_validate_merci_selected_items($form, &$form_state,$choices,$reser
       // Do we have the item available at this time?
       if(!isset($total_counts[$type])) {
         if (is_numeric($value)) {
-          $item_options = merci_get_reservable_items('resource', $type, $start, $end, $reservation_nid);
+          $item_options = merci_get_reservable_items($type, $start, $end, $reservation_nid);
           foreach($item_options as $nid => $item_nid){
             $total_counts[$type][$nid] = $choice_counts[$type][$nid] = 1;
           }
@@ -1126,29 +1126,27 @@ function merci_cron() {
 
   $args = array($time, $time, MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING);
   // Select reservation nodes where all reserved items and resources are autocheckout.
-  $reservations = db_query("SELECT n.nid, n.vid FROM {node} AS n 
+  $reservations = db_query("SELECT n.nid FROM {node} AS n 
         INNER JOIN {" . $table . "} ct ON ct.vid = n.vid
         INNER JOIN {merci_reservation} AS mr ON n.vid = mr.vid
           WHERE $column_start_date <= '%s' AND $column_end_date > '%s' 
             AND mr.merci_reservation_status IN (%d, %d)", $args);
 
-  while ($reservation = db_fetch_array($reservations)) {
+  while ($reservation_nid = db_result($reservations)) {
 
-    $reservation_items = db_query("SELECT item_nid FROM {merci_reservation_detail} mrd 
-        WHERE mrd.vid = %d", $reservation['vid']);
+    $reservation = node_load($reservation_nid);
 
     //check child items of that reservations for autocheckout
-    while ($child = db_result($reservation_items)) {
-      $node = node_load($child);
-      if (!$node->merci_autocheckout) {
+    foreach ($reservaton->merci_reservation_items as $item) {
+      $node = node_load($item->merci_item_nid);
+      if (!$node or !$node->merci_autocheckout) {
         // skip out to the next reservation.
         continue 2;
       }
     }
-    
+
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
-    watchdog('merci', "Setting node " . $reservation['nid'] . " to checked out");
-    $node = node_load($reservation['nid']);
+    watchdog('merci', "Setting node " . $reservation_nid . " to checked out");
     $node->merci_reservation_status = MERCI_STATUS_CHECKED_OUT;
     node_save($node);
   }
@@ -1156,29 +1154,27 @@ function merci_cron() {
   
   $args = array($time, MERCI_STATUS_CHECKED_OUT);
   // Select reservation nodes where all reserved items and resources are autocheckin.
-  $reservations = db_query("SELECT n.nid,n.vid FROM {node} AS n 
+  $reservations = db_query("SELECT n.nid FROM {node} AS n 
         INNER JOIN {" . $table . "} ct ON ct.vid = n.vid
         INNER JOIN {merci_reservation} AS mr ON n.vid = mr.vid
           WHERE $column_end_date <= '%s'  
             AND mr.merci_reservation_status IN (%d)", $args);
 
-  while ($reservation = db_fetch_array($reservations)) {
+  while ($reservation_nid = db_result($reservations)) {
     
     //check child items of that reservations for autocheckin
-    $reservation_items = db_query("SELECT item_nid FROM {merci_reservation_detail} mrd 
-        WHERE mrd.vid = %d", $reservation['vid']);
+    $reservation = node_load($reservation_nid);
 
-    while ($child = db_result($reservation_items)) {
-      $node = node_load($child);
-      if (!$node->merci_autocheckin) {
+    foreach ($reservaton->merci_reservation_items as $item) {
+      $node = node_load($item->merci_item_nid);
+      if (!$node or !$node->merci_autocheckin) {
         // skip out to the next reservation.
         continue 2;
       }
     }
-    
+
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
-    watchdog('merci', "Setting node " . $reservation['nid'] . " to checked in");
-    $node = node_load($reservation['nid']);
+    watchdog('merci', "Setting node " . $reservation_nid . " to checked in");
     $node->merci_reservation_status = MERCI_STATUS_CHECKED_IN;
     node_save($node);
   }
@@ -1446,73 +1442,6 @@ function _merci_choice_form($node, $form_state, $delta, $default = '', $reset = 
   return $form;
 }
 
-function merci_get_user_reservable_nodes($type=NULL) {
-
-  $reservable_nodes = array();
-
-  if ($type == 'bucket') {
-    $bucket = TRUE;
-  } 
-  elseif ($type == 'resource') {
-    $resource = TRUE;
-  } 
-  else {
-    $bucket = TRUE;
-    $resource = TRUE;
-  }
-
-  if ($bucket) {
-    // Buckets.
-    $buckets = db_query("SELECT type FROM {merci_node_type} WHERE merci_active_status = %d AND merci_type_setting = '%s'", MERCI_STATUS_ACTIVE,'bucket');
-    // Loop through each bucket type.
-    while ($bucket = db_result($buckets)) {
-
-      // Only include active buckets, and content types the user
-      // can reserve.
-      if ( merci_check_content_type_user_permissions($type)) {
-
-        // Get all assignable nodes for this bucket item.
-        $bucket_nodes = db_query("SELECT n.title, n.nid FROM {node} n INNER JOIN {merci_bucket_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.merci_sub_type = %d AND m.merci_default_availability IN (%d, %d)", $type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_T);
-
-        // Use up items for assigned nodes.
-        while ($node = db_fetch_object($bucket_nodes)) {
-          // If item is assigned then item is in use by this node.
-          $reservable_nodes[$node->nid] = $node->title;
-        }
-      }
-      // if
-    }
-    // while
-  }
-
-  if ($resource) { 
-    // Resources.
-    $resources = db_query("SELECT type FROM {merci_node_type} WHERE merci_active_status = %d AND merci_type_setting = '%s'", MERCI_STATUS_ACTIVE,'resource');
-
-    // Loop through each resource type.
-    while ($resource = db_result($resources)) {
-      // Only include active resources, and content types the user can reserve.
-      if (merci_check_content_type_user_permissions($type)) {
-         
-        if (user_access("administer MERCI")) {
-          // Only filter out any placeholder nodes for this resource.
-          $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.merci_sub_type = %d ORDER BY n.title", $type, 1, MERCI_SUB_TYPE_ITEM);
-        } 
-        else {
-          // Filter out any placeholder AND template-only nodes for this resource.
-          // TODO templates is a seperate module move this there.
-          $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.merci_sub_type = %d AND m.merci_default_availability = 1 ORDER BY n.title", $type, 1, MERCI_SUB_TYPE_ITEM);
-
-        }
-        while ($item = db_fetch_object($items)) {
-          $reservable_nodes[$item->nid] = $item->title;
-        }
-        // while
-      }
-    }
-  }
-  return $reservable_nodes;
-}
 /**
  * Builds the list of all currently reservable items, filtered by date.
  *
@@ -1527,8 +1456,6 @@ function merci_get_user_reservable_nodes($type=NULL) {
  *   An associative array with the following key/value pairs:
  *     'options'      => An array of available items, in the format used
  *                       for the item selector.
- *     'flat_options' => An array of available items, whose values are the
- *                       nids of the items.
  */
 function merci_build_reservable_items($node, $form_state, $reservation_nid = NULL) {
   
@@ -1551,101 +1478,46 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
   $options = array();
   $options['options'] = array('' => t('<Select>'));
 
-  // Buckets.
-  $buckets = db_query("SELECT nt.type,m.merci_spare_items,nt.name FROM {merci_node_type} m INNER JOIN {node_type} nt ON nt.type = m.type WHERE m.merci_active_status = %d AND m.merci_type_setting = '%s' ORDER BY nt.name", MERCI_STATUS_ACTIVE,'bucket');
+  $merci_types = merci_content_types();
   $bucket_options = array();
 
   // This array holds all reservable items the user may reserve.
-  $total_flat_options = array();
   // Loop through each bucket type.
-  while ($bucket = db_fetch_object($buckets)) {
 
-    // Only include active buckets, and content types the user
-    // can reserve.
-    if (merci_check_content_type_user_permissions($bucket->type)) {
-
-      // Check for available items in the bucket.
-      $available_bucket_items = merci_get_available_bucket_count($bucket->type, $start, $end, $reservation_nid) - $bucket->merci_spare_items;
-
-      if (empty($is_new)) {
-        // Check bucket restrictions.
-        $restrictions = merci_check_content_type_restrictions($bucket->type, $start, $end);
-      }
-      if (empty($restrictions) and  $available_bucket_items) {
-          $bucket_options[$bucket->type] = $bucket->name;
-          // Start building the array for all reservable items.
-          while ($available_bucket_items > 0) {
-            $total_flat_options[$bucket->type]++;
-            $available_bucket_items--;
-          }
-      }
-      // if
+  foreach ($merci_types as $type => $value) {
+    if ($value['merci_active_status'] != MERCI_STATUS_ACTIVE) {
+      continue;
     }
-    // if
+    if (!merci_check_content_type_user_permissions($type)) {
+      continue;
+    }
+    if (empty($is_new)) {
+      $restrictions = merci_check_content_type_restrictions($type, $start, $end);
+      if (!empty($restrictions)) {
+        continue;
+      }
+    }
+    if ($value['merci_type_setting'] == 'bucket') {
+      // Check for available items in the bucket.
+      $available_bucket_items = merci_get_available_bucket_count($type, $start, $end, $reservation_nid) 
+        - $value['merci_spare_items'];
+
+      if ($available_bucket_items) {
+          $bucket_options[$type] = $value['name'];
+      }
+    } else if ($value['merci_type_setting'] == 'resource') {
+      // No date filtering for new reservations.
+      $item_options = merci_get_reservable_items($type, $start, $end, $reservation_nid);
+
+      if(!empty($item_options)){
+        $options['options'][$value['name']] = $item_options;
+      }
+    }
   }
-  // while
 
   // FIX - NEED TO CHANGE FORMATTING HERE
   if ($bucket_options) {
     $options['options'][t('Buckets')] = $bucket_options;
-    $options['flat_options'] = array_keys($bucket_options);
-  }
-  $options['total_flat_options'] = $total_flat_options;
-
-  // Resources.
-  $resources = db_query("SELECT nt.type,nt.name FROM {merci_node_type} m INNER JOIN {node_type} nt ON nt.type = m.type WHERE m.merci_active_status = %d AND m.merci_type_setting = '%s' ORDER BY nt.name", MERCI_STATUS_ACTIVE,'resource');
-
-  // Loop through each resource type.
-  while ($resource = db_fetch_object($resources)) {
-
-    $item_options = array();
-
-    // Only include active resources, and content types the user can reserve.
-    if (merci_check_content_type_user_permissions($resource->type)) {
-
-      // No filtering for new reservations.
-      if (isset($is_new)) {
-        
-        // Filter out any placeholder nodes for this resource.
-        $items = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_resource_node} m ON n.vid = m.vid WHERE n.type = '%s' AND n.status = %d AND m.merci_sub_type = %d ORDER BY n.title", $resource->type, 1, MERCI_SUB_TYPE_ITEM);
-        
-        while ($item = db_fetch_object($items)) {
-          $item_options[$item->nid] = $item->title;
-        }
-        // while
-      }
-      // if
-      else {
-
-        // Check resource restrictions.
-        $restrictions = merci_check_content_type_restrictions($resource->type, $start, $end);
-
-        if (empty($restrictions)) {
-          $item_options = merci_get_reservable_items('resource', $resource->type, $start, $end, $reservation_nid);
-        }
-        // if
-      }
-      // else
-
-      if(!empty($item_options)){
-        $options['options'][$resource->name] = $item_options;
-      }
-
-      if (!is_array($options['flat_options'])) {
-        $options['flat_options'] = array();
-      }
-      else {
-        $options['flat_options'] = array_merge($options['flat_options'], array_keys($item_options));
-      }
-      foreach ($item_options as $key => $value) {
-        $options['total_flat_options'][$key] = $value;
-      }
-    }
-    // if
-  }
-  // while
-  if (!is_array($options['flat_options'])) {
-    $options['flat_options'] = array();
   }
 
   return $options;
@@ -2504,7 +2376,7 @@ function merci_get_available_bucket_items($node, $bucket_type) {
   $start     = $date_info['value'];
   $end       = $date_info['value2'];
 
-  $options = merci_get_reservable_items('bucket', $bucket_type, $start, $end, $node->nid);
+  $options = merci_get_reservable_items($bucket_type, $start, $end, $node->nid);
 
   return $options;
 }
@@ -2512,8 +2384,6 @@ function merci_get_available_bucket_items($node, $bucket_type) {
 /**
  * Pulls an array of items that are reservable for the content type and date range.
  *
- * @param $merci_type
- *   The MERCI type.  bucket|resource
  * @param $content_type
  *   The content type name of the bucket/resource.
  * @param $start
@@ -2526,26 +2396,10 @@ function merci_get_available_bucket_items($node, $bucket_type) {
  * @return
  *   An array of reservable items, in select option format.
  */
-function merci_get_reservable_items($merci_type, $content_type, $start, $end, $reservation_nid = NULL) {
+function merci_get_reservable_items($content_type, $start=NULL, $end=NULL, $reservation_nid = NULL) {
 
-  // Determine CCK table and columns the date data is stored in.
-  $field             = content_fields('field_merci_date');
-  $db_info           = content_database_info($field);
-  $table             = $db_info['table'];
-  $column_start_date = $db_info['columns']['value']['column'];
-  $column_end_date   = $db_info['columns']['value2']['column'];
 
-  $start2 = date_create($start, timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
-  $args = array(MERCI_AVA_F, MERCI_AVA_T, $content_type, MERCI_SUB_TYPE_ITEM, $start, $end, $start, $end, $start, $end, MERCI_ITEM_STATUS_AVAILABLE, $start2, MERCI_ITEM_STATUS_CHECKED_OUT);
-
-  // If there's an already selected bucket item, then we need to make sure we
-  // include it in the list of available items.
-  $where = '';
-  if ($reservation_nid) {
-    $where = ' AND md2.nid <> %d';
-    $args[] = $reservation_nid;
-  }
-
+  $merci_type = merci_type_setting($content_type);
   // Pull reservable items.  This query takes the following into consideration:
   //   1. Pulls all all item nodes of the content type that are in an available or checked in state,
   //   2. Excludes all item nodes that have associated reservations in the date range
@@ -2554,31 +2408,57 @@ function merci_get_reservable_items($merci_type, $content_type, $start, $end, $r
   //      is usually used to allow an already assigned item to not conflict with itself.
   //   4. Exclude items from past reservations where the item is in a checked out state.
   
-  $items = db_query("SELECT n.nid, n.title FROM {node} n 
+  $query = "SELECT n.nid, n.title FROM {node} n 
     INNER JOIN {merci_{$merci_type}_node} m ON n.vid = m.vid 
       WHERE m.merci_default_availability IN (%d, %d) 
         AND n.type = '%s' 
         AND m.merci_sub_type = %d  
-        AND n.nid NOT IN 
-          (SELECT md2.merci_item_nid FROM {" . $table . "} ct 
-            INNER JOIN {merci_reservation_detail} md2 ON ct.vid = md2.vid 
-            INNER JOIN {merci_{$merci_type}_node} m2 ON md2.merci_item_nid = m2.nid 
-            INNER JOIN {node} ctn ON ctn.vid = ct.vid 
-            INNER JOIN {node} m2n ON m2.vid = m2n.vid 
-            WHERE (
-                (
-                    (($column_start_date >= '%s' AND $column_start_date <= '%s') 
-                    OR ($column_end_date >= '%s' AND $column_end_date <= '%s') 
-                    OR ($column_start_date <= '%s' AND $column_end_date >= '%s'))  
-                    AND NOT md2.merci_item_status <= %d
-                )
-                OR ($column_end_date <= '%s' AND md2.merci_item_status = %d)
-              )
-              $where
-          ) 
-       
-    ORDER BY n.title", $args);
-    
+        ";
+
+  $args = array(MERCI_AVA_F, MERCI_AVA_T, $content_type, MERCI_SUB_TYPE_ITEM);
+
+
+  if ($start) {
+    // Determine CCK table and columns the date data is stored in.
+    $field             = content_fields('field_merci_date');
+    $db_info           = content_database_info($field);
+    $table             = $db_info['table'];
+    $column_start_date = $db_info['columns']['value']['column'];
+    $column_end_date   = $db_info['columns']['value2']['column'];
+
+    $start2 = date_create($start, timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
+    $args += array($start, $end, $start, $end, $start, $end, MERCI_ITEM_STATUS_AVAILABLE, $start2, MERCI_ITEM_STATUS_CHECKED_OUT);
+
+    if ($reservation_nid) {
+      $where = ' AND md2.nid <> %d';
+      $args[] = $reservation_nid;
+    }
+    // If there's an already selected bucket item, then we need to make sure we
+    // include it in the list of available items.
+    $query .= "
+      AND n.nid NOT IN 
+      (SELECT md2.merci_item_nid FROM {" . $table . "} ct 
+      INNER JOIN {merci_reservation_detail} md2 ON ct.vid = md2.vid 
+      INNER JOIN {merci_{$merci_type}_node} m2 ON md2.merci_item_nid = m2.nid 
+      INNER JOIN {node} ctn ON ctn.vid = ct.vid 
+      INNER JOIN {node} m2n ON m2.vid = m2n.vid 
+      WHERE (
+        (
+          (($column_start_date >= '%s' AND $column_start_date <= '%s') 
+          OR ($column_end_date >= '%s' AND $column_end_date <= '%s') 
+          OR ($column_start_date <= '%s' AND $column_end_date >= '%s'))  
+          AND NOT md2.merci_item_status <= %d
+        )
+        OR ($column_end_date <= '%s' AND md2.merci_item_status = %d)
+      )
+      $where
+    ) 
+    ";
+
+  }
+  $query .= " ORDER BY n.title";
+
+  $items = db_query($query, $args);
   $options = array();
   while ($item = db_fetch_object($items)) {
     $options[$item->nid] = $item->title;
