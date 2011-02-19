@@ -316,6 +316,7 @@ function merci_views_data() {
     'relationship' => array(
       'base' => 'node',
       'field' => 'nid',
+      'relationship field' => 'merci_placeholder_nid',
       'label' => t('Reserved placeholder item node id'),
     ),
   );
@@ -339,6 +340,7 @@ function merci_views_data() {
     'relationship' => array(
       'base' => 'node',
       'field' => 'nid',
+      'relationship field' => 'merci_item_nid',
       'label' => t('Reserved item node id'),
     ),
   );

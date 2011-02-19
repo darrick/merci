@@ -678,7 +678,7 @@ function merci_update_6209() {
     CHANGE autocheckout merci_autocheckout TINYINT(4) NOT NULL DEFAULT '0', 
     CHANGE autocheckin merci_autocheckin TINYINT(4) NOT NULL DEFAULT '0', 
     CHANGE selfcheckout merci_selfcheckout TINYINT(4) NOT NULL DEFAULT '0', 
-    CHANGE sub_type merci_sub_type INT(11) NOT NULL DEFAULT");
+    CHANGE sub_type merci_sub_type INT(11) NOT NULL DEFAULT '0'");
 
   $ret[] = update_sql("ALTER TABLE  {merci_node_type}
     CHANGE  type_setting  merci_type_setting VARCHAR( 20 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT  'disabled',
@@ -687,6 +687,7 @@ function merci_update_6209() {
     CHANGE  allow_weekends  merci_allow_weekends TINYINT( 4 ) NOT NULL DEFAULT  '0',
     CHANGE  late_fee_per_hour  merci_late_fee_per_hour FLOAT NOT NULL DEFAULT  '0',
     CHANGE  rate_per_hour  merci_rate_per_hour FLOAT NOT NULL DEFAULT  '0',
+    CHANGE  fee_free_hours merci_fee_free_hours FLOAT NOT NULL DEFAULT  '0',
     CHANGE  daypart1_price  merci_daypart1_price FLOAT NOT NULL DEFAULT  '0',
     CHANGE  daypart2_price  merci_daypart2_price FLOAT NOT NULL DEFAULT  '0',
     CHANGE  daypart3_price  merci_daypart3_price FLOAT NOT NULL DEFAULT  '0',
@@ -730,9 +731,8 @@ function merci_update_6209() {
     CHANGE  selfcheckout  merci_selfcheckout TINYINT( 4 ) NOT NULL DEFAULT  '0',
     CHANGE  sub_type  merci_sub_type INT( 11 ) NOT NULL DEFAULT  '0'");
 
-    
-   // cache_clear_all('merci_' . $settings['type'] . '_data','cache');
     cache_clear_all('merci_content_type_info','cache');
+    return $ret;
 }
 
 function merci_create_cck_fields() {

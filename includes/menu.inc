@@ -211,7 +211,6 @@ function merci_current_inventory() {
 
   $rows   = array();
 
-
   foreach ($merci_types as $merci_type) { 
 
     $info = content_types($merci_type['type']);
