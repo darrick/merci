@@ -86,9 +86,7 @@ function merci_inventory_menu() {
  */
 function merci_inventory_node_type_menu_access($type_name) {
 
-  $types = merci_inventory_sync_resource_types();
-
-  if ((!in_array($type_name, $types)) && user_access('administer MERCI')) {
+  if (!(merci_is_merci_type($type_name)) && user_access('administer MERCI')) {
     return TRUE;
   }
   // if
@@ -127,9 +125,9 @@ function merci_inventory_sync_fields(&$form_state, $type_name) {
     '#options' => array(),
   );
 
-  $types = merci_inventory_sync_resource_types();
+  $types = merci_content_types();
 
-  foreach ($types as $type) {
+  foreach ($types as $type => $value) {
     $form['merci_inventory_sync_to_types']['#options'][$type] = $type;
   }
   // foreach
@@ -283,26 +281,6 @@ function merci_inventory_sync_fields_submit($form_id, $form_values) {
   }
   // if
 }
-// merci_inventory_sync_fields_submit
-function merci_inventory_sync_resource_types($reset = FALSE) {
-
-  static $types = FALSE;
-
-  if ((!is_array($types)) || $reset) {
-
-    $types = array();
-    $merci_types = merci_content_types();
-
-    foreach ($merci_types as $type) {
-      $types[] = $type->type;
-    }
-    // while
-  }
-  // if
-
-  return $types;
-}
-// merci_inventory_sync_resource_types
 
 /**
  * Implementation of hook_node_operations().
