@@ -153,7 +153,7 @@ function theme_merci_build_reservation_table_form($form) {
   }
 
   if (!empty($rows)) {
-    $table_caption = in_array((int) $node->merci['status'], array(MERCI_STATUS_CHECKED_OUT, MERCI_STATUS_CHECKED_IN)) ? t('Checked out items') : t('Currently reserved items');
+    $table_caption = in_array((int) $node->merci_reservation_status, array(MERCI_STATUS_CHECKED_OUT, MERCI_STATUS_CHECKED_IN)) ? t('Checked out items') : t('Currently reserved items');
     $output .= '<div class="existing-items-table-header">' . $table_caption . '</div>';
     $output .= theme('table', $header, $rows);
   }

@@ -23,6 +23,7 @@ function merci_views_data() {
   $data['merci_node_type']['type_setting'] = array(
     'title' => t('MERCI type'),
     'help' => t('The MERCI type (Bucket|Resource).'),
+    'real field' => 'merci_type_setting',
     'field' => array(
       'handler' => 'merci_handler_field_merci_node_type_type_setting',
       'click sortable' => TRUE,
@@ -40,6 +41,7 @@ function merci_views_data() {
   $data['merci_node_type']['max_hours_per_reservation'] = array(
     'title' => t('Max hours per reservation'),
     'help' => t('The maximum hours that the item can be reserved for.'),
+    'real field' => 'merci_max_hours_per_reservation',
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -57,6 +59,7 @@ function merci_views_data() {
   $data['merci_node_type']['allow_overnight'] = array(
     'title' => t('Allow overnight'),
     'help' => t('TRUE if the item can be kept overnight.'),
+    'real field' => 'merci_allow_overnight',
     'field' => array(
       'handler' => 'views_handler_field_boolean',
       'click sortable' => TRUE,
@@ -75,6 +78,7 @@ function merci_views_data() {
   $data['merci_node_type']['allow_weekends'] = array(
     'title' => t('Allow weekends'),
     'help' => t('TRUE if the item can be kept over weekends.'),
+    'real field' => 'merci_allow_weekends',
     'field' => array(
       'handler' => 'views_handler_field_boolean',
       'click sortable' => TRUE,
@@ -93,6 +97,7 @@ function merci_views_data() {
   $data['merci_node_type']['late_fee_per_hour'] = array(
     'title' => t('Late fee per hour -- default'),
     'help' => t('Default per hour fee if the item is returned late (as defined by MERCI type).'),
+    'real field' => 'merci_late_fee_per_hour',
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -110,6 +115,7 @@ function merci_views_data() {
   $data['merci_node_type']['rate_per_hour'] = array(
     'title' => t('Rate per hour -- default'),
     'help' => t('Default per hour fee for use of the item (as defined by MERCI type).'),
+    'real field' => 'merci_rate_per_hour',
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -127,6 +133,7 @@ function merci_views_data() {
   $data['merci_node_type']['fee_free_hours'] = array(
     'title' => t('Fee free hours -- default'),
     'help' => t('Default number of hours the item can be used before fees are charged (as defined by MERCI type).'),
+    'real field' => 'merci_fee_free_hours',
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -144,6 +151,7 @@ function merci_views_data() {
   $data['merci_node_type']['status'] = array(
     'title' => t('Bucket/Resource Status'),
     'help' => t('The status of the Bucket/Resource.'),
+    'real field' => 'merci_active_status',
     'field' => array(
       'handler' => 'merci_handler_field_merci_node_type_status',
       'click sortable' => TRUE,
@@ -163,6 +171,7 @@ function merci_views_data() {
   $data['merci_node_type']['spare_items'] = array(
     'title' => t('Bucket spare items'),
     'help' => t('Number of spare items to leave unreserved for the bucket.'),
+    'real field' => 'merci_spare_items',
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -188,6 +197,7 @@ function merci_views_data() {
   $data['merci_reservation']['status'] = array(
     'title' => t('Reservation status'),
     'help' => t('The status of the reservation.'),
+    'real field' => 'merci_reservation_status',
     'field' => array(
       'handler' => 'merci_handler_field_merci_reservation_status',
       'click sortable' => TRUE,
@@ -209,7 +219,7 @@ function merci_views_data() {
   $data['merci_reservation_detail3']['table']['group'] = t('MERCI');
   $data['merci_reservation_detail3']['table']['join']['node'] = array(
     'left_field' => 'nid',
-    'field' => 'item_nid',
+    'field' => 'merci_item_nid',
     'table' => 'merci_reservation_detail',
   );
   $data['merci_reservation_detail3']['date_argument'] = array(
@@ -246,7 +256,7 @@ function merci_views_data() {
   $data['merci_reservation_detail2']['table']['group'] = t('MERCI');
   $data['merci_reservation_detail2']['table']['join']['node'] = array(
     'left_field' => 'vid',
-    'field' => 'placeholder_nid',
+    'field' => 'merci_placeholder_nid',
     //'type' => 'INNER',
     'table' => 'merci_reservation_detail',
   );
@@ -291,6 +301,7 @@ function merci_views_data() {
   $data['merci_reservation_detail']['placeholder_nid'] = array(
     'title' => t('Reserved placeholder nid'),
     'help' => t('The node id of the reserved placeholder item.'),
+    'real field' => 'merci_placeholder_nid',
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -313,6 +324,7 @@ function merci_views_data() {
   $data['merci_reservation_detail']['item_nid'] = array(
     'title' => t('Reserved item nid'),
     'help' => t('The node id of the reserved item.'),
+    'real field' => 'merci_item_nid',
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -359,6 +371,7 @@ function merci_views_data() {
   $data['merci_resource_node']['late_fee_per_hour'] = array(
     'title' => t('Late fee per hour -- resource'),
     'help' => t('Per hour fee if the item is returned late (as defined by the individual resource).'),
+    'real field' => 'merci_late_fee_per_hour',
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -376,6 +389,7 @@ function merci_views_data() {
   $data['merci_resource_node']['rate_per_hour'] = array(
     'title' => t('Rate per hour -- resource'),
     'help' => t('Per hour fee for use of the item (as defined by the individual resource).'),
+    'real field' => 'merci_rate_per_hour',
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -393,6 +407,7 @@ function merci_views_data() {
   $data['merci_resource_node']['fee_free_hours'] = array(
     'title' => t('Fee free hours -- resource'),
     'help' => t('Number of hours the item can be used before fees are charged (as defined by the individual resource).'),
+    'real field' => 'merci_fee_free_hours',
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
@@ -418,6 +433,7 @@ function merci_views_data() {
   $data['merci_reservation_item_node']['default_availability'] = array(
     'title' => t('Default booking availability -- resource/bucket'),
     'help' => t('The default booking availability of a Resource or Bucket type (ex. Available|Unavailable).'),
+    'real field' => 'merci_default_availability',
     'field' => array(
       'handler' => 'merci_handler_field_merci_bucket_resource_node_default_availability',
       'click sortable' => TRUE,
@@ -437,6 +453,7 @@ function merci_views_data() {
   $data['merci_reservation_item_node']['sub_type'] = array(
     'title' => t('Sub type -- resource/bucket'),
     'help' => t('The sub type of the Resource or Bucket (Item|Reservation placeholder).'),
+    'real field' => 'merci_sub_type',
     'field' => array(
       'handler' => 'merci_handler_field_merci_bucket_resource_node_sub_type',
       'click sortable' => TRUE,
@@ -456,6 +473,7 @@ function merci_views_data() {
   $data['merci_reservation_item_node']['item_status'] = array(
     'title' => t('Reservation Status of Item'),
     'help' => t('Is the reservatble item currently checked out.'),
+    'real field' => 'merci_item_status',
     'field' => array(
       'handler' => 'merci_handler_field_merci_reservation_item_node_item_status',
       'click sortable' => TRUE,

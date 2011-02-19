@@ -50,10 +50,10 @@ $logourl = theme_get_setting('logo_path', '');
 
     //$type            = merci_load_content_type_settings($item->type);
     //$type            = merci_load_item_settings($item,$item->type);
-    $fee_hours       = $hours - ($item_node->merci['fee_free_hours']);
-    $commercial_cost = $item_node->merci['rate_per_hour'] * $hours;
-    $member_cost     = ($fee_hours > 0) ? ($item_node->merci['rate_per_hour'] * $discount) * $fee_hours : 0;
-    $day_rate     = ($item_node->merci['rate_per_hour'] * 24);
+    $fee_hours       = $hours - ($item_node->merci_fee_free_hours);
+    $commercial_cost = $item_node->merci_rate_per_hour * $hours;
+    $member_cost     = ($fee_hours > 0) ? ($item_node->merci_rate_per_hour * $discount) * $fee_hours : 0;
+    $day_rate     = ($item_node->merci_rate_per_hour * 24);
     
     $commercial_cost_total += $commercial_cost;
     $member_cost_total += $member_cost;

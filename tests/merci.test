@@ -312,7 +312,7 @@ class MerciUserTestCase extends MerciTestCase {
     // Update reservation status with merci user as author with override off.  Should Pass as status should be validated by the admin user.
     $edit = array(
       'name' => $this->merci_user->name,
-      'merci_status' => 5,
+      'merci_reservation_status' => 5,
     );
 
     $title = $first->title;
@@ -579,7 +579,7 @@ class MerciUserTestCase extends MerciTestCase {
     $this->drupalLogin($this->admin_user);
     // Cancel the last reservation.  This should Pass
     $edit = array(
-      'merci_status' => 5,
+      'merci_reservation_status' => 5,
     );
 
     $title = $pass->title;
@@ -638,12 +638,12 @@ class MerciUserTestCase extends MerciTestCase {
 
   }
   function testMerciUserCase() {
-    $this->_testMerciStaffModule();
     $this->_testMerciResourceAvailability();
     $this->_testMerciBucketAvailability();
     $this->_testMerciHoursOfOperation();
     $this->_testMerciClosedDays();
     $this->_testMerciMaxDays();
+    $this->_testMerciStaffModule();
   }
 }
 class MerciAdminTestCase extends MerciTestCase {
@@ -675,18 +675,13 @@ class MerciAdminTestCase extends MerciTestCase {
         'merci_autocheckin' => TRUE,
         'merci_selfcheckout' => TRUE,
         'merci_auto_assign_bucket_item' => TRUE,
-        'merci_status' => MERCI_STATUS_ACTIVE,
+        'merci_active_status' => MERCI_STATUS_ACTIVE,
     );
     $type = $this->merciCreateContentType($settings,'bucket',$merci_settings);
 
     $content_settings = merci_content_types($type);
     $settings = array();
 
-    foreach($merci_settings as $key => $value) {
-      if(substr($key,0,6) == 'merci_'){
-        $settings[substr($key,6)] = $value;
-      }
-    }
     $this->_compareArrayForChanges($settings,$content_settings,"!key matches");
     //$this->verbose('Node created: ' . var_export($content_settings, TRUE));
     // Create resource item

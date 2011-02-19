@@ -71,7 +71,7 @@ function merci_permissions_form_alter(&$form, $form_state, $form_id) {
   return;
   if ($form_id == 'user_admin_perm') {
     // Have to build checkboxes here after checkbox arrays are built
-    $merci_types = merci_permissions_load_merci_type_settings();
+    $merci_types = merci_content_types();
     $perms = array();
     foreach ($merci_types as $key => $value) {
       $perms[] = "delete own $key content";
@@ -123,7 +123,7 @@ function merci_permissions_add_form(&$form) {
     $role_permissions[$role->rid] = $role->perm .',';
   }
 
-  $merci_types = merci_permissions_load_merci_type_settings();
+  $merci_types = merci_content_types();
   if (empty($merci_types)) {
     drupal_set_message(t("You need to add some reservable content types to make this form usefull."));
     return;
@@ -147,7 +147,8 @@ function merci_permissions_add_form(&$form) {
   }
   $form['permission'][] = array('#value' => t('Bucket and Resource Permissions'),
   );
-  foreach ($merci_types as $type => $name) {
+  foreach ($merci_types as $type => $merci_type) {
+    $name = $merci_type['name'];
     $perm = "reserve $type";
     $options[$perm] = '';
     $form['permission'][$perm] = array('#value' => t($name));
@@ -193,19 +194,10 @@ function merci_permissions_form() {
   return $form;
 }
 
-function merci_permissions_load_merci_type_settings() {
-  $result = db_query("SELECT nt.type,nt.name FROM {node_type} nt INNER JOIN {merci_node_type} m ON nt.type = m.type WHERE m.type_setting <> 'disabled'");
-  $merci_types = array();
-  while ($merci_type = db_fetch_object($result)) {
-    $merci_types[$merci_type->type] = $merci_type->name;
-  }
-  return $merci_types;
-}
-
 function merci_permissions_settings_form_submit($form, &$form_state) {
 
   $result      = db_query('SELECT * FROM {role}');
-  $merci_types = merci_permissions_load_merci_type_settings();
+  $merci_types = merci_content_types();
   $merci_perms = merci_perm();
   while ($role = db_fetch_object($result)) {
     if (isset($form_state['values'][$role->rid])) {
@@ -227,7 +219,7 @@ function merci_permissions_settings_form_submit($form, &$form_state) {
           }
         }
         elseif (strstr('admin all reservations', $key)) {
-          foreach ($merci_types as $type => $name) {
+          foreach ($merci_types as $type => $value) {
             $perms[] = "edit own $type content";
             $perms[] = "delete own $type content";
             $perms[] = "delete any $type content";

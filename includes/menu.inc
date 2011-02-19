@@ -208,6 +208,7 @@ function merci_current_inventory() {
 
   $merci_types = merci_content_types();
 
+
   $rows   = array();
 
 
@@ -281,16 +282,16 @@ function merci_pricing($start, $end, $node_type_array) {
     if (is_numeric($item)) {
       //this is a Resource to load the pricing based on the node
       $item_node = node_load($item);
-      $fee_hours       = $hours - ($item_node->merci['fee_free_hours']);
-      $rate_per_hour   = $item_node->merci['rate_per_hour']; 
+      $fee_hours       = $hours - ($item_node->merci_fee_free_hours);
+      $rate_per_hour   = $item_node->merci_rate_per_hour; 
       
     } 
     else {
       //for buckets, load settings based on type
       //$type = merci_load_content_type_settings($item);
-      $type = merci_load_item_settings(NULL,$item);
-      $fee_hours       = $hours - ($type['fee_free_hours']);
-      $rate_per_hour   = $type['rate_per_hour'];
+      $type = merci_load_item_settings($item);
+      $fee_hours       = $hours - ($type['merci_fee_free_hours']);
+      $rate_per_hour   = $type['merci_rate_per_hour'];
       
     }
     

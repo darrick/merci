@@ -133,7 +133,7 @@ function merci_printable_contract($node) {
     $phone = $ob[$userID]['phone'];
   }
 
-  $items = $node->merci['reservation_items'];
+  $items = $node->merci_reservation_items;
 
   $timezone = $node->field_merci_date[0]['timezone'];
   $timezone_db = $node->field_merci_date[0]['timezone_db'];

@@ -29,21 +29,14 @@ function merci_admin_settings() {
   $header = array(t('Type'), t('Usage'), t('Operations'));
   $rows = array();
 
-  $merci_types = array();
-  $merci_type_result = db_query("SELECT type, type_setting FROM {merci_node_type} WHERE type_setting = 'resource' OR  type_setting = 'bucket'");
-
-  while ($merci_type = db_fetch_object($merci_type_result)) {
-    $merci_types[$merci_type->type] = $merci_type->type_setting;
-  }
-  // while
 
   foreach (node_get_types() as $type) {
 
     $type_url_str = str_replace('_', '-', $type->type);
 
     $usage = t('Not used by MERCI');
-    if (isset($merci_types[$type->type])) {
-      $usage = 'MERCI ' . $merci_types[$type->type];
+    if (merci_is_merci_type($type->type)) {
+      $usage = 'MERCI ' . merci_type_setting($type->type);
     }
     // if
 

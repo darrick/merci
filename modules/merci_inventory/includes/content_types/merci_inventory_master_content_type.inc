@@ -45,7 +45,7 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
   'comment_preview' => '1',
   'comment_form_location' => '0',
   'merci_type_setting' => 'disabled',
-  'merci_status' => 1,
+  'merci_reservation_status' => 1,
   'merci_spare_items' => 0,
   'merci_grouping' => 0,
   'merci_max_hours_per_reservation' => 0,

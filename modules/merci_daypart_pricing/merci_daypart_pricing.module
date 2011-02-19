@@ -190,7 +190,7 @@ function merci_daypart_pricing($start, $end, $items, $response = 'json') {
     //print_r($item);
     if (is_numeric($item)) {
       //this is a Resource to load the pricing based on the node
-      $item_node = node_load($item);
+      $settings = node_load($item);
       //print_r($item_node);
       //$type = merci_load_content_type_settings($item_node->type);
       //watchdog('daypart resource rate', $item_node->merci['rate_per_hour']);
@@ -199,25 +199,18 @@ function merci_daypart_pricing($start, $end, $items, $response = 'json') {
       // watchdog('daypart 3 rate', $item_node->merci['daypart3_price']);
       
       //print_r($item_node);
-      $fee_hours       = $hours - ($item_node->merci['fee_free_hours']);
-      $rate_per_hour   = $item_node->merci['rate_per_hour']; 
-      $daypart1_price  = $item_node->merci['daypart1_price'];
-      $daypart2_price  = $item_node->merci['daypart2_price'];
-      $daypart3_price  = $item_node->merci['daypart3_price'];
-      $weekend_price   = $item_node->merci['weekend_price'];
       
     } else {
       //for buckets, load settings based on type
       //$type = merci_load_content_type_settings($item);
-      $type = merci_load_item_settings(NULL,$item);
-      $fee_hours       = $hours - ($type['fee_free_hours']);
-      $rate_per_hour   = $type['rate_per_hour'];
-      
-      $daypart1_price  = $type['daypart1_price'];
-      $daypart2_price  = $type['daypart2_price'];
-      $daypart3_price  = $type['daypart3_price'];
-      $weekend_price   = $type['weekend_price'];
+      $settings = merci_load_item_settings($item);
     }
+    $fee_hours       = $hours - ($settings->merci_fee_free_hours);
+    $rate_per_hour   = $settings->merci_rate_per_hour; 
+    $daypart1_price  = $settings->merci_daypart1_price;
+    $daypart2_price  = $settings->merci_daypart2_price;
+    $daypart3_price  = $settings->merci_daypart3_price;
+    $weekend_price   = $settings->merci_weekend_price;
     
     //START FRESH
     $daypart_price = 0;
