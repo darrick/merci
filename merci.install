@@ -541,6 +541,9 @@ function merci_schema() {
       ),
     ),
     'primary key' => array('nid', 'vid'),
+    'indexes' => array(
+      'merci_sub_type' => array('merci_sub_type'),
+    ),
   );
   return $schema;
 }
@@ -733,6 +736,13 @@ function merci_update_6209() {
 
     cache_clear_all('merci_content_type_info','cache');
     return $ret;
+}
+function merci_update_6210() {
+  $ret = array();
+
+  $ret[] = update_sql("ALTER TABLE  {merci_reservation_item_node} ADD INDEX ( merci_sub_type )");
+
+  return $ret;
 }
 
 function merci_create_cck_fields() {

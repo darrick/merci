@@ -2427,7 +2427,7 @@ function merci_get_reservable_items($content_type, $start=NULL, $end=NULL, $rese
     $column_end_date   = $db_info['columns']['value2']['column'];
 
     $start2 = date_create($start, timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
-    $args += array($start, $end, $start, $end, $start, $end, MERCI_ITEM_STATUS_AVAILABLE, $start2, MERCI_ITEM_STATUS_CHECKED_OUT);
+    $args = array_merge($args,array($start, $end, $start, $end, $start, $end, MERCI_ITEM_STATUS_AVAILABLE, $start2, MERCI_ITEM_STATUS_CHECKED_OUT));
 
     if ($reservation_nid) {
       $where = ' AND md2.nid <> %d';
@@ -2467,9 +2467,8 @@ function merci_get_reservable_items($content_type, $start=NULL, $end=NULL, $rese
   return $options;
 }
 
+//TODO: the following three functions look very much a like.
 function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, $reservation_vid = NULL) {
-  //if there are no dates, return the active total
-  
 
   // Determine CCK table and columns the date data is stored in.
   $field             = content_fields('field_merci_date');
@@ -2479,7 +2478,7 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
   $column_end_date   = $db_info['columns']['value2']['column'];
 
   // Get all assignable nodes for this bucket item.
-  $total_items_nodes = db_query("SELECT n.nid FROM {node} n INNER JOIN {merci_bucket_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.merci_sub_type = %d AND m.merci_default_availability IN (%d, %d)", $content_type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_S);
+  $total_items_nodes = db_query("SELECT n.nid FROM {node} n INNER JOIN {merci_reservation_item_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.merci_sub_type = %d AND m.merci_default_availability IN (%d, %d)", $content_type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_S);
   $total_items_array = array();
   while ($ctnodes = db_fetch_array($total_items_nodes)) {
     $total_items_array[$ctnodes['nid']] = array();
@@ -2532,8 +2531,7 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
     $args2[] = $reservation_vid;
   }
   $reserved_nodes = db_query("
-    SELECT  ctn.title as reservation_title, ctn.nid as reservation_nid, mn.title, 
-                  ct.nid,field_merci_date_value,field_merci_date_value2,md.merci_item_nid  
+    SELECT ct.nid,field_merci_date_value,field_merci_date_value2,md.merci_item_nid  
       FROM {" . $table . "} ct 
         INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid 
         INNER JOIN {merci_bucket_node} m on md.merci_placeholder_nid = m.nid 
@@ -2555,10 +2553,6 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
 
   // Use up items for assigned nodes.
   while ($node = db_fetch_object($reserved_nodes)) {
-    // If item is assigned then item is in use by this node.
-    if (user_access("administer MERCI") || user_access("manage MERCI")) {
-      drupal_set_message(t('Warning: @title checked out by <a href="@reservation_link">@reservation_title</a> which was due back @date', array('@title' => $node->title, '@reservation_link' => url('node/' . $node->reservation_nid), '@reservation_title' => $node->reservation_title, '@date' => $node->field_merci_date_value2)));
-    }
     $total_items_array[$node->merci_item_nid][] = $node;
   }
 
@@ -2622,157 +2616,8 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
   return $total_items_array;
 }
 
-function merci_get_suggested_bucket_item($content_type, $start = NULL, $end = NULL, $items = array()) {
-  //if there are no dates, return the active total
-  
-
-  // Determine CCK table and columns the date data is stored in.
-  $field             = content_fields('field_merci_date');
-  $db_info           = content_database_info($field);
-  $table             = $db_info['table'];
-  $column_start_date = $db_info['columns']['value']['column'];
-  $column_end_date   = $db_info['columns']['value2']['column'];
-
-  // Get all assignable nodes for this bucket item.
-  $total_items_nodes = db_query("SELECT n.nid FROM {node} n INNER JOIN {merci_bucket_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.merci_sub_type = %d AND m.merci_default_availability IN (%d, %d)", $content_type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_S);
-  $total_items_array = array();
-  while ($ctnodes = db_fetch_array($total_items_nodes)) {
-    $total_items_array[$ctnodes['nid']] = array();
-  }
-
-  $args = array($start, $end, $start, $end, $start, $end, $content_type, MERCI_ITEM_STATUS_AVAILABLE);
-
-  // If we're checking an existing reservation, exclude it from the
-  // reserved items.
-  if (isset($reservation)) {
-    $where = ' AND ct.nid <> %d';
-    $args[] = $reservation;
-  }
-  else {
-    $where = '';
-  }
-
-  // pull reservations with assigned nodes and status of MERCI_ITEM_STATUS_RESERVED or MERCI_ITEM_STATUS_CHECKED_OUT
-  $reserved_nodes = db_query("
-    SELECT ct.nid,field_merci_date_value,field_merci_date_value2,md.merci_item_nid FROM {" . $table . "} ct 
-      INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid 
-      INNER JOIN {merci_bucket_node} m on md.merci_placeholder_nid = m.nid 
-      INNER JOIN {node} ctn on ct.vid = ctn.vid 
-      INNER JOIN {node} mn on m.vid = mn.vid 
-        WHERE (
-                ($column_start_date >= '%s' and $column_start_date <= '%s') 
-            OR  ($column_end_date >= '%s' and $column_end_date <= '%s') 
-            OR  ($column_start_date <= '%s' and $column_end_date >= '%s')
-          ) 
-          AND mn.type = '%s' 
-          AND md.merci_item_nid !=0 
-          AND NOT md.merci_item_status <= %d
-          $where",
-    $args
-  );
-
-  // Use up items for assigned nodes.
-  while ($node = db_fetch_object($reserved_nodes)) {
-    // If item is assigned then item is in use by this node.
-    $total_items_array[$node->merci_item_nid][] = $node;
-  }
-
-  // pull reservations in the past which are still checked out.
-  $start2 = date_create($start, timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
-  $args2 = array($start2, $content_type, MERCI_ITEM_STATUS_CHECKED_OUT);
-
-  // If we're checking an existing reservation, exclude it from the
-  // reserved items.
-  if (isset($reservation)) {
-    $args2[] = $reservation;
-  }
-  $reserved_nodes = db_query("
-    SELECT  ctn.title as reservation_title, ctn.nid as reservation_nid, mn.title, 
-                  ct.nid,field_merci_date_value,field_merci_date_value2,md.merci_item_nid  
-      FROM {" . $table . "} ct 
-        INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid 
-        INNER JOIN {merci_bucket_node} m on md.merci_placeholder_nid = m.nid 
-        INNER JOIN {node} ctn on ct.vid = ctn.vid 
-        INNER JOIN {node} mn on m.vid = mn.vid 
-          WHERE ($column_end_date <= '%s') 
-            AND mn.type = '%s' 
-            AND md.merci_item_nid !=0 
-            AND md.merci_item_status = %d
-            $where",
-    $args2
-  );
-
-  /*
-  if (count($reserved_nodes) and !user_access('administrate MERCI')) {
-    drupal_set_message(t("There are items you can't reserve because they have not been returned."));
-  }
-   */
-
-  // Use up items for assigned nodes.
-  while ($node = db_fetch_object($reserved_nodes)) {
-    // If item is assigned then item is in use by this node.
-    if (user_access("administer MERCI") || user_access("manage MERCI")) {
-      drupal_set_message(t('Warning: @title checked out by <a href="@reservation_link">@reservation_title</a> which was due back @date', array('@title' => $node->title, '@reservation_link' => url('node/' . $node->reservation_nid), '@reservation_title' => $node->reservation_title, '@date' => $node->field_merci_date_value2)));
-    }
-    $total_items_array[$node->merci_item_nid][] = $node;
-  }
-
-  // pull reservations without assigned nodes and status of MERCI_ITEM_STATUS_RESERVED or MERCI_ITEM_STATUS_CHECKED_OUT
-  $reserved_nodes = db_query("
-    SELECT ct.nid,field_merci_date_value,field_merci_date_value2,md.merci_item_nid  
-      FROM {" . $table . "} ct 
-        INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid 
-        INNER JOIN {merci_bucket_node} m ON md.merci_placeholder_nid = m.nid 
-        INNER JOIN {node} ctn on ct.vid = ctn.vid 
-        INNER JOIN {node} mn ON m.vid = mn.vid 
-          WHERE (
-                  ($column_start_date >= '%s' AND $column_start_date <= '%s') 
-              OR  ($column_end_date >= '%s' AND $column_end_date <= '%s') 
-              OR  ($column_start_date <= '%s' AND $column_end_date >= '%s')
-            ) 
-            AND mn.type = '%s' 
-            AND md.merci_item_nid = 0 
-            AND NOT md.merci_item_status < %d
-            $where",
-    $args
-  );
-
-  // Temporarily assign an item for these nodes.
-  while ($node = db_fetch_object($reserved_nodes)) {
-    
-    // Eat up a bucket item for this node.
-    // If item is not assigned then temporarily add one.
-    foreach ($total_items_array as $item_nid => $reservations) {
-      $willitfit = TRUE;
-      foreach ($reservations as $oldnode) {
-        // Does the start date overlap this reservation.
-        if (
-          (
-            date_create($node->field_merci_date_value) > date_create($oldnode->field_merci_date_value) and
-            date_create($node->field_merci_date_value) < date_create($oldnode->field_merci_date_value2)
-          ) or
-          // Does the end date overlap this reservation.
-          (
-            date_create($node->field_merci_date_value2) > date_create($oldnode->field_merci_date_value) and
-            date_create($node->field_merci_date_value2) < date_create($oldnode->field_merci_date_value2)
-          ) or
-          // Does the start and end date overlap this reservation.
-          (
-            date_create($node->field_merci_date_value) <= date_create($oldnode->field_merci_date_value) and
-            date_create($node->field_merci_date_value2) >= date_create($oldnode->field_merci_date_value2)
-          )
-        ) {
-          // Can't use this item for this reservation. So try another.
-          $willitfit = FALSE;
-          break;
-        }
-      }
-      if ($willitfit) {
-        $total_items_array[$item_nid][] = $node;
-        break;
-      }
-    }
-  }
+function merci_get_suggested_bucket_item($content_type, $start , $end , $items = array()) {
+  $total_items_array = merci_reserved_bucket_items($content_type, $start, $end );
 
   foreach ($total_items_array as $item_nid => $node) {
     if (empty($total_items_array[$item_nid]) && !in_array($item_nid, $items)) {
@@ -2782,7 +2627,6 @@ function merci_get_suggested_bucket_item($content_type, $start = NULL, $end = NU
   }
 
   return 0;
-
 }
 
 // merci_get_reservable_items
@@ -2818,155 +2662,8 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
     return $count->total;
   }
 
+  $total_items_array = merci_reserved_bucket_items($content_type, $start, $end,$reservation );
 
-  // Determine CCK table and columns the date data is stored in.
-  $field             = content_fields('field_merci_date');
-  $db_info           = content_database_info($field);
-  $table             = $db_info['table'];
-  $column_start_date = $db_info['columns']['value']['column'];
-  $column_end_date   = $db_info['columns']['value2']['column'];
-
-  // Get all assignable nodes for this bucket item.
-  $total_items_nodes = db_query("SELECT n.nid FROM {node} n INNER JOIN {merci_bucket_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.merci_sub_type = %d AND m.merci_default_availability IN (%d, %d)", $content_type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_T);
-  $total_items_array = array();
-  while ($ctnodes = db_fetch_array($total_items_nodes)) {
-    $total_items_array[$ctnodes['nid']] = array();
-  }
-
-  $args = array($start, $end, $start, $end, $start, $end, $content_type, MERCI_ITEM_STATUS_AVAILABLE);
-
-  // If we're checking an existing reservation, exclude it from the
-  // reserved items.
-  if (isset($reservation)) {
-    $where = ' AND ct.nid <> %d';
-    $args[] = $reservation;
-  }
-  else {
-    $where = '';
-  }
-
-  // pull reservations with assigned nodes and status of MERCI_ITEM_STATUS_RESERVED or MERCI_ITEM_STATUS_CHECKED_OUT
-  $reserved_nodes = db_query("
-    SELECT ct.nid,field_merci_date_value,field_merci_date_value2,md.merci_item_nid FROM {" . $table . "} ct 
-      INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid 
-      INNER JOIN {merci_bucket_node} m on md.merci_placeholder_nid = m.nid 
-      INNER JOIN {node} ctn on ct.vid = ctn.vid 
-      INNER JOIN {node} mn on m.vid = mn.vid 
-        WHERE (
-                ($column_start_date >= '%s' and $column_start_date <= '%s') 
-            OR  ($column_end_date >= '%s' and $column_end_date <= '%s') 
-            OR  ($column_start_date <= '%s' and $column_end_date >= '%s')
-          ) 
-          AND mn.type = '%s' 
-          AND md.merci_item_nid !=0 
-          AND NOT md.merci_item_status <= %d
-          $where",
-    $args
-  );
-
-  // Use up items for assigned nodes.
-  while ($node = db_fetch_object($reserved_nodes)) {
-    // If item is assigned then item is in use by this node.
-    $total_items_array[$node->merci_item_nid][] = $node;
-  }
-
-
-  // pull reservations without assigned nodes and status of MERCI_ITEM_STATUS_RESERVED or MERCI_ITEM_STATUS_CHECKED_OUT
-  $reserved_nodes = db_query("
-    SELECT ct.nid,field_merci_date_value,field_merci_date_value2,md.merci_item_nid  
-      FROM {" . $table . "} ct 
-        INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid 
-        INNER JOIN {merci_bucket_node} m ON md.merci_placeholder_nid = m.nid 
-        INNER JOIN {node} ctn on ct.vid = ctn.vid 
-        INNER JOIN {node} mn ON m.vid = mn.vid 
-          WHERE (
-                  ($column_start_date >= '%s' AND $column_start_date <= '%s') 
-              OR  ($column_end_date >= '%s' AND $column_end_date <= '%s') 
-              OR  ($column_start_date <= '%s' AND $column_end_date >= '%s')
-            ) 
-            AND mn.type = '%s' 
-            AND md.merci_item_nid = 0 
-            AND NOT md.merci_item_status < %d
-            $where",
-    $args
-  );
-
-  // Temporarily assign an item for these nodes.
-  while ($node = db_fetch_object($reserved_nodes)) {
-    
-    // Eat up a bucket item for this node.
-    // If item is not assigned then temporarily add one.
-    foreach ($total_items_array as $item_nid => $reservations) {
-      $willitfit = TRUE;
-      foreach ($reservations as $oldnode) {
-        // Does the start date overlap this reservation.
-        if (
-          (
-            date_create($node->field_merci_date_value) > date_create($oldnode->field_merci_date_value) and
-            date_create($node->field_merci_date_value) < date_create($oldnode->field_merci_date_value2)
-          ) or
-          // Does the end date overlap this reservation.
-          (
-            date_create($node->field_merci_date_value2) > date_create($oldnode->field_merci_date_value) and
-            date_create($node->field_merci_date_value2) < date_create($oldnode->field_merci_date_value2)
-          ) or
-          // Does the start and end date overlap this reservation.
-          (
-            date_create($node->field_merci_date_value) <= date_create($oldnode->field_merci_date_value) and
-            date_create($node->field_merci_date_value2) >= date_create($oldnode->field_merci_date_value2)
-          )
-        ) {
-          // Can't use this item for this reservation. So try another.
-          $willitfit = FALSE;
-          break;
-        }
-      }
-      if ($willitfit) {
-        $total_items_array[$item_nid][] = $node;
-        break;
-      }
-    }
-  }
-
-  $start2 = date_create($start, timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
-  $args2 = array($start2, $content_type, MERCI_ITEM_STATUS_CHECKED_OUT);
-
-  // If we're checking an existing reservation, exclude it from the
-  // reserved items.
-  if (isset($reservation)) {
-    $args2[] = $reservation;
-  }
-  // pull reservations in the past which are still checked out.
-  $reserved_nodes = db_query("
-    SELECT  ctn.title as reservation_title, ctn.nid as reservation_nid, mn.title, 
-                  ct.nid,field_merci_date_value,field_merci_date_value2,md.merci_item_nid  
-      FROM {" . $table . "} ct 
-        INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid 
-        INNER JOIN {merci_bucket_node} m on md.merci_placeholder_nid = m.nid 
-        INNER JOIN {node} ctn on ct.vid = ctn.vid 
-        INNER JOIN {node} mn on m.vid = mn.vid 
-          WHERE ($column_end_date <= '%s') 
-            AND mn.type = '%s' 
-            AND md.merci_item_nid !=0 
-            AND md.merci_item_status = %d
-            $where",
-    $args2
-  );
-
-  /*
-  if (count($reserved_nodes) and !user_access('administrate MERCI')) {
-    drupal_set_message(t("There are items you can't reserve because they have not been returned."));
-  }
-   */
-
-  // Use up items for assigned nodes.
-  while ($node = db_fetch_object($reserved_nodes)) {
-    // If item is assigned then item is in use by this node.
-    if (user_access("administer MERCI") || user_access("manage MERCI")) {
-      drupal_set_message(t('Warning: @title checked out by <a href="@reservation_link">@reservation_title</a> which was due back @date', array('@title' => $node->title, '@reservation_link' => url('node/' . $node->reservation_nid), '@reservation_title' => $node->reservation_title, '@date' => $node->field_merci_date_value2)));
-    }
-    $total_items_array[$node->merci_item_nid][] = $node;
-  }
 
   foreach ($total_items_array as $item_nid => $reservations) {
     if (!empty($reservations)) {
@@ -3027,7 +2724,7 @@ function merci_load_reservations_for_node_in_timespan($nid, $type, $start_date, 
     return merci_reserved_bucket_items($type, $start_date, $end_date, $reservation_vid);
   } 
   else {
-    $sql = "SELECT merci_item_nid, r.nid AS reservation, r.field_merci_date_value , r.field_merci_date_value2 
+    $sql = "SELECT r.nid, r.field_merci_date_value, r.field_merci_date_value2, merci_item_nid 
       FROM {node} n
       JOIN {merci_reservation_detail} d ON n.nid = d.merci_item_nid
       JOIN {content_type_merci_reservation} r ON d.vid = r.vid 
