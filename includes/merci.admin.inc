@@ -215,15 +215,6 @@ function merci_admin_settings() {
     '#default_value' => variable_get('merci_closed_dates', ''),
     '#description' => '<div>' . t('Enter dates which are closed regardless of the day of the week, one date per line, in the format') . ' <em>mm-dd</em></div>' . t('ex.') . ' <em>07-04</em> ' . t('would mean July 4th is always closed, regardless of what day of the week it falls on.'),
   );
-
-  $form['merci_general']['merci_membership_discount'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Membership discount'),
-    '#size' => 11,
-    '#maxlength' => 11,
-    '#default_value' => variable_get('merci_membership_discount', ''),
-    '#description' => t('Fraction of commercial rate users in a role with member discount permission pays. Enter as decimal.  60% would be .60.  An item with a commercial rate of $100 would cost a member $60 for any hours beyond the fee free hours for that reservation.'),
-  );
   
    $form['merci_general']['merci_debug'] = array(
     '#type' => 'checkbox',
