@@ -247,7 +247,7 @@ function merci_admin_settings() {
 
 
 function merci_unlock() {
-  db_query("UPDATE {content_node_field} SET locked = 0 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
+  db_query("UPDATE {content_node_field} SET locked = 0 WHERE field_name = 'field_merci_date'");
   $return = $_GET["destination"];
   if (!$return) {
     $return = 'admin/settings/merci';
@@ -256,7 +256,7 @@ function merci_unlock() {
 }
 
 function merci_lock() {
-  db_query("UPDATE {content_node_field} SET locked = 1 WHERE field_name = 'field_merci_date' OR  field_name = 'field_merci_member_cost' OR field_name = 'field_merci_commercial_cost' OR field_name = 'field_merci_commercial_rental'");
+  db_query("UPDATE {content_node_field} SET locked = 1 WHERE field_name = 'field_merci_date'");
   $return = $_GET["destination"];
   if (!$return) {
     $return = 'admin/settings/merci';
