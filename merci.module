@@ -48,7 +48,7 @@ function merci_init() {
  * Implementation of hook_perm().
  */
 function merci_perm() {
-   return array('create reservations', 'create confirmed reservations', 'membership discount', 'suspend MERCI access', 'administer MERCI', 'create reservations outside hours of operation', 'manage MERCI', 'override max hours over closed days', 'view all reservations');
+   return array('create reservations', 'create confirmed reservations', 'suspend MERCI access', 'administer MERCI', 'create reservations outside hours of operation', 'manage MERCI', 'override max hours over closed days', 'view all reservations');
 }
 
 /**
