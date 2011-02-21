@@ -711,12 +711,6 @@ function merci_form(&$node, $form_state) {
     );
   }
 
-  if (!user_access("administer MERCI")) {
-    //drupal_add_js('merciDisablePricingFields()', 'inline');
-    //Disable member cost and commerical cost.  
-    $form['#after_build'][] = '_merci_after_build';
-  }
-
   // Since hook_validate is broken in 6.x, we add our own
   // custom validation here.
   // TODO check if this fixed.
@@ -2970,40 +2964,6 @@ function merci_format_time($hours_minutes) {
   return $return;
 }
 
-
-/**
- * Custom after_build callback handler.
- */
-function _merci_after_build($form, &$form_state) {
-  // Use this one if the field is placed on top of the form.
-  //_merci_fix_disabled($form['field_merci_member_cost']);
-
-  // Use this one if the field is placed inside a fieldgroup.
-  _merci_fix_disabled($form['group_merci_costs']['field_merci_member_cost']);
-  _merci_fix_disabled($form['group_merci_costs']['field_merci_commercial_cost']);
-
-
-  return $form;
-}
-
-/**
- * Recursively set the disabled attribute of a CCK field
- * and all its dependent FAPI elements.
- */
-function _merci_fix_disabled(&$elements) {
-  foreach (element_children($elements) as $key) {
-    if (isset($elements[$key]) && $elements[$key]) {
-
-      // Recurse through all children elements.
-      _merci_fix_disabled($elements[$key]);
-    }
-  }
-
-  if (!isset($elements['#attributes'])) {
-    $elements['#attributes'] = array();
-  }
-  $elements['#attributes']['disabled'] = 'disabled';
-}
 
 /**
  * Pass type as user/project and uid/nid
