@@ -1182,8 +1182,6 @@ function merci_cron() {
 function merci_token_list($type = 'all') {
   if ($type == 'node' || $type == 'all') {
     //$tokens['node']['merci_resources'] = t('Reserved resource');
-    $tokens['node']['merci_commercial_cost'] = t('Commercial cost');
-    $tokens['node']['merci_member_cost'] = t('Member cost');
     return $tokens;
   }
 }
@@ -1198,9 +1196,7 @@ function merci_token_values($type, $object = NULL, $options = array()) {
       $node = merci_load($object);
       if ($node) {
         $values['merci_resources'] = '';
-        $values['merci_commercial_cost'] = 0;
-        $values['merci_member_cost'] = 0;
-        $discount = variable_get('merci_membership_discount', 1);
+        
         // We want these timestamps generated in UTC.
         $old_timezone = date_default_timezone_get();
         date_default_timezone_set('UTC');
@@ -1212,9 +1208,6 @@ function merci_token_values($type, $object = NULL, $options = array()) {
         foreach ($node->merci_reservation_items as $item) {
           $item_node = node_load($item->merci_placeholder_nid);
 //          $type      = merci_load_content_type_settings($item->type);
-          $fee_hours = $hours - ($item_node->merci_fee_free_hours);
-          $values['merci_commercial_cost'] += $item_node->merci_rate_per_hour * $hours;
-          $values['merci_member_cost'] += ($fee_hours > 0) ? ($item_node->merci_rate_per_hour * $discount) * $fee_hours : 0;
           if ($item->item_title != '') {
             $titles[] = $item->item_title;
           }
