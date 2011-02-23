@@ -170,27 +170,6 @@ function merci_taxonomy_json($node,$vid,$did) {
 
 
 
-// Changes the reservation from UNCONFIRMED to CONFIRMED.
-// Normally accessed from email sent to user
-// TODO: Currently takes nid, but should be a more unique id
-function merci_confirm_via_email($nid) {
-  global $basepath;
-  if (merci_confirm_reservation($nid)) {
-    drupal_set_message(t('Reservation confirmed'));
-  } 
-  else {
-    drupal_set_message(t('Reservation not confirmed.  The Reservation may have been confirmed by staff.')); 
-  }
-  
-  $return = $_GET["destination"];
-  if (!$return) {
-    $return = $basepath;
-  }
-  drupal_goto($return);
-  
-}
-
-// merci_confirm_via_email
 /**
  * returns the number of items currently checked out for each content type
  * TODO: change this to a views view.

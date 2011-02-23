@@ -83,15 +83,6 @@ function merci_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['merci/confirm'] = array(
-    'title' => 'Confirm MERCI Reservation',
-    'description' => 'Takes an ID and returns a page confirming Reservation',
-    'page arguments' => array(2),
-    'page callback' => 'merci_confirm_via_email',
-    'access arguments' => array('access content'),
-    'file' => 'includes/menu.inc',
-    'type' => MENU_CALLBACK,
-  );
 
   // Adds Manage Equipment to Admin Interfaces
   //
@@ -541,14 +532,7 @@ function merci_insert($node) {
   if ($node->type == 'merci_reservation') {
     drupal_write_record("merci_reservation",$node);
     merci_add_reservation_items($node);
-  }
-  
-  // Are we emailing the user a receipt?
-  // TODO move to hook_nodeapi in seperate module
-  if (variable_get('merci_email_receipt', 0)) {
-    merci_email_user($node);
-  }
-  
+  }  
 }
 
 /**
@@ -2983,51 +2967,6 @@ function merci_confirm_reservation($nid) {
 }
 
 
-function merci_email_user($node) {
-  
-  $account = user_load(array('name' => check_plain($node->name)));
-  
-  if ($account->mail && variable_get('site_mail', 0)) {
-    //format receipt
-        
-    $body = "You have reserved the following items from " . $node->field_merci_date[0]['value'] . " to " . $node->field_merci_date[0]['value2'] . ".\n";
-    
-    foreach ($node->choice as $num => $choice) {
-    
-      // Resource.
-      if (is_numeric($choice['item'])) {
-        $new_item = node_load( $choice['item']);
-        $title    = $new_item->title;
-
-        $body    .= $title . ".\n";
-      }
-      
-      // Bucket.
-      elseif ($choice['item']) {
-        $title = node_get_types('name',$choice['item']);
-        $body .= $title . ".\n\n";
-      }
-    } //foreach
-    //add confirmation link to message
-    if (variable_get('merci_email_confirmation', 0) && $node->merci_reservation_status == 1) {
-
-      $destination = 'destination=node/' . $node->nid;
-      $body .= "Click this link to confirm your Reservation: \n " . url('merci/confirm/' . $node->nid, array('query' => $destination, 'absolute' => TRUE));
-    }
-    
-  
-    $message = array(
-      'to' => $account->mail,
-      'subject' => t('Confirm Reservation Starting ' . $node->field_merci_date[0]['value']),
-      'body' => $body,
-      'headers' => array('From' => variable_get('site_mail', 0)),
-    );
-    
-    drupal_mail_send($message);
-    watchdog('merci', 'emailed receipt to ' . $account->mail . ' from ' . variable_get('site_mail', 0));
-  }
-  
-}
 
 function merci_add_settings_form(&$form, $form_state) {
 
