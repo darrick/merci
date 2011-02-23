@@ -178,7 +178,7 @@ function merci_ui_list_reservations($node, $start, $end) {
     $result      = db_query("SELECT * FROM {merci_reservation_detail} md 
       JOIN {node} n ON md.nid = n.nid 
       JOIN {". $table ."} ct ON md.nid = ct.nid 
-      WHERE item_nid = %d AND $column_start_date < '%s' AND $column_start_date > '%s' 
+      WHERE merci_item_nid = %d AND $column_start_date < '%s' AND $column_start_date > '%s' 
       ORDER BY $column_start_date DESC", $node->nid, $start_mysql, $end_mysql);
 
     $output .= '<b>'. l(t('Upcoming Reservations'), 'node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
@@ -188,7 +188,7 @@ function merci_ui_list_reservations($node, $start, $end) {
     $result = db_query("SELECT * FROM {merci_reservation_detail} md 
       JOIN {node} n ON md.nid = n.nid 
       JOIN {". $table ."} ct ON md.nid = ct.nid 
-      WHERE item_nid = %d AND $column_start_date < '%s' 
+      WHERE merci_item_nid = %d AND $column_start_date < '%s' 
       ORDER BY $column_start_date DESC", $node->nid, $start_mysql);
 
     $output .= '<b>'. l(t('Upcoming Reservations'), 'node/'. $node->nid .'/reservations/') .' | '. t('Previous Reservations') .'</b><br />';
@@ -196,8 +196,8 @@ function merci_ui_list_reservations($node, $start, $end) {
   else {
     $result = db_query("SELECT * FROM {merci_reservation_detail} md
       JOIN {node} n ON md.nid = n.nid 
-      JOIN {". $table ."} ct ON merci_reservation_detail.nid = ct.nid 
-      WHERE item_nid = %d AND $column_start_date > NOW() ORDER BY $column_start_date", $node->nid);
+      JOIN {". $table ."} ct ON md.nid = ct.nid 
+      WHERE merci_item_nid = %d AND $column_start_date > NOW() ORDER BY $column_start_date", $node->nid);
 
     $output .= '<b>'. t('Upcoming Reservations') .' | '. l(t('Previous Reservations'), 'node/'. $node->nid .'/reservations/'. strtotime('now') .'/'. strtotime('- 3 months')) .'</b><br />';
   }
