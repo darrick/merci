@@ -949,7 +949,7 @@ function merci_load_item_settings($object) {
 
       case 'resource':
         // TODO: move to seperate module.
-        $item_settings = db_fetch_array(db_query("SELECT merci_default_availability, merci_late_fee_per_hour, merci_rate_per_hour, merci_fee_free_hours, merci_min_cancel_hours, merci_autocheckout, merci_autocheckin, merci_selfcheckout, merci_daypart1_price, merci_daypart2_price, merci_daypart3_price, merci_weekend_price, merci_sub_type FROM {merci_resource_node} WHERE vid = %d", $node['vid']));
+        $item_settings = db_fetch_array(db_query("SELECT merci_default_availability, merci_late_fee_per_hour, merci_rate_per_hour, merci_fee_free_hours, merci_min_cancel_hours, merci_autocheckout, merci_autocheckin, merci_selfcheckout, merci_sub_type FROM {merci_resource_node} WHERE vid = %d", $node['vid']));
         break;
     }
   }
@@ -2172,7 +2172,7 @@ function merci_add_reservation_items($node) {
   //update commercial value
   //db_query("UPDATE {content_field_merci_commercial_cost} SET field_merci_commercial_cost_value = %d WHERE vid = %d", $commercial_total, $node->vid);
 
-  db_query("UPDATE {content_type_merci_reservation} SET field_merci_member_cost_value = %d WHERE vid = %d", $commercial_total, $node->vid);
+  //db_query("UPDATE {content_type_merci_reservation} SET field_merci_member_cost_value = %d WHERE vid = %d", $commercial_total, $node->vid);
   //print 'UPDATE {content_type_merci_reservation} SET field_merci_member_cost_value = '.$commercial_total . ' WHERE vid = ' . $node->vid;
   // die;
   // Update the merci_reservation_item_node table with the current status.
@@ -3117,42 +3117,6 @@ function merci_add_settings_form(&$form, $form_state) {
       '#element_validate' => array('merci_is_numeric_validate'),
       '#description' => t('The number of hours the item can be used before fees are charged.'),
     );
-    //TODO: move to hook_form_alter in seperate module.
-    if (module_exists('merci_daypart_pricing')) {
-      $form['merci']['merci_daypart1_price'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Rate for Daypart 1'),
-        '#size' => 10,
-        '#default_value' => $node->merci_daypart1_price,
-        '#element_validate' => array('merci_is_numeric_validate'),
-        '#description' => t('The total cost when Reservation is within this Daypart.'),
-      );
-      $form['merci']['merci_daypart2_price'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Rate for Daypart 2'),
-        '#size' => 10,
-        '#default_value' => $node->merci_daypart2_price,
-        '#element_validate' => array('merci_is_numeric_validate'),
-        '#description' => t('The total cost when Reservation is within this Daypart.'),
-      );
-      $form['merci']['merci_daypart3_price'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Rate for Daypart 3'),
-        '#size' => 10,
-        '#default_value' => $node->merci_daypart3_price,
-        '#element_validate' => array('merci_is_numeric_validate'),
-        '#description' => t('The total cost when Reservation is within this Daypart.'),
-      );
-      $form['merci']['merci_weekend_price'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Rate for Weekend'),
-        '#size' => 10,
-        '#default_value' => $node->merci_weekend_price,
-        '#element_validate' => array('merci_is_numeric_validate'),
-        '#description' => t('The total cost when Reservation is on a day marked as weekend.  Does not have to be Saturday or Sunday'),
-      );
-
-    }
   }
 
   if (($node->merci_type_setting == 'resource' and $sub_type == MERCI_SUB_TYPE_ITEM) or $form['#id'] == 'node-type-form') {
