@@ -620,19 +620,6 @@ function merci_form(&$node, $form_state) {
   }
   $node = (object) $node;
 
-  // Allow other modules to add pricing.
-  // TODO: use hook_form_merci_reservation_node_form_alter instead
-  foreach (module_implements('merci_pricing_js') as $module) {
-    $function = $module .'_merci_pricing_js';
-    $function($node);
-    $overriden++;
-  }
-
-  if (!$overriden) {
-    drupal_add_js(drupal_get_path('module', 'merci') . '/merci_pricing.js'); 
-  }
-  // \TODO
-
   // Add a wrapper for the choices and more button.
   $form['choice_wrapper'] = array(
     '#tree' => FALSE,
