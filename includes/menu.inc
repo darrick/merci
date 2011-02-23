@@ -230,10 +230,9 @@ function merci_current_inventory() {
     $checked_out = l($checked_out,'admin/merci/manage/current_inventory/'.$info['type'].'/checked-out');
     $unavailable = l($unavailable,'admin/merci/manage/current_inventory/'.$info['type'].'/Unavailable');
 
-    // TODO: Check if the View exists... not the module that normally creates it.
-    $title = module_exists('merci_inventory') 
+    $title = views_get_view('merci_inventory_view')
       ? l($info['name'], 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'type[0]=' . $merci_type['type'])) 
-      : l($info['name'],'admin/merci/manage/current_inventory/'. $info['type'] .'/all');
+      : $info['name'];
 
     $rows[] = array(
       $title,
