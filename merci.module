@@ -2211,7 +2211,8 @@ function merci_build_accessory_form($form_state,$node,$did) {
  *   The form array.
  */
 function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FALSE) {
-
+  global $user;
+  
   $form            = array();
   $form['#theme']  = 'merci_build_reservation_table_form';
   $form['#node']   = $node;
@@ -2221,7 +2222,7 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
     t('Item'),
     t('Type'),
   );
-
+  
   $reservation_items = array();
   $items = $node->merci_reservation_items;
   foreach ($items as $did => $item) {
@@ -2258,13 +2259,17 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
         }
       }
     }
-    // Only allow editing or deletion if unconfirmed or confirmed.
-    if ($edit_page && user_access("manage reservations") && $node->merci_reservation_status < MERCI_STATUS_CHECKED_OUT) {
-      if (!in_array(t('Operations'), $form['#header'])) {
-        $form['#header'][] = t('Operations');
+    
+    //@TODO: Should users be able to remove items from confirmed reservations?  
+    if (user_access("manage reservations") || $node->uid == $user->uid){
+      // Only allow editing or deletion if unconfirmed or confirmed.
+      if ($edit_page && $node->merci_reservation_status < MERCI_STATUS_CHECKED_OUT) {
+        if (!in_array(t('Operations'), $form['#header'])) {
+          $form['#header'][] = t('Operations');
+        }
+        $operations .= ' &nbsp;&nbsp;' . l(t('delete'), "node/$item->merci_placeholder_nid/delete", array('query' => drupal_get_destination()));
+        //$operations .= ' &nbsp;&nbsp;' . l(t('edit'), "node/$item->merci_placeholder_nid/edit", array('query' => drupal_get_destination()));
       }
-      $operations .= ' &nbsp;&nbsp;' . l(t('delete'), "node/$item->merci_placeholder_nid/delete", array('query' => drupal_get_destination()));
-      $operations .= ' &nbsp;&nbsp;' . l(t('edit'), "node/$item->merci_placeholder_nid/edit", array('query' => drupal_get_destination()));
     }
 
     $type_setting = merci_type_setting($item->type);
