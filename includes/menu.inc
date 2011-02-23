@@ -216,7 +216,7 @@ function merci_current_inventory() {
     $info = content_types($merci_type['type']);
 
     $operations = l(t('Edit'),'admin/content/node-type/'.$info['url_str'],array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
-    $operations .= " ";
+    $operations .= " | ";
     $operations .= l(t('Add Item'),'node/add/'.$info['url_str'],array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
 
     $checked_out = merci_get_reservation_count($merci_type['type']);
