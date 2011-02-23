@@ -41,7 +41,6 @@ define('MERCI_ITEM_STATUS_CHECKED_OUT', 2);
  */
 function merci_init() {
   drupal_add_css(drupal_get_path('module', 'merci') . '/merci.css');
-  //drupal_add_js(drupal_get_path('module', 'merci') . '/merci.js');
 }
 
 /**
@@ -1181,6 +1180,7 @@ function merci_cron() {
  */
 function merci_token_list($type = 'all') {
   if ($type == 'node' || $type == 'all') {
+    //@TODO: Fix This Token
     //$tokens['node']['merci_resources'] = t('Reserved resource');
     return $tokens;
   }
@@ -2082,9 +2082,7 @@ function merci_add_reservation_items($node) {
       // Use the item specific accounting data if an item is assigned,
       // otherwise fall back to the content type defaults.
       // TODO move to nodeapi insert and update ops.
-      //Add to commerical rate
-      //print '<pre>';
-      //print_r();
+
       $rate = $settings->merci_rate_per_hour;
       $commercial_total = $commercial_total + ($hours * $rate);
       $reservation->merci_late_fee_per_hour = $settings->merci_late_fee_per_hour ;
@@ -2149,12 +2147,7 @@ function merci_add_reservation_items($node) {
   //db_query("UPDATE {merci_reservation_detail} SET item_status = %d WHERE vid = %d AND item_nid <> 0", $item_status, $node->vid);
 
   db_query("UPDATE {merci_reservation_detail} SET merci_item_status = %d WHERE vid = %d", $item_status, $node->vid);
-  //update commercial value
-  //db_query("UPDATE {content_field_merci_commercial_cost} SET field_merci_commercial_cost_value = %d WHERE vid = %d", $commercial_total, $node->vid);
 
-  //db_query("UPDATE {content_type_merci_reservation} SET field_merci_member_cost_value = %d WHERE vid = %d", $commercial_total, $node->vid);
-  //print 'UPDATE {content_type_merci_reservation} SET field_merci_member_cost_value = '.$commercial_total . ' WHERE vid = ' . $node->vid;
-  // die;
   // Update the merci_reservation_item_node table with the current status.
   $results = db_query("SELECT merci_item_nid FROM {merci_reservation_detail} WHERE merci_item_nid <> 0 AND vid = %d", $node->vid); 
   $item_status == MERCI_ITEM_STATUS_CHECKED_OUT ? MERCI_ITEM_STATUS_CHECKED_OUT : MERCI_ITEM_STATUS_AVAILABLE;
@@ -2996,14 +2989,7 @@ function merci_email_user($node) {
   
   if ($account->mail && variable_get('site_mail', 0)) {
     //format receipt
-    
-    //$node->choice
-    //$node->field_merci_member_cost[0]['value']
-    //$node->field_merci_commercial_cost[0]['value']
-    //$node->field_merci_date[0]['value']
-    //$node->field_merci_date[0]['value2']
-    //timezone_db
-    
+        
     $body = "You have reserved the following items from " . $node->field_merci_date[0]['value'] . " to " . $node->field_merci_date[0]['value2'] . ".\n";
     
     foreach ($node->choice as $num => $choice) {
