@@ -954,7 +954,11 @@ function merci_load_item_settings($object) {
     }
   }
 
-  return (object)($item_settings + $content_settings);
+  if ($item_settings) {
+    return (object)($item_settings + $content_settings);
+  } else {
+    return (object)($content_settings);
+  }
 }
 
 /**
