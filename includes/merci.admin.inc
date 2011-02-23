@@ -84,20 +84,6 @@ function merci_admin_settings() {
     '#description' => t('Maximum number of days a Reservation can be made in advance.  Set to 0 if to allow Reservations to be made an unlimitted time into the future.'),
   );
 
-  $form['merci_general']['merci_email_receipt'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Send Email Receipt'),
-    '#default_value' => variable_get('merci_email_receipt', 0),
-    '#description' => t('Sends an email summarizing the Reservation'),
-  );
-
-  $form['merci_general']['merci_email_confirmation'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Include Confirmation Link'),
-    '#default_value' => variable_get('merci_email_confirmation', 0),
-    '#description' => t('Adds link to the email allowing user to change Reservation\'s status from Unconfirmed to Confirmed'),
-  );
-
   // Weekend
 
   $form['merci_general']['merci_saturday_is_weekend'] = array(
