@@ -245,6 +245,6 @@ function merci_current_inventory() {
     );
   }
   $output = theme('table', $header, $rows);
-  $output .= l(t('Add Merci Type'),'admin/content/types/add',array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+  $output .= l(' ' . t('È Add a new content type'),'admin/content/types/add',array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
   return $output;
 }
