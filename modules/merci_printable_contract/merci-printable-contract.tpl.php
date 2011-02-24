@@ -46,7 +46,7 @@ $logourl = theme_get_setting('logo_path', '');
 
   foreach ($items as $item) {
 
-    $item_node = node_load($item->placeholder_nid);
+    $item_node = node_load($item['merci_placeholder_nid']);
 
     //$type            = merci_load_content_type_settings($item->type);
     //$type            = merci_load_item_settings($item,$item->type);
@@ -58,8 +58,8 @@ $logourl = theme_get_setting('logo_path', '');
     $commercial_cost_total += $commercial_cost;
     $member_cost_total += $member_cost;
 
-    if ($item->item_title) {
-      $ttitle = htmlspecialchars($item->item_title);
+    if ($item['item_title']) {
+      $ttitle = htmlspecialchars($item['item_title']);
     }
     else {
       $ttitle = '<b>SPECIFIC ITEM NOT SELECTED FROM BUCKET</b>';

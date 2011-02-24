@@ -219,7 +219,7 @@ function merci_permissions_settings_form_submit($form, &$form_state) {
           }
         }
         elseif (strstr('admin all reservations', $key)) {
-          foreach ($merci_types as $type => $value) {
+          foreach ($merci_types as $type => $value2) {
             $perms[] = "edit own $type content";
             $perms[] = "delete own $type content";
             $perms[] = "delete any $type content";

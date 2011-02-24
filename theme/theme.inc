@@ -127,29 +127,31 @@ function theme_merci_build_reservation_table_form($form) {
   $header = $form['#header'];
   $node   = $form['#node'];
   $rows   = array();
-  foreach ($form['#table'] as $did => $columns) {
+  foreach (element_children($form) as $did) {
+
+    $values = $form[$did];
     
-    $item = drupal_render($form['items'][$did]);
-        
-    // The content type name.
-    if (isset($columns['display_item'])) {
-      $item .= $columns['display_item'];
+    if($values['merci_item_nid']['#type'] == 'value') {
+      $item = drupal_render($values['display_item_title']);
+    } else {
+      $item = drupal_render($values['merci_item_nid']);
     }
-   
-    $rows[$did] = array(
+        
+    $row = array(
       $item,
-      $form['#table'][$did]['type'],
+      drupal_render($values['display_name']),
     );
 
     foreach($form['#header'] as $index => $value) {
       if ($value == t('Accessories')) {
-        $rows[$did][$index] = drupal_render($form['accessories'][$did]);
+        $row[$index] = drupal_render($values['accessories']);
       }
       else if ($value == t('Operations')) {
-        $rows[$did][$index] = $form['#table'][$did]['ops'];
+        $row[$index] = drupal_render($values['ops']);
       }
     }
 
+    $rows[$did] = $row;
   }
 
   if (!empty($rows)) {

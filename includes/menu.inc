@@ -5,158 +5,27 @@
  * Menu callback for AHAH additions.
  */
 function merci_choice_js() {
-  $form_state = array('storage' => NULL, 'submitted' => TRUE);
-  $form_build_id = $_POST['form_build_id'];
 
-  // Get the form from the cache.
-  $form = form_get_cache($form_build_id, $form_state);
-  $args = $form['#parameters'];
-  $form_id = array_shift($args);
-  // We will run some of the submit handlers so we need to disable redirecting.
-  $form['#redirect'] = FALSE;
-  // We need to process the form, prepare for that by setting a few internals
-  // variables.
-  $form['#post'] = $_POST;
-  $form['#programmed'] = FALSE;
-  $form_state['post'] = $_POST;
-  $delta = count($_POST['choice']);
-  $nid = isset($_POST['nid']) ? $_POST['nid'] : 0;
-  if ((int) $nid) {
-    $node = node_load($nid);
-  }
-  else {
-    $node = new stdClass();
-  }
-  
-  $dates = $_POST['field_merci_date'][0];
-  // If a start and end date exist, we have to massage them
-  // into the proper format from user input.
-  // TODO: is there a more elegant way to do this?
-  if ($dates['value']['date'] && $dates['value']['time'] && $dates['value2']['date'] && $dates['value2']['time']) {
-    $default_format = $form['#field_info']['field_merci_date']['widget']['input_format'];
-    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates, $default_format);
-  }
-  else {
-    $form_state = array();
-  }
+  list($form, $form_state) = merci_ahah_get_form();
 
-  // Build our new form element.
-  $form_element = _merci_choice_form($node, $form_state, $delta, $default);
-  drupal_alter('form', $form_element, array(), 'merci_choice_js');
+  $selected_portion = $form['choice_wrapper'];
 
-  /*
-  // Build the new form.
-  $form_state = array('submitted' => FALSE);
-  $form_build_id = $_POST['form_build_id'];
-  // Add the new element to the stored form. Without adding the element to the
-  // form, Drupal is not aware of this new elements existence and will not
-  // process it. We retreive the cached form, add the element, and resave.
-  if (!$form = form_get_cache($form_build_id, $form_state)) {
-    exit();
-  }
-   */
-  $form['choice_wrapper']['choice'][$delta] = $form_element;
-  form_set_cache($form_build_id, $form, $form_state);
-  $form += array(
-    '#post' => $_POST,
-    '#programmed' => FALSE,
-  );
+  // To avoid doubling-up the wrapper, we have to remove it here.
+  unset($selected_portion['#prefix'], $selected_portion['#suffix']);
 
-  // Rebuild the form.
-  $form = form_builder('merci_reservation_node_form', $form, $form_state);
+  $output = theme('status_messages') . drupal_render($selected_portion);
 
-  // Render the new output.
-  $choice_form = $form['choice_wrapper']['choice'];
-  // Prevent duplicate wrappers.
-  unset($choice_form['#prefix'], $choice_form['#suffix']);
-  $choice_form[$delta]['#attributes']['class'] = empty($choice_form[$delta]['#attributes']['class']) ? 'ahah-new-content' : $choice_form[$delta]['#attributes']['class'] . ' ahah-new-content';
-  $output = theme('status_messages') . drupal_render($choice_form);
-
+  // Final rendering callback.
   drupal_json(array('status' => TRUE, 'data' => $output));
-}
 
-function merci_date_filter_js() {
-  $form_state = array('storage' => NULL, 'submitted' => TRUE);
-  $form_build_id = $_POST['form_build_id'];
-
-  // Get the form from the cache.
-  $form = form_get_cache($form_build_id, $form_state);
-  $args = $form['#parameters'];
-  $form_id = array_shift($args);
-  // We will run some of the submit handlers so we need to disable redirecting.
-  $form['#redirect'] = FALSE;
-  // We need to process the form, prepare for that by setting a few internals
-  // variables.
-  $form['#post'] = $_POST;
-  $form['#programmed'] = FALSE;
-  $form_state['post'] = $_POST;
-
-  $choice_count = count($_POST['choice']);
-  $nid = isset($_POST['nid']) ? $_POST['nid'] : 0;
-  if ((int) $nid) {
-    $node = node_load($nid);
-  }
-  else {
-    $node = new stdClass();
-  }
-  
-  $dates = $_POST['field_merci_date'][0];
-  // If a start and end date exist, we have to massage them
-  // into the proper format from user input.
-  // TODO: is there a more elegant way to do this?
-  if ($dates['value']['date'] && $dates['value']['time'] && $dates['value2']['date'] && $dates['value2']['time']) {
-    $default_format = $form['#field_info']['field_merci_date']['widget']['input_format'];
-    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates, $default_format);
-  }
-  else {
-    $form_state = array();
-  }
-
-  // Add the current choices to the form.
-  for ($delta = 0; $delta < $choice_count; $delta++) {
-    $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
-
-    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default);
-  }
-
-  /*
-  // Build the new form.
-  $form_state = array('submitted' => FALSE);
-  $form_build_id = $_POST['form_build_id'];
-  // Add the new element to the stored form. Without adding the element to the
-  // form, Drupal is not aware of this new elements existence and will not
-  // process it. We retreive the cached form, add the element, and resave.
-  if (!$form = form_get_cache($form_build_id, $form_state)) {
-    exit();
-  }
-   */
-  //$form['choice_wrapper']['choice'] = $form_element;
-  form_set_cache($form_build_id, $form, $form_state);
-  $form += array(
-    '#post' => $_POST,
-    '#programmed' => FALSE,
-  );
-
-  // Rebuild the form.
-  $form = form_builder('merci_reservation_node_form', $form, $form_state);
-  // Render the new output.
-  $choice_form = $form['choice_wrapper']['choice'];
-  //$choice_form = $form_element;
-  // Prevent duplicate wrappers.
-  unset($choice_form['#prefix'], $choice_form['#suffix']);
-  //$choice_form[$delta]['#attributes']['class'] = empty($choice_form[$delta]['#attributes']['class']) ? 'ahah-new-content' : $choice_form[$delta]['#attributes']['class'] . ' ahah-new-content';
-  $output = theme('status_messages') . drupal_render($choice_form);
-
-  drupal_json(array('status' => TRUE, 'data' => $output));
 }
 
 function merci_taxonomy_json($node,$vid,$did) {
 
-
   db_query("DELETE FROM {term_node} WHERE vid = %d and tid IN (SELECT tid FROM {term_data} td WHERE td.vid = %d)",$node->vid,$vid); 
 
-  $choices = $_POST['existing_items'] 
-    ? $_POST['existing_items']['accessories'][$did]['choices'][$vid]  : $_POST['accessories'][$did]['choices'][$vid] ;
+  $choices = $_POST['merci_reservation_items'] 
+    ? $_POST['merci_reservation_items'][$did]['accessories']['choices'][$vid]  : $_POST[$did]['accessories']['choices'][$vid] ;
 
   foreach($choices as $tid) {
     if($tid) {

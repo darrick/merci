@@ -26,25 +26,6 @@ function merci_staff_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  // Callback for AJAX adding of item selectors.
-  $items['mercistaff/js'] = array(
-    'title' => 'Javascript Choice Form',
-    'page callback' => 'merci_staff_choice_js',
-    'access arguments' => array('access content'),
-    'file' => 'includes/menu.inc',
-    'file path' => drupal_get_path('module', 'merci'), 
-    'type' => MENU_CALLBACK,
-  );
-
-  $items['mercistaff/datefilter'] = array(
-    'title' => 'Javascript Choice Form',
-    'page callback' => 'merci_staff_date_filter_js',
-    'access arguments' => array('access content'),
-    'file' => 'includes/menu.inc',
-    'file path' => drupal_get_path('module', 'merci'), 
-    'type' => MENU_CALLBACK,
-  );
-
   return $items;
 }
 
@@ -61,24 +42,13 @@ function merci_staff_user_load($post = NULL) {
   }
 }
 
-function merci_staff_choice_js() {
-  merci_staff_user_load($_POST);
-  merci_choice_js(); 
-  merci_staff_user_load();
-}
-
-function merci_staff_date_filter_js() {
-  merci_staff_user_load($_POST);
-  merci_date_filter_js(); 
-  merci_staff_user_load();
-}
-
-
 /**
 * Implementation of hook_form_alter
 **/
 
 function merci_staff_form_alter(&$form, &$form_state,$form_id) {
+
+  global $user;
 
   if($form_id != 'merci_reservation_node_form') {
     return;
@@ -90,7 +60,7 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
   }
   $node = (object) $node;
   //merci_staff_user_load();
-  if (user_access('administer MERCI') || user_access('manage MERCI')) {
+  if (user_access('manage reservations')) {
     // Move the author field and set autocomplete and ahah handlers.
     $form['name'] = $form['author']['name'];
     $form['name']['#title'] = 'Reserve for';
@@ -109,41 +79,6 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
       );
 
     unset($form['author']['name']);
-
-    // We need our own ahah handler to filter by the submitted name.
-    // The submit handler can remain the same as this function is called from that to rebuild the choices filtered by the submitted name.
-    $form['field_merci_date'][0]['merci_date_filter'] = array(
-      '#type' => 'submit',
-      '#value' => t('Limit Lists to Available Items'),
-      '#weight' => 10,
-      '#submit' => array('merci_date_filter'),
-      '#ahah' => array(
-        'path' => 'mercistaff/datefilter',
-        'wrapper' => 'merci-choices',
-        'method' => 'replace',
-        'effect' => 'fade',
-      ),
-
-    );
-
-    // We name our button 'merci_more' to avoid conflicts with other modules using
-    // AHAH-enabled buttons with the id 'more'.
-    // We need our own ahah handler to filter by the submitted name.
-    // The submit handler can remain the same as this function is called from that to rebuild the choices filtered by the submitted name.
-    $form['choice_wrapper']['merci_more'] = array(
-      '#type' => 'submit',
-      '#value' => t('Add more items'),
-      '#description' => t("If the number of items above isn't enough, click here to add more items."),
-      '#weight' => 1,
-      // If no javascript action.
-      '#submit' => array('merci_more_choices_submit'),
-      '#ahah' => array(
-        'path' => 'mercistaff/js',
-        'wrapper' => 'merci-choices',
-        'method' => 'replace',
-        'effect' => 'fade',
-      ),
-    );
 
     //create override checkbox          
     $form['override'] = array(
@@ -173,12 +108,18 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
 
     // Add the current choices to the form.
     $reset = true;
-    foreach($form['choice_wrapper']['choice'] as $delta => $choice){
-      $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
-      if(is_numeric($delta)){
-        $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default, $reset);
-        unset($reset);
+    foreach(element_children($form['choice_wrapper']['merci_reservation_items']) as $delta){
+      if (is_numeric($delta)) {
+        continue;
       }
+      $delta = substr($delta,7);
+      $default = isset($node->merci_reservation_items["choice_" . $delta]['merci_item_nid']) ? $node->merci_reservation_items["choice_" . $delta]['merci_item_nid'] : '';
+      $choice_form = _merci_choice_form($node, $form_state, $delta, $default, $reset);
+      unset($choice_form['item']['#title']);
+      // $form['choice_wrapper']['existing_items']['items']["choice_".$delta] = $choice_form['item'];
+      //$form['choice_wrapper']['existing_items']['#table']["choice_".$delta] = array();
+      $form['choice_wrapper']['merci_reservation_items']["choice_".$delta]['merci_item_nid'] = $choice_form['item'];
+      unset($reset);
     }
     merci_staff_user_load();
   }
@@ -212,71 +153,24 @@ function merci_staff_autocomplete($string = '') {
   drupal_json($matches);
 }
 
-// Update the groups and choices when the name is changed.
-//
+/**
+ * Menu callback for AHAH additions.
+ */
 function merci_staff_update_name() {
-  //module_load_include('inc', 'node', 'node.pages');
-  $choice_count = count($_POST['choice']);
-  $form_state = array('storage' => NULL, 'submitted' => TRUE);
-  $form_build_id = $_POST['form_build_id'];
 
-  // Get the form from the cache.
-  $form = form_get_cache($form_build_id, $form_state);
-  $args = $form['#parameters'];
-  $form_id = array_shift($args);
-  // We will run some of the submit handlers so we need to disable redirecting.
-  //$form['#redirect'] = FALSE;
-  // We need to process the form, prepare for that by setting a few internals
-  // variables.
-  $form['#post'] = $_POST;
-  $form['#programmed'] = FALSE;
-  $form_state['post'] = $_POST;
+  list($form, $form_state) = merci_ahah_get_form();
 
-  $dates = $form['#post']['field_merci_date'][0];
+  $selected_portion = $form;
 
-  // If a start and end date exist, we have to massage them
-  // into the proper format from user input.
-  // TODO: is there a more elegant way to do this?
-  if ($dates['value']['date'] && $dates['value']['time'] && $dates['value2']['date'] && $dates['value2']['time']) {
-    $default_format = $form['#field_info']['field_merci_date']['widget']['input_format'];
-    $form_state['values']['field_merci_date'][0] = merci_convert_date_popup($dates, $default_format);
-  }
-  else {
-    $form_state['values']['field_merci_date'][0]['value'] = NULL;
-    $form_state['values']['field_merci_date'][0]['value2'] = NULL;
-  }
+  // To avoid doubling-up the wrapper, we have to remove it here.
+  unset($selected_portion['#prefix'], $selected_portion['#suffix']);
 
-  merci_staff_user_load($form['#post']);
+  $output = theme('status_messages') . drupal_render($selected_portion);
 
-  if (module_exists('og')) {
-    og_form_add_og_audience($form,$form_state);
-  }
-  // Add the current choices to the form.
-  for ($delta = 0; $delta < $choice_count; $delta++) {
-    $default = isset($node->choice[$delta]['item']) ? $node->choice[$delta]['item'] : '';
-
-    $form['choice_wrapper']['choice'][$delta] = _merci_choice_form($node, $form_state, $delta, $default);
-  }
-
-  merci_staff_user_load();
-
-  form_set_cache($form_build_id, $form, $form_state);
-  $form += array(
-    '#post' => $_POST,
-    '#programmed' => FALSE,
-  );
-  $form = form_builder($form_id, $form, $form_state);
-
-  unset($form['#prefix'], $form['#suffix']);
-
-  drupal_json(array(
-    'status'   => TRUE,
-    'data'     => theme('status_messages') . drupal_render($form),
-//    'settings' => array('ahah' => $settings['ahah']),
-  ));
+  // Final rendering callback.
+  drupal_json(array('status' => TRUE, 'data' => $output));
 
 }
-
 
 function _merci_staff_potential_references($field, $string = '', $exact_string = FALSE) {
     static $results = array();
