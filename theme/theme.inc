@@ -16,7 +16,7 @@ function template_preprocess_merci_conflict_grid(&$variables) {
   $reservation_vid = $variables['reservation_vid'];
 
   $hours = array();
-  if (user_access('manage MERCI') || user_access('create reservations outside hours of operation')) {
+  if (user_access('create reservations outside hours of operation')) {
     $adminhours = explode('-', variable_get('merci_hours_admin', '07:00-23:00'));
 
     for($day=0; $day < 7; $day++) {

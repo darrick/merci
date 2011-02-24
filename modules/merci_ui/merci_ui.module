@@ -108,7 +108,7 @@ function merci_ui_user_reservations_tab_access($context) {
   global $user;
 
   if ($context->uid != $user->uid) {
-    if (user_access('administer MERCI') || user_access('manage MERCI')) {
+    if (user_access('manage reservations')) {
       return TRUE;
     }
     else {
@@ -145,7 +145,7 @@ function merci_ui_list_reservations_access($node) {
   //if ($merci_settings->type_setting == 'bucket' || $merci_settings->type_setting == 'resource') {
   if (merci_is_merci_type($node->type)) {
     global $user;
-    if (user_access('manage MERCI') || user_access('administer MERCI')) {
+    if (user_access('manage reservations')) {
 
       return TRUE;
     }

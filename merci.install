@@ -745,6 +745,11 @@ function merci_update_6210() {
   return $ret;
 }
 
+function merci_update_6211() {
+
+  return array(array('success' => TRUE, 'query' => 'Permissions have been changed.  Please edit your user permissions to make sure they are what you want.  I have done nothing for you.  Please refer to ' . l("MERCI Permissions","http://drupal.org/node/1013528") . ' documentation for more information'));
+}
+
 function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
   $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');

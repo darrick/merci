@@ -19,7 +19,7 @@ function merci_printable_contract_menu() {
     'page arguments' => array(1),
     'page callback' => 'merci_printable_contract',
     'access callback' => 'merci_printable_contract_content_access',
-    'access arguments' => array(1, 'manage MERCI'),
+    'access arguments' => array(1, 'manage reservations'),
     'type' => MENU_LOCAL_TASK,
   );
 
