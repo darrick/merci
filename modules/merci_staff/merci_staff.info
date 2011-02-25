@@ -1,4 +1,3 @@
-; $Id$
 name = MERCI Staff
 package = MERCI
 description = "Alters Reservation form to use node author for validation instead of logged in user."

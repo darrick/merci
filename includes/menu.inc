@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Menu callback for AHAH additions.
