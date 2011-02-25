@@ -13,6 +13,8 @@ function merci_choice_js() {
   unset($selected_portion['#prefix'], $selected_portion['#suffix']);
 
   //$output = theme('status_messages') . drupal_render($selected_portion);
+  // BAD HACK to not show validation error messages for the date combo.  Not sure how to turn validation off for that.
+  theme('status_messages');
   $output = drupal_render($selected_portion);
 
   // Final rendering callback.

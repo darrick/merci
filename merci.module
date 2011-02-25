@@ -710,24 +710,23 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       );
 
       merci_add_settings_form(&$form, $form_state);
+    } else if ($type == 'merci_reservation') {
+      $form['field_merci_date'][0]['merci_date_filter'] = array(
+        '#type' => 'submit',
+        '#value' => t('Limit Lists to Available Items'),
+        '#weight' => 10,
+        '#submit' => array('merci_date_filter'),
+        '#ahah' => array(
+          'path' => 'merci/js',
+          'wrapper' => 'merci-choice-wrapper',
+          'method' => 'replace',
+          'effect' => 'fade',
+        ),
+
+      );
     }
     break;
 
-  case 'merci_reservation_node_form':
-    $form['field_merci_date'][0]['merci_date_filter'] = array(
-      '#type' => 'submit',
-      '#value' => t('Limit Lists to Available Items'),
-      '#weight' => 10,
-      '#submit' => array('merci_date_filter'),
-      '#ahah' => array(
-        'path' => 'merci/js',
-        'wrapper' => 'merci-choice-wrapper',
-        'method' => 'replace',
-        'effect' => 'fade',
-      ),
-
-    );
-    break;
   case 'node_type_form':
     // Reservation content type can't used for other MERCI functionality.
     if (isset($form['#node_type']->type) && $form['#node_type']->type == 'merci_reservation') {
@@ -3061,6 +3060,7 @@ function merci_ahah_get_form() {
   $form_state['validate_handlers'] = NULL;
 
   // Disable #required and #element_validate validation.
+  // TODO figure out how to turn off validation for date_combo.
   merci_disable_validation($form);
   drupal_process_form($form_id, $form, $form_state);
   $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
