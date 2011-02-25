@@ -1,5 +1,4 @@
 <?php
-// $Id$
 define('DRAFT_VIEWS_PATH', drupal_get_path('module', 'draft_views'));
 
 /**

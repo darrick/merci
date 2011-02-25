@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 
 foreach ($reservations as $date => $times) {
