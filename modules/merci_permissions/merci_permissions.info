@@ -1,4 +1,3 @@
-; $Id$
 name = "MERCI Permissions"
 package = MERCI
 description = "Administration form to more easily manage reservation permissions for MERCI."

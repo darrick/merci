@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 class views_handler_filter_datetime extends views_handler_filter_date {
   function op_simple($field) {

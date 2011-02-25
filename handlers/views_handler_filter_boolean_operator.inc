@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 class views_handler_filter_bookings_resource_disabled extends views_handler_filter_boolean_operator {
   function construct() {

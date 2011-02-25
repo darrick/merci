@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * @file
  * Expose MERCI information to Views.

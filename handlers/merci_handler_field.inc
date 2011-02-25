@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Type setting Bucket|Resource.
