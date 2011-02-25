@@ -580,7 +580,16 @@ function merci_form(&$node, $form_state) {
   //}
 
   // Choice adding code mostly stolen from poll module.
-  $choice_count = empty($node->merci_more) ? 3 : $node->merci_more;
+  $choice_count = empty($node->choice_count) ? 3 : $node->choice_count;
+
+  if ($form_state['clicked_button']['#value'] == "Add more items") {
+    $choice_count += 3;
+  }
+
+  $form['choice_wrapper']['choice_count'] = array(
+    '#type' => 'value',
+    '#value' => $choice_count
+  );
 
   // Add the current choices to the form.
   for ($delta = 1; $delta <= $choice_count; $delta++) {
@@ -596,6 +605,7 @@ function merci_form(&$node, $form_state) {
     $options[$i]=$i;
   }
 
+  /*
   $form['choice_wrapper']['merci_more'] = array(
     '#title' => t('Number of select boxes for items'),
     '#type' => 'select',
@@ -609,7 +619,7 @@ function merci_form(&$node, $form_state) {
     ),
 
   );
-  /*
+   */
   // We name our button 'merci_more' to avoid conflicts with other modules using
   // AHAH-enabled buttons with the id 'more'.
   $form['choice_wrapper']['merci_more'] = array(
@@ -625,7 +635,6 @@ function merci_form(&$node, $form_state) {
       'effect' => 'fade',
     ),
   );
-   */
 
   if (user_access('manage reservations')) {
     $form['merci_reservation_status'] = array(
@@ -3050,9 +3059,9 @@ function merci_ahah_get_form() {
   // For customly set #validate and #submit handlers.
   $form_state['submit_handlers'] = NULL;
   $form_state['validate_handlers'] = NULL;
+
   // Disable #required and #element_validate validation.
   merci_disable_validation($form);
-
   drupal_process_form($form_id, $form, $form_state);
   $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
   return array($form, $form_state);

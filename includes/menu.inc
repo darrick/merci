@@ -12,7 +12,8 @@ function merci_choice_js() {
   // To avoid doubling-up the wrapper, we have to remove it here.
   unset($selected_portion['#prefix'], $selected_portion['#suffix']);
 
-  $output = theme('status_messages') . drupal_render($selected_portion);
+  //$output = theme('status_messages') . drupal_render($selected_portion);
+  $output = drupal_render($selected_portion);
 
   // Final rendering callback.
   drupal_json(array('status' => TRUE, 'data' => $output));
