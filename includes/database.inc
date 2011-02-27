@@ -101,3 +101,51 @@ function merci_delete_record($table, &$object, $update = array()) {
 
   return $return;
 }
+/**
+ * Returns totals for reporting.
+ *
+ * @param $type
+ *   The bucket or resrouce node type.
+ * @param $startdate
+ *   TRUE to restrict to published items, FALSE otherwise.
+ *
+ * @return
+ *   Total reservation number for that type betweent the start and end dates
+TODO NOT USER.
+ */
+function merci_reservation_totals($type, $startdate, $enddate) {
+  $result = db_query("SELECT COUNT(nid) as total  FROM {node} WHERE type LIKE '%s' and status = 0 AND created > %d AND created < %d", $type, $startdate, $enddate);
+  $reservationnode = db_fetch_object($result);
+  return $reservationnode->total;
+}
+function merci_has_accessories($content_type) {
+  if(empty($content_type)) return;
+  return db_fetch_object(db_query("SELECT * FROM {vocabulary_node_types} WHERE type = '%s'", $content_type));
+}
+
+/**
+ * Pass type as user/project and uid/nid
+ * returns total hours
+ */
+function merci_total_usage($id, $type = 'user', $date = NULL) {
+
+  if ($type == 'project') {
+    $result = db_query("SELECT * FROM {merci_reservation} mr JOIN node n ON n.vid = mr.vid JOIN og_ancestry og ON og.nid = n.nid JOIN content_type_merci_reservation ct ON n.vid = ct.vid WHERE group_nid = %d", $id);
+  }
+  else {
+    if ($date) {
+      $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE uid = %d AND field_merci_date_value > '%s'", $id, $date);
+    }
+    else {
+      $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE uid = %d", $id);
+    }
+  }
+
+  //add the reservation total minutes for each item in the reservation
+  while ($reservationnode = db_fetch_object($result)) {
+
+    $minutes = $minutes + ((strtotime($reservationnode->field_merci_date_value2) - strtotime($reservationnode->field_merci_date_value)));
+  }
+
+  return $minutes;
+}

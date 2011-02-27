@@ -652,7 +652,7 @@ class MerciUserTestCase extends MerciTestCase {
 
   }
 
-  function _testIssue1070662() {
+  function testIssue1070662() {
     // Create our reservation with no title.
     $node = $this->resource;
     $edit = array(
@@ -668,7 +668,7 @@ class MerciUserTestCase extends MerciTestCase {
     $this->assertNoText(t("Reservations cannot start at a time before"));
   }
 
-  function _testIssue1070658() {
+  function testIssue1070658() {
     // Create our first reservation
     $node = $this->bucket1;
     $edit = array(

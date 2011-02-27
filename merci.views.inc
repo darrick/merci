@@ -494,3 +494,15 @@ function merci_views_data() {
   return $data;
 }
 
+function merci_views_plugins() {
+  return array(
+    'module' => 'views', // This just tells our themes are elsewhere.
+    'argument validator' => array(
+      'node' => array(
+        'title' => t('MERCI'),
+        'handler' => 'views_plugin_argument_validate_merci_node',
+        'path' => drupal_get_path('module', 'merci') , // not necessary for most modules
+      ),
+    ),
+  );
+}

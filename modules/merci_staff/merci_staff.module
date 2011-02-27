@@ -99,9 +99,6 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
     merci_staff_user_load((array)$node);
 
     if (module_exists('og')) {
-      if(!isset($form['og_nodeapi'])) {
-        db_query("UPDATE {system} SET weight = 10 WHERE name = 'merci_staff'");
-      }
       og_form_add_og_audience($form,$form_state);
     }
 

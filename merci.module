@@ -928,7 +928,7 @@ function merci_load_item_settings($object) {
 
       case 'resource':
         // TODO: move to seperate module.
-        $item_settings = db_fetch_array(db_query("SELECT merci_late_fee_per_hour, merci_rate_per_hour, merci_fee_free_hours, merci_min_cancel_hours, merci_autocheckout, merci_autocheckin, merci_selfcheckout FROM {merci_resource_node} WHERE vid = %d", $node['vid']));
+        $item_settings += db_fetch_array(db_query("SELECT merci_late_fee_per_hour, merci_rate_per_hour, merci_fee_free_hours, merci_min_cancel_hours, merci_autocheckout, merci_autocheckin, merci_selfcheckout FROM {merci_resource_node} WHERE vid = %d", $node['vid']));
         break;
     }
   }
@@ -2761,40 +2761,6 @@ function merci_node_admin_delete_validate($form, &$form_state) {
   }
 }
 
-/**
- * Check for existing items in a bucket.
- *
- * @param $type
- *   The bucket node type.
- * @param $status
- *   TRUE to restrict to published items, FALSE otherwise.
- *
- * @return
- *   TRUE if any items exist, FALSE otherwise.
- */
-function merci_check_existing_bucket_items($type, $status = FALSE) {
-  $where = $status ? ' AND status = 1' : '';
-  $existing_items = db_result(db_query("SELECT n.nid FROM {node} AS n INNER JOIN {merci_bucket_node} AS mn ON n.vid=mn.vid WHERE type = '%s' AND merci_default_availability IN (%d,%d)" . $where, $type, MERCI_AVA_F, MERCI_AVA_T));
-  return $existing_items;
-}
-
-/**
- * Returns totals for reporting.
- *
- * @param $type
- *   The bucket or resrouce node type.
- * @param $startdate
- *   TRUE to restrict to published items, FALSE otherwise.
- *
- * @return
- *   Total reservation number for that type betweent the start and end dates
-TODO NOT USER.
- */
-function merci_reservation_totals($type, $startdate, $enddate) {
-  $result = db_query("SELECT COUNT(nid) as total  FROM {node} WHERE type LIKE '%s' and status = 0 AND created > %d AND created < %d", $type, $startdate, $enddate);
-  $reservationnode = db_fetch_object($result);
-  return $reservationnode->total;
-}
 
 /**
  * Sort by vid
@@ -2817,11 +2783,6 @@ function merci_by_vid() {
   return ($a->vid > $b->vid) ? -1 : 1;
 }
 // merci_by_vid
-
-function merci_has_accessories($content_type) {
-  if(empty($content_type)) return;
-  return db_fetch_object(db_query("SELECT * FROM {vocabulary_node_types} WHERE type = '%s'", $content_type));
-}
 
 /**
  * Calculates the short hour/minute time format based on the site settings.
@@ -2853,32 +2814,6 @@ function merci_format_time($hours_minutes) {
 }
 
 
-/**
- * Pass type as user/project and uid/nid
- * returns total hours
- */
-function merci_total_usage($id, $type = 'user', $date = NULL) {
-
-  if ($type == 'project') {
-    $result = db_query("SELECT * FROM {merci_reservation} mr JOIN node n ON n.vid = mr.vid JOIN og_ancestry og ON og.nid = n.nid JOIN content_type_merci_reservation ct ON n.vid = ct.vid WHERE group_nid = %d", $id);
-  }
-  else {
-    if ($date) {
-      $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE uid = %d AND field_merci_date_value > '%s'", $id, $date);
-    }
-    else {
-      $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE uid = %d", $id);
-    }
-  }
-
-  //add the reservation total minutes for each item in the reservation
-  while ($reservationnode = db_fetch_object($result)) {
-
-    $minutes = $minutes + ((strtotime($reservationnode->field_merci_date_value2) - strtotime($reservationnode->field_merci_date_value)));
-  }
-
-  return $minutes;
-}
 
 /**
  * Callback function for updating Reservation status from VBO.
