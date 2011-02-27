@@ -113,11 +113,8 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
       }
       $delta = substr($delta,7);
       $default = isset($node->merci_reservation_items["choice_" . $delta]['merci_item_nid']) ? $node->merci_reservation_items["choice_" . $delta]['merci_item_nid'] : '';
-      $choice_form = _merci_choice_form($node, $form_state, $delta, $default, $reset);
-      unset($choice_form['item']['#title']);
-      // $form['choice_wrapper']['existing_items']['items']["choice_".$delta] = $choice_form['item'];
-      //$form['choice_wrapper']['existing_items']['#table']["choice_".$delta] = array();
-      $form['choice_wrapper']['merci_reservation_items']["choice_".$delta]['merci_item_nid'] = $choice_form['item'];
+      $form['choice_wrapper']['merci_reservation_items']["choice_".$delta]['merci_item_nid'] = 
+        _merci_choice_form($node, $form_state, $delta, $default, $reset);
       unset($reset);
     }
     merci_staff_user_load();

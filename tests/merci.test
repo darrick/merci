@@ -707,9 +707,70 @@ class MerciUserTestCase extends MerciTestCase {
     $this->assertText(t("You've selected too many @name", array('@name' => $node->title)));
   }
 
-  function testMerciUserCase() {
-    $this->_testIssue1070662();
-    $this->_testIssue1070658();
+  function testMerciCheckedOutCase() {
+    $today = date('Y-m-d',time() + 3600 * 24);
+
+    // Create our first reservation
+    $node = $this->bucket1;
+    $edit = array(
+      'title' => $this->randomName(),
+      'field_merci_date[0][value][date]' => $today,
+      'field_merci_date[0][value][time]' => '09:15',
+      'field_merci_date[0][value2][date]' => $today,
+      'field_merci_date[0][value2][time]' => '10:15',
+      'merci_reservation_items[choice_1][merci_item_nid]' => $node->type
+    );
+
+    $first = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
+
+    // Create merci staff user. 
+    $staff_user = $this->drupalCreateUser(array(
+      'view revisions',
+      'revert revisions',
+      'create confirmed reservations',
+      'edit own bucket content',
+      'delete own bucket content',
+      'edit own resource content',
+      'delete own resource content',
+      'create reservations',
+      'access devel information',
+      'manage reservations',
+      'administer nodes'
+    ));
+    $this->drupalLogin($staff_user);
+    $edit = array(
+      'merci_reservation_items[1][merci_item_nid]' => $node->nid,
+      'merci_reservation_status' => MERCI_STATUS_CHECKED_OUT
+      );
+    $fourth = $this->merciUpdateNode($first->nid,$edit);
+    $this->assertText(t("@title has been updated", array('@title' => $first->title)));
+    $checked_out = merci_get_reservation_count($node->type);
+    $this->assertEqual($checked_out,1,"Check return of merci_get_reservation_count");
+    $edit = array(
+      'merci_reservation_status' => MERCI_STATUS_CHECKED_IN
+      );
+    $fourth = $this->merciUpdateNode($first->nid,$edit);
+    $this->assertText(t("@title has been updated", array('@title' => $first->title)));
+    $checked_out = merci_get_reservation_count($node->type);
+    $this->assertEqual($checked_out,0,"Check return of merci_get_reservation_count");
+    $edit = array(
+      'merci_reservation_items[1][merci_item_nid]' => $node->nid,
+      'merci_reservation_status' => MERCI_STATUS_CHECKED_OUT
+      );
+    $fourth = $this->merciUpdateNode($first->nid,$edit);
+    $this->assertText(t("@title has been updated", array('@title' => $first->title)));
+    $checked_out = merci_get_reservation_count($node->type);
+    $this->assertEqual($checked_out,1,"Check return of merci_get_reservation_count");
+    node_delete($fourth->nid);
+    $checked_out = merci_get_reservation_count($node->type);
+    $this->assertEqual($checked_out,0,"Check return of merci_get_reservation_count");
+
+  }
+
+  function _testMerciUserCase() {
+    //$this->_testIssue1070662();
+    //$this->_testIssue1070658();
     $this->_testMerciResourceAvailability();
     $this->_testMerciBucketAvailability();
     $this->_testMerciHoursOfOperation();
