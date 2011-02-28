@@ -124,7 +124,7 @@ function merci_permissions_add_form(&$form) {
 
   $merci_types = merci_content_types();
   if (empty($merci_types)) {
-    drupal_set_message(t("You need to add some reservable content types to make this form usefull."));
+    drupal_set_message(t("You need to add some reservable content types to make this form useful."));
     return;
   }
   $options = array();
@@ -147,7 +147,7 @@ function merci_permissions_add_form(&$form) {
   $form['permission'][] = array('#value' => t('Bucket and Resource Permissions'),
   );
   foreach ($merci_types as $type => $merci_type) {
-    $name = $merci_type['name'];
+    $name = $merci_type['type'];
     $perm = "reserve $type";
     $options[$perm] = '';
     $form['permission'][$perm] = array('#value' => t($name));
