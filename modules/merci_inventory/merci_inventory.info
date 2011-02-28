@@ -6,5 +6,6 @@ core = 6.x
 dependencies[] = merci
 dependencies[] = content_copy
 dependencies[] = text
+dependencies[] = field_sync
 
 
