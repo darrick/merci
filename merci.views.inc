@@ -473,7 +473,7 @@ function merci_views_data() {
   );
   $data['merci_reservation_item_node']['item_status'] = array(
     'title' => t('Reservation Status of Item'),
-    'help' => t('Is the reservatble item currently checked out.'),
+    'help' => t('Is the reservable item currently checked out.'),
     'real field' => 'merci_item_status',
     'field' => array(
       'handler' => 'merci_handler_field_merci_reservation_item_node_item_status',
