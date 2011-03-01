@@ -26,7 +26,7 @@ class views_plugin_argument_validate_merci_node extends views_plugin_argument_va
 
     $form[$this->option_name] = array(
       '#type' => 'checkboxes',
-      '#prefix' => '<div id="edit-options-validate-argument-node-type-wrapper">',
+      '#prefix' => '<div id="edit-options-validate-argument-merci-type-wrapper">',
       '#suffix' => '</div>',
       '#title' => t('Types'),
       '#options' => $options,
@@ -39,6 +39,8 @@ class views_plugin_argument_validate_merci_node extends views_plugin_argument_va
     $form['validate_argument_merci_sub_type'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Argument type'),
+      '#prefix' => '<div id="edit-options-validate-argument-merci-sub-type-wrapper">',
+      '#suffix' => '</div>',
       '#options' => array(
         1 => "MERCI Item",
         2 => "MERCI Reservaton Item",
