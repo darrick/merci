@@ -1615,7 +1615,6 @@ function merci_content_types($type_name = NULL) {
 
 function _merci_content_type_info($reset=FALSE) {
   static $info;
-  $reset= TRUE;
   if ($reset || !isset($info)) {
     if (!$reset && $cached = cache_get('merci_content_type_info')) {
       $info = $cached->data;
