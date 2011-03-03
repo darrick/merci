@@ -575,8 +575,8 @@ function merci_form(&$node, $form_state) {
   merci_check_default_timezone();
   $form = node_content_form($node, $form_state);
    
-  if (isset($form_state['values'])) {
-      $node = $form_state['values'] + (array)$node;
+  if (isset($form_state['node'])) {
+      $node = $form_state['node'] + (array)$node;
   }
   $node = (object) $node;
 
@@ -618,21 +618,6 @@ function merci_form(&$node, $form_state) {
     $options[$i]=$i;
   }
 
-  /*
-  $form['choice_wrapper']['merci_more'] = array(
-    '#title' => t('Number of select boxes for items'),
-    '#type' => 'select',
-    '#options' => $options,
-    '#default_value' => $choice_count,
-    '#submit' => array('merci_more_choices_submit'),
-    '#ahah' => array(
-      'path' => 'merci/js',
-      'wrapper' => 'merci-choice-wrapper',
-      'effect' => 'fade',
-    ),
-
-  );
-   */
   // We name our button 'merci_more' to avoid conflicts with other modules using
   // AHAH-enabled buttons with the id 'more'.
   $form['choice_wrapper']['merci_more'] = array(
@@ -640,6 +625,7 @@ function merci_form(&$node, $form_state) {
     '#value' => t('Add more items'),
     '#description' => t("If the number of items above isn't enough, click here to add more items."),
     '#weight' => 1,
+    '#submit' => array('merci_more_choices_submit'),
     // If no javascript action.
     '#ahah' => array(
       'path' => 'merci/js',
@@ -1290,10 +1276,6 @@ function merci_more_choices_submit($form, &$form_state) {
   // Set the form to rebuild and run submit handlers.
   node_form_submit_build_node($form, $form_state);
 
-  // Make the changes we want to the form state.
-  if ($form_state['values']['merci_more']) {
-    $form_state['choice_count'] = count($form_state['values']['choice']) + 1;
-  }
 }
 
 /**
@@ -2947,7 +2929,7 @@ function merci_ahah_get_form() {
   // Stash original form action to avoid overwriting with drupal_rebuild_form().
   $form_state['action'] = $form['#action'];
 
-  $form_state['submitted'] = TRUE;
+  //$form_state['submitted'] = TRUE;
   // Continued from the above: when an AHAH update of the form is triggered
   // without using a button, you generally don't want any validation to kick
   // in. A typical example is adding new fields, possibly even required ones.
@@ -2956,15 +2938,20 @@ function merci_ahah_get_form() {
   // you do want instant validation, but that's an even bigger pain to solve
   // here so I'll leave that for later…)
     // For the default "{$form_id}_validate" and "{$form_id}_submit" handlers.
+
+  // Disable #required and #element_validate validation.
+  // TODO figure out how to turn off validation for date_combo.
+  /*
   $form['#validate'] = NULL;
   $form['#submit'] = NULL;
   // For customly set #validate and #submit handlers.
   $form_state['submit_handlers'] = NULL;
   $form_state['validate_handlers'] = NULL;
-
-  // Disable #required and #element_validate validation.
-  // TODO figure out how to turn off validation for date_combo.
+  require_once( drupal_get_path('module', 'date') .'/date_elements.inc');
   merci_disable_validation($form);
+  $element = $form['field_merci_date'][0];
+  date_combo_validate($element,$form_state);
+   */
   drupal_process_form($form_id, $form, $form_state);
   $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
   return array($form, $form_state);
