@@ -1335,8 +1335,10 @@ function _merci_choice_form($node, $form_state, $delta, $default = '', $reset = 
 
         if ($tid) {
           $term = taxonomy_get_term($tid);
-          $sorted[$term->name][$id] = $name;
-          unset ($options['options'][$grouping][$id]);
+          if ($term) {
+            $sorted[$term->name][$id] = $name;
+            unset ($options['options'][$grouping][$id]);
+          }
         }
       }
       if(empty($options['options'][$grouping])) {
