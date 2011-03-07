@@ -128,17 +128,22 @@ function theme_merci_build_reservation_table_form($form) {
   $rows   = array();
   foreach (element_children($form) as $did) {
 
+    if (strstr($did, 'form_')) {
+      continue;
+    }
     $values = $form[$did];
-    
+
+    $name = drupal_render($values['display_name']);
+
     if($values['merci_item_nid']['#type'] == 'value') {
       $item = ($values['display_item_title']['#value']) ? drupal_render($values['display_item_title']) : t('SPECIFIC ITEM NOT SELECTED');
     } else {
       $item = drupal_render($values['merci_item_nid']);
     }
-        
+
     $row = array(
       $item,
-      drupal_render($values['display_name']),
+      $name, 
     );
 
     foreach($form['#header'] as $index => $value) {
