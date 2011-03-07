@@ -41,12 +41,6 @@ function merci_admin_settings() {
 
     $operations = l(t('Edit'), 'admin/content/node-type/' . $type_url_str, array('query' => drupal_get_destination()));
 
-    if (module_exists('merci_inventory') && merci_inventory_node_type_menu_access($type->type)) {
-
-      $operations .= ' | ' . l(t('Inventory Sync'), 'admin/content/node-type/' . $type_url_str . '/merci_inventory', array('query' => drupal_get_destination()));
-    }
-    // if
-
     $rows[] = array(
       $type->name,
       $usage,
