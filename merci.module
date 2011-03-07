@@ -1774,7 +1774,8 @@ function merci_delete_node_type_validate(&$form) {
   $type = $form['type']['#value'];
   // Only validate active MERCI node types.
   if(merci_is_merci_type($type)) {
-    $settings = merci_load_item_settings($type);
+    //$settings = merci_load_item_settings($type);
+    $merci_type_setting = merci_type_setting($type);
 
     // Determine CCK table and columns the date data is stored in.
     $field   = content_fields('field_merci_date');
@@ -1783,7 +1784,7 @@ function merci_delete_node_type_validate(&$form) {
 
     // Join on nid here so that any version of the reservation that contain
     // the bucket/resource is caught.
-    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {" . $table . "} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.nid = ctn.nid INNER JOIN {merci_{$settings->merci_type_setting}_node} m ON md.merci_placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = '%s' AND m.merci_sub_type = %d ORDER BY ct.nid, ct.vid", $settings->type, MERCI_SUB_TYPE_RESERVATION);
+    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {" . $table . "} ct INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid INNER JOIN {node} ctn ON ct.nid = ctn.nid INNER JOIN {merci_{$merci_type_setting}_node} m ON md.merci_placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = '%s' AND m.merci_sub_type = %d ORDER BY ct.nid, ct.vid", $type, MERCI_SUB_TYPE_RESERVATION);
 
     $bad_reservations = array();
     while ($reservation = db_fetch_object($reservations)) {
@@ -1791,7 +1792,8 @@ function merci_delete_node_type_validate(&$form) {
     }
 
     if (!empty($bad_reservations)) {
-      drupal_set_message(t('@type can not be deleted because it is associated with the following reservations:', array('@type' => $settings->name)) . theme('item_list', $bad_reservations), 'error');
+      $name = node_get_types('name', $type);
+      drupal_set_message(t('@type can not be deleted because it is associated with the following reservations:', array('@type' => $name)) . theme('item_list', $bad_reservations), 'error');
       unset($form['actions']['submit']);
     }
   }
@@ -1946,6 +1948,16 @@ function merci_add_reservation_items($node) {
       if (empty($item['merci_item_nid']) and !$item['type']) {
         continue;
       }
+
+      // If we are copying a reservation.  I.e. via node_repeat
+      if ($item['merci_placeholder_nid'] and $node->is_new) {
+        $placeholder_node = node_load($item['merci_placeholder_nid']);
+        $placeholder_node->nid = NULL;
+        $placeholder_node->vid = NULL;
+        $placeholder_node = node_submit($placeholder_node);
+        node_save($placeholder_node);
+        $item['merci_placeholder_nid'] = $placeholder_node->nid; 
+      }
       // Create a placeholder node if we don't have one yet.
       if (!$item['merci_placeholder_nid']) {
         // Resource.
@@ -2036,7 +2048,7 @@ function merci_add_reservation_items($node) {
       // If we have an item assigned.  Set status to reserved.
       $item['merci_item_status'] = $item_status;
 
-      if ($node->revision or is_string($did)) {
+      if ($node->revision or is_string($did) or $node->is_new) {
         $item['nid'] = $node->nid;
         $item['vid'] = $node->vid;
         drupal_write_record('merci_reservation_detail',$item);
@@ -2047,7 +2059,7 @@ function merci_add_reservation_items($node) {
       }
 
       $item_status = $item_status == MERCI_ITEM_STATUS_CHECKED_OUT ? MERCI_ITEM_STATUS_CHECKED_OUT : MERCI_ITEM_STATUS_AVAILABLE;
-      if (is_numeric($item['merci_item_nid'])) {
+      if (is_numeric($item['merci_item_nid']) and $item['merci_item_nid'] > 0) {
         $update = array();
         $update['nid'] = $item['merci_item_nid'];
         $update['merci_item_status'] = $item_status;
