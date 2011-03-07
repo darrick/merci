@@ -714,19 +714,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
 
       merci_add_settings_form(&$form, $form_state);
     } else if ($type == 'merci_reservation') {
-      $form['field_merci_date'][0]['merci_date_filter'] = array(
-        '#type' => 'submit',
-        '#value' => t('Limit Lists to Available Items'),
-        '#weight' => 10,
-        '#submit' => array('merci_date_filter'),
-        '#ahah' => array(
-          'path' => 'merci/js',
-          'wrapper' => 'merci-choice-wrapper',
-          'method' => 'replace',
-          'effect' => 'fade',
-        ),
-
-      );
+      $form['#after_build'][] = '_merci_after_build';
     }
     break;
 
@@ -2979,3 +2967,20 @@ function merci_disable_validation(&$form) {
 
 }
 
+function _merci_after_build($form, &$form_state) {
+ 
+ $weight = ($form['field_merci_date']['#weight']+1);
+ $form['field_merci_date'][0]['field_merci_date_button'] = array(
+   '#type' => 'submit',
+   '#value' => t('Limit Lists to Available Items'),
+   '#weight' => $weight,
+   '#submit' => array('merci_date_filter'),
+   '#ahah' => array(
+     'path' => 'merci/js',
+     'wrapper' => 'merci-choice-wrapper',
+     'method' => 'replace',
+     'effect' => 'fade',
+    ),
+  );
+  return $form;
+}
