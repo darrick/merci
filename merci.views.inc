@@ -254,7 +254,7 @@ function merci_views_data() {
   // merci_reservation_detail
   $data['merci_reservation_detail2']['table']['group'] = t('MERCI');
   $data['merci_reservation_detail2']['table']['join']['node'] = array(
-    'left_field' => 'vid',
+    'left_field' => 'nid',
     'field' => 'merci_placeholder_nid',
     //'type' => 'INNER',
     'table' => 'merci_reservation_detail',
@@ -284,7 +284,7 @@ function merci_views_data() {
     ),
     'relationship' => array(
       'base' => 'node',
-      'base field' => 'vid',
+      'base field' => 'nid',
       'label' => t('Reservation for placeholder item node id'),
     ),
   );
