@@ -2079,7 +2079,7 @@ function merci_display_reservation_status(&$form_state, $status) {
 }
 
 function merci_build_accessory_form($form_state,$node,$did) {
-
+  
   $vocabularies = taxonomy_get_vocabularies($node->type);
 
   $form = array();
@@ -2118,7 +2118,7 @@ function merci_build_accessory_form($form_state,$node,$did) {
  */
 function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FALSE) {
   global $user;
-
+  
   $table            = array();
   $table['#theme']  = 'merci_build_reservation_table_form';
   $table['#node']   = $node;
@@ -2156,18 +2156,36 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
         if (!in_array(t('Accessories'), $table['#header'])) {
           $table['#header'][] = t('Accessories');
         }
-
-        // Container for just the item selector.
-        $form['accessories']= array(
-          '#type' => 'fieldset',
-          '#title' => t('Add accessories'),
-          '#collapsible' => TRUE,
-          '#collapsed' => TRUE,
-          '#prefix' => '<div id="merci-accessories-'.$placeholder_node->nid.'">',
-          '#suffix' => '</div>',
-          'choices' => merci_build_accessory_form($form_state, $placeholder_node,$did),
-        );
-    
+        
+        if ($edit_page) {
+          // Container for just the item selector.
+          $form['accessories']= array(
+            '#type' => 'fieldset',
+            '#title' => t('Add accessories'),
+            '#collapsible' => TRUE,
+            '#collapsed' => TRUE,
+            '#prefix' => '<div id="merci-accessories-'.$placeholder_node->nid.'">',
+            '#suffix' => '</div>',
+            'choices' => merci_build_accessory_form($form_state, $placeholder_node, $did),
+          );
+        } else {
+          $accessories = '';
+          // Container for just the item selector.
+          $terms = taxonomy_node_get_terms($placeholder_node);
+          if (count($terms) > 0) {
+            foreach ($terms as $accessory) {
+              $accessories .= $accessory->name . ', ';       
+            }
+          // foreach
+          }
+          $form['accessories']= array(
+            '#type' => 'markup',
+            '#title' => t('Accessories'),
+            '#value' => $accessories,
+          );
+        
+        }
+        
         //$operations .= ' &nbsp;&nbsp;' . l(t('edit'), "node/$item->merci_placeholder_nid/edit", array('query' => drupal_get_destination()));
         // Only allow editing or deletion if unconfirmed or confirmed.
         if ($node->merci_reservation_status >= MERCI_STATUS_CHECKED_OUT) {
