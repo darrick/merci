@@ -2933,7 +2933,311 @@ function merci_ui_views_default_views() {
   $handler->override_option('block_caching', -1);
 
   $views[$view->name] = $view;
+  
+  $view = new view;
+  $view->name = 'merci_ui_type_reservations';
+  $view->description = 'Find reservations by type of item reserved including placeholders';
+  $view->tag = '';
+  $view->view_php = '';
+  $view->base_table = 'node';
+  $view->is_cacheable = FALSE;
+  $view->api_version = 2;
+  $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+  $handler = $view->new_display('default', 'Defaults', 'default');
+  $handler->override_option('relationships', array(
+	'nid' => array(
+	  'label' => 'Reservation for placeholder item node id',
+	  'required' => 1,
+	  'id' => 'nid',
+	  'table' => 'merci_reservation_detail2',
+	  'field' => 'nid',
+	  'relationship' => 'none',
+	),
+  ));
+  $handler->override_option('fields', array(
+	'name' => array(
+	  'label' => 'User',
+	  'alter' => array(
+		'alter_text' => 0,
+		'text' => '',
+		'make_link' => 0,
+		'path' => '',
+		'link_class' => '',
+		'alt' => '',
+		'prefix' => '',
+		'suffix' => '',
+		'target' => '',
+		'help' => '',
+		'trim' => 0,
+		'max_length' => '',
+		'word_boundary' => 1,
+		'ellipsis' => 1,
+		'html' => 0,
+		'strip_tags' => 0,
+	  ),
+	  'empty' => '',
+	  'hide_empty' => 0,
+	  'empty_zero' => 0,
+	  'link_to_user' => 1,
+	  'overwrite_anonymous' => 0,
+	  'anonymous_text' => '',
+	  'exclude' => 0,
+	  'id' => 'name',
+	  'table' => 'users',
+	  'field' => 'name',
+	  'relationship' => 'nid',
+	  'override' => array(
+		'button' => 'Override',
+	  ),
+	),
+	'field_merci_date_value_1' => array(
+	  'label' => 'Reserved',
+	  'alter' => array(
+		'alter_text' => 0,
+		'text' => '[field_merci_date_value][field_merci_date_value_1]',
+		'make_link' => 0,
+		'path' => '',
+		'link_class' => '',
+		'alt' => '',
+		'prefix' => '',
+		'suffix' => '',
+		'target' => '',
+		'help' => '',
+		'trim' => 0,
+		'max_length' => '',
+		'word_boundary' => 1,
+		'ellipsis' => 1,
+		'html' => 0,
+		'strip_tags' => 0,
+	  ),
+	  'empty' => '',
+	  'hide_empty' => 0,
+	  'empty_zero' => 0,
+	  'link_to_node' => 1,
+	  'repeat' => array(
+		'show_repeat_rule' => '',
+	  ),
+	  'multiple' => array(
+		'multiple_number' => '',
+		'multiple_from' => '',
+		'multiple_to' => '',
+		'group' => TRUE,
+	  ),
+	  'fromto' => array(
+		'fromto' => 'both',
+	  ),
+	  'label_type' => 'custom',
+	  'format' => 'default',
+	  'exclude' => 0,
+	  'id' => 'field_merci_date_value_1',
+	  'table' => 'node_data_field_merci_date',
+	  'field' => 'field_merci_date_value',
+	  'relationship' => 'nid',
+	  'override' => array(
+		'button' => 'Override',
+	  ),
+	),
+	'item_nid2' => array(
+	  'label' => 'Reserved items',
+	  'alter' => array(
+		'alter_text' => 0,
+		'text' => '',
+		'make_link' => 0,
+		'path' => '',
+		'link_class' => '',
+		'alt' => '',
+		'prefix' => '',
+		'suffix' => '',
+		'target' => '',
+		'help' => '',
+		'trim' => 0,
+		'max_length' => '',
+		'word_boundary' => 1,
+		'ellipsis' => 1,
+		'html' => 0,
+		'strip_tags' => 0,
+	  ),
+	  'empty' => '',
+	  'hide_empty' => 0,
+	  'empty_zero' => 0,
+	  'type' => 'separator',
+	  'separator' => ', ',
+	  'exclude' => 0,
+	  'id' => 'item_nid2',
+	  'table' => 'merci_reservation_detail',
+	  'field' => 'item_nid2',
+	  'relationship' => 'nid',
+	),
+	'status' => array(
+	  'label' => 'Status',
+	  'alter' => array(
+		'alter_text' => 0,
+		'text' => '',
+		'make_link' => 0,
+		'path' => '',
+		'link_class' => '',
+		'alt' => '',
+		'prefix' => '',
+		'suffix' => '',
+		'target' => '',
+		'help' => '',
+		'trim' => 0,
+		'max_length' => '',
+		'word_boundary' => 1,
+		'ellipsis' => 1,
+		'html' => 0,
+		'strip_tags' => 0,
+	  ),
+	  'empty' => '',
+	  'hide_empty' => 0,
+	  'empty_zero' => 0,
+	  'exclude' => 0,
+	  'id' => 'status',
+	  'table' => 'merci_reservation',
+	  'field' => 'status',
+	  'override' => array(
+		'button' => 'Override',
+	  ),
+	  'relationship' => 'nid',
+	),
+  ));
+  $handler->override_option('filters', array(
+	'type' => array(
+	  'operator' => 'in',
+	  'value' => array(),
+	  'group' => '0',
+	  'exposed' => TRUE,
+	  'expose' => array(
+		'use_operator' => 0,
+		'operator' => 'type_op',
+		'identifier' => 'type',
+		'label' => 'Type',
+		'optional' => 1,
+		'single' => 1,
+		'remember' => 0,
+		'reduce' => 0,
+	  ),
+	  'id' => 'type',
+	  'table' => 'node',
+	  'field' => 'type',
+	  'relationship' => 'none',
+	),
+	'date_filter' => array(
+	  'operator' => '>=',
+	  'value' => array(
+		'value' => NULL,
+		'min' => NULL,
+		'max' => NULL,
+		'default_date' => 'now - 1 day',
+		'default_to_date' => '',
+	  ),
+	  'group' => '0',
+	  'exposed' => TRUE,
+	  'expose' => array(
+		'use_operator' => 0,
+		'operator' => 'date_filter_op',
+		'identifier' => 'date_filter',
+		'label' => 'Date',
+		'optional' => 1,
+		'remember' => 0,
+	  ),
+	  'date_fields' => array(
+		'node_data_field_merci_date.field_merci_date_value' => 'node_data_field_merci_date.field_merci_date_value',
+	  ),
+	  'date_method' => 'OR',
+	  'granularity' => 'day',
+	  'form_type' => 'date_popup',
+	  'default_date' => 'now - 1 day',
+	  'default_to_date' => '',
+	  'year_range' => '-3:+3',
+	  'id' => 'date_filter',
+	  'table' => 'node',
+	  'field' => 'date_filter',
+	  'relationship' => 'nid',
+	),
+  ));
+  $handler->override_option('access', array(
+	'type' => 'none',
+  ));
+  $handler->override_option('cache', array(
+	'type' => 'none',
+  ));
+  $handler->override_option('footer_format', '1');
+  $handler->override_option('footer_empty', 0);
+  $handler->override_option('empty', 'There are no reservations for this item.');
+  $handler->override_option('empty_format', '1');
+  $handler->override_option('items_per_page', 25);
+  $handler->override_option('use_pager', 'mini');
+  $handler->override_option('distinct', 1);
+  $handler->override_option('style_plugin', 'table');
+  $handler->override_option('style_options', array(
+	'grouping' => '',
+	'override' => 1,
+	'sticky' => 0,
+	'order' => 'asc',
+	'columns' => array(
+	  'title' => 'title',
+	  'title_1' => 'title_1',
+	  'title_2' => 'title_2',
+	  'field_merci_date_value' => 'field_merci_date_value',
+	  'field_merci_date_value_1' => 'field_merci_date_value_1',
+	),
+	'info' => array(
+	  'title' => array(
+		'sortable' => 1,
+		'separator' => '',
+	  ),
+	  'title_1' => array(
+		'sortable' => 0,
+		'separator' => '',
+	  ),
+	  'title_2' => array(
+		'sortable' => 0,
+		'separator' => '',
+	  ),
+	  'field_merci_date_value' => array(
+		'sortable' => 0,
+		'separator' => '',
+	  ),
+	  'field_merci_date_value_1' => array(
+		'sortable' => 0,
+		'separator' => '',
+	  ),
+	),
+	'default' => '-1',
+  ));
+  $handler = $view->new_display('page', 'Page', 'page_2');
+  $handler->override_option('relationships', array(
+	'nid' => array(
+	  'label' => 'Reservation for placeholder item node id',
+	  'required' => 1,
+	  'id' => 'nid',
+	  'table' => 'merci_reservation_detail2',
+	  'field' => 'nid',
+	  'override' => array(
+		'button' => 'Use default',
+	  ),
+	  'relationship' => 'none',
+	),
+  ));
+  $handler->override_option('path', 'admin/merci/manage/reservations/node-type');
+  $handler->override_option('menu', array(
+	'type' => 'tab',
+	'title' => 'By type',
+	'description' => '',
+	'weight' => '75',
+	'name' => 'navigation',
+  ));
+  $handler->override_option('tab_options', array(
+	'type' => 'none',
+	'title' => '',
+	'description' => '',
+	'weight' => 0,
+	'name' => 'navigation',
+  ));
 
+  $views[$view->name] = $view;
+  
   return $views;
 }
 
