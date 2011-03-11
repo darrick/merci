@@ -2157,13 +2157,19 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
           $table['#header'][] = t('Accessories');
         }
         
-        if ($edit_page) {   
+        if ($edit_page) {
+          if($node->merci_reservation_status == MERCI_STATUS_CHECKED_OUT) {
+            $collapsed = FALSE;
+          } else {
+            $collapsed = TRUE;
+          }
+          
           // Container for just the item selector.
           $form['accessories']= array(
             '#type' => 'fieldset',
             '#title' => t('Add accessories'),
             '#collapsible' => TRUE,
-            '#collapsed' => TRUE,
+            '#collapsed' => $collapsed,
             '#prefix' => '<div id="merci-accessories-'.$placeholder_node->nid.'">',
             '#suffix' => '</div>',
             'choices' => merci_build_accessory_form($form_state, $placeholder_node, $did),
