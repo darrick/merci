@@ -2157,7 +2157,7 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
           $table['#header'][] = t('Accessories');
         }
         
-        if ($edit_page) {
+        if ($edit_page) {   
           // Container for just the item selector.
           $form['accessories']= array(
             '#type' => 'fieldset',
@@ -2170,13 +2170,12 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
           );
         } else {
           $accessories = '';
-          // Container for just the item selector.
           $terms = taxonomy_node_get_terms($placeholder_node);
-          if (count($terms) > 0) {
+ 
+          if(!empty($terms)){
             foreach ($terms as $accessory) {
               $accessories .= $accessory->name . ', ';       
             }
-          // foreach
           }
           $form['accessories']= array(
             '#type' => 'markup',
@@ -2188,7 +2187,7 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
         
         //$operations .= ' &nbsp;&nbsp;' . l(t('edit'), "node/$item->merci_placeholder_nid/edit", array('query' => drupal_get_destination()));
         // Only allow editing or deletion if unconfirmed or confirmed.
-        if ($node->merci_reservation_status >= MERCI_STATUS_CHECKED_OUT) {
+        if ($edit_page && $node->merci_reservation_status >= MERCI_STATUS_CHECKED_OUT) {
           foreach ($form['accessories']['choices'] as $vid => $values) {
             $form['accessories']['choices'][$vid]['#disabled'] = TRUE;
           }
