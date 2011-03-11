@@ -68,29 +68,6 @@ function merci_ui_menu() {
   return $items;
 }
 
-/**
- * om_navigation_om_navigation_items function.
- * Sample implementation of hook_om_navigation_items
- * @access public
- *
- * @param mixed $context
- *
- * @return void
- */
-function merci_ui_om_navigation_items($context) {
-  $items = array();
-
-  $items['normal'][0] = array(
-    'zone' => 'private',
-    'status' => 'merci_ui_user_tab_access',
-    'value' => 'merci_ui_user_tab',
-    'label' => 'My Reservation',
-    'path' => 'reservations',
-    'weight' => 10,
-  );
-
-  return $items;
-}
 
 function merci_ui_my_reservations_tab_access($context) {
   global $user;
