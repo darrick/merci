@@ -434,7 +434,18 @@ function merci_validate_merci_selected_items($form, &$form_state) {
         $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount available at the times you've selected.", array('%name' => $title, '%amount' => $total_counts[$type][$value])) . '</div>';
       } 
       elseif (!$choice_counts[$type][$value]) {
-        $messages[$did] .= theme('merci_conflict_grid', $type, $title, $start, $end, $value,$node->vid);
+        $overdue_items_array = merci_overdue_items($type, $start, $reservation_nid = NULL) ;
+        if (!empty($overdue_items_array)) {
+          $messages[$did] = '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
+          foreach ($overdue_items_array as $reservations) {
+            foreach (array_keys($reservations) as $nid) {
+              $overdue = node_load($nid);
+          $messages[$did] .= '<div> ' . l($overdue->title,'node/' . $overdue->nid) . '</div>';
+            }
+          }
+        } else {
+          $messages[$did] .= theme('merci_conflict_grid', $type, $title, $start, $end, $value,$node->vid);
+        }
       }
       else {
         //drupal_set_message(t('There are no time conflicts with this Reservation.'));
@@ -2328,14 +2339,6 @@ function merci_get_reservable_items($content_type, $start=NULL, $end=NULL, $rese
           OR ($column_start_date <= '%s' AND $column_end_date >= '%s'))  
           AND NOT md2.merci_item_status <= %d
         ) ";
-    if($overdue) {
-      $start2 = date_create($start, timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
-      $args[] = $start2;
-      $args[] = MERCI_ITEM_STATUS_CHECKED_OUT;
-      $query .= "
-        OR ($column_end_date <= '%s' AND md2.merci_item_status = %d)
-        ";
-    }
     if ($reservation_nid) {
       $where = ' AND md2.nid <> %d';
       $args[] = $reservation_nid;
@@ -2352,15 +2355,70 @@ function merci_get_reservable_items($content_type, $start=NULL, $end=NULL, $rese
 
   $items = db_query($query, $args);
   $options = array();
+
   while ($item = db_fetch_object($items)) {
     $options[$item->nid] = $item->title;
   }
 
+  if ($overdue) {
+    $overdue_items_array = merci_overdue_items($content_type, $start, $reservation_nid);
+    if (!empty($overdue_items_array)) {
+      foreach ($options as $item_nid => $title) {
+        if (array_key_exists($item_nid, $overdue_items_array)) {
+          unset($options[$item_nid]);
+        }
+      }
+    }
+  }
   return $options;
 }
 
+function merci_overdue_items($content_type, $start, $reservation_nid = NULL) {
+  // Determine CCK table and columns the date data is stored in.
+  $field             = content_fields('field_merci_date');
+  $db_info           = content_database_info($field);
+  $table             = $db_info['table'];
+  $column_start_date = $db_info['columns']['value']['column'];
+  $column_end_date   = $db_info['columns']['value2']['column'];
+
+  // pull reservations in the past which are still checked out.
+  $start = date_create($start, timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
+  $args = array($start, $content_type, MERCI_ITEM_STATUS_CHECKED_OUT);
+
+  $merci_type = merci_type_setting($content_type);
+
+  // If we're checking an existing reservation, exclude it from the
+  // reserved items.
+  if (isset($reservation_nid)) {
+    $where = ' AND ct.nid <> %d';
+    $args[] = $reservation_nid;
+  }
+
+  $reserved_nodes = db_query("
+    SELECT ct.nid,field_merci_date_value,field_merci_date_value2,md.merci_item_nid  
+    FROM {" . $table . "} ct 
+    INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid 
+    INNER JOIN {merci_{$merci_type}_node} m on md.merci_placeholder_nid = m.nid 
+    INNER JOIN {node} ctn on ct.vid = ctn.vid 
+    INNER JOIN {node} mn on m.vid = mn.vid 
+    WHERE ($column_end_date <= '%s') 
+    AND mn.type = '%s' 
+    AND md.merci_item_nid !=0 
+    AND md.merci_item_status = %d
+    $where",
+    $args
+  );
+
+  // Use up items for assigned nodes.
+  while ($node = db_fetch_object($reserved_nodes)) {
+    $total_items_array[$node->merci_item_nid][$node->nid] = $node;
+  }
+
+  return $total_items_array;
+}
+
 //TODO: the following three functions look very much a like.
-function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, $reservation_vid = NULL) {
+function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, $reservation_vid = NULL, $overdue = TRUE) {
 
   // Determine CCK table and columns the date data is stored in.
   $field             = content_fields('field_merci_date');
@@ -2413,39 +2471,16 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
     $total_items_array[$node->merci_item_nid][$node->nid] = $node;
   }
 
-  // pull reservations in the past which are still checked out.
-  $start2 = date_create($start, timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
-  $args2 = array($start2, $content_type, MERCI_ITEM_STATUS_CHECKED_OUT);
+  if ($overdue) {
+    $overdue_items_array = merci_overdue_items($content_type, $start, $reservation_vid);
 
-  // If we're checking an existing reservation, exclude it from the
-  // reserved items.
-  if (isset($reservation_vid)) {
-    $args2[] = $reservation_vid;
-  }
-  $reserved_nodes = db_query("
-    SELECT ct.nid,field_merci_date_value,field_merci_date_value2,md.merci_item_nid  
-      FROM {" . $table . "} ct 
-        INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid 
-        INNER JOIN {merci_bucket_node} m on md.merci_placeholder_nid = m.nid 
-        INNER JOIN {node} ctn on ct.vid = ctn.vid 
-        INNER JOIN {node} mn on m.vid = mn.vid 
-          WHERE ($column_end_date <= '%s') 
-            AND mn.type = '%s' 
-            AND md.merci_item_nid !=0 
-            AND md.merci_item_status = %d
-            $where",
-    $args2
-  );
-
-  /*
-  if (count($reserved_nodes) and !user_access('administrate MERCI')) {
-    drupal_set_message(t("There are items you can't reserve because they have not been returned."));
-  }
-   */
-
-  // Use up items for assigned nodes.
-  while ($node = db_fetch_object($reserved_nodes)) {
-    $total_items_array[$node->merci_item_nid][$node->nid] = $node;
+    if (!empty($overdue_items_array)) {
+      foreach ($overdue_items_array as $merci_item_nid => $nodes) {
+        foreach ($nodes as $nid => $node) {
+          $total_items_array[$node->merci_item_nid][$node->nid] = $node;
+        }
+      }
+    }
   }
 
   // pull reservations without assigned nodes and not status of MERCI_ITEM_STATUS_CHECKED_IN
