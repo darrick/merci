@@ -59,7 +59,7 @@ function template_preprocess_merci_conflict_grid(&$variables) {
 
     // loop through all the items.
     if(!empty($hours[$day])) {
-      $reservations_by_date[$start_date] = array();
+      //$reservations_by_date[$start_date] = array();
       foreach($reservations as $item => $values) {
 
         $reservations_by_date[$start_date][$item] = array();
