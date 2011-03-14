@@ -2202,7 +2202,7 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
       }
     }
     // Only allow editing or deletion if unconfirmed or confirmed.
-    if ($edit_page && user_access("manage reservations") && $node->merci_reservation_status < MERCI_STATUS_CHECKED_OUT) {
+    if ($edit_page && $node->merci_reservation_status < MERCI_STATUS_CHECKED_OUT) {
       if (!in_array(t('Operations'), $table['#header'])) {
         $table['#header'][] = t('Operations');
       }
