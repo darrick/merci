@@ -2417,6 +2417,9 @@ function merci_overdue_items($content_type, $start, $reservation_nid = NULL) {
   return $total_items_array;
 }
 
+function _merci_sort_array($a, $b) {
+  return count($b) - count($a);
+}
 //TODO: the following three functions look very much a like.
 function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, $reservation_vid = NULL, $overdue = TRUE) {
 
@@ -2503,6 +2506,7 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
     $args
   );
 
+  uasort ( $total_items_array , '_merci_sort_array'); 
   // Temporarily assign an item for these nodes.
   while ($node = db_fetch_object($reserved_nodes)) {
     
