@@ -22,36 +22,6 @@ function merci_ui_views_default_views() {
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->override_option('fields', array(
-	'title' => array(
-	  'label' => 'Title',
-	  'alter' => array(
-		'alter_text' => 0,
-		'text' => '',
-		'make_link' => 0,
-		'path' => '',
-		'link_class' => '',
-		'alt' => '',
-		'prefix' => '',
-		'suffix' => '',
-		'target' => '',
-		'help' => '',
-		'trim' => 0,
-		'max_length' => '',
-		'word_boundary' => 1,
-		'ellipsis' => 1,
-		'strip_tags' => 0,
-		'html' => 0,
-	  ),
-	  'empty' => '',
-	  'hide_empty' => 0,
-	  'empty_zero' => 0,
-	  'link_to_node' => 1,
-	  'exclude' => 0,
-	  'id' => 'title',
-	  'table' => 'node',
-	  'field' => 'title',
-	  'relationship' => 'none',
-	),
 	'field_merci_date_value' => array(
 	  'label' => 'Reservation',
 	  'alter' => array(
@@ -69,13 +39,13 @@ function merci_ui_views_default_views() {
 		'max_length' => '',
 		'word_boundary' => 1,
 		'ellipsis' => 1,
-		'strip_tags' => 0,
 		'html' => 0,
+		'strip_tags' => 0,
 	  ),
 	  'empty' => '',
 	  'hide_empty' => 0,
 	  'empty_zero' => 0,
-	  'link_to_node' => 0,
+	  'link_to_node' => 1,
 	  'label_type' => 'widget',
 	  'format' => 'default',
 	  'multiple' => array(
@@ -94,6 +64,37 @@ function merci_ui_views_default_views() {
 	  'id' => 'field_merci_date_value',
 	  'table' => 'node_data_field_merci_date',
 	  'field' => 'field_merci_date_value',
+	  'relationship' => 'none',
+	),
+	'item_nid2' => array(
+	  'label' => 'Reserved items',
+	  'alter' => array(
+		'alter_text' => 0,
+		'text' => '',
+		'make_link' => 0,
+		'path' => '',
+		'link_class' => '',
+		'alt' => '',
+		'prefix' => '',
+		'suffix' => '',
+		'target' => '',
+		'help' => '',
+		'trim' => 0,
+		'max_length' => '',
+		'word_boundary' => 1,
+		'ellipsis' => 1,
+		'html' => 0,
+		'strip_tags' => 0,
+	  ),
+	  'empty' => '',
+	  'hide_empty' => 0,
+	  'empty_zero' => 0,
+	  'type' => 'separator',
+	  'separator' => ', ',
+	  'exclude' => 0,
+	  'id' => 'item_nid2',
+	  'table' => 'merci_reservation_detail',
+	  'field' => 'item_nid2',
 	  'relationship' => 'none',
 	),
   ));
@@ -322,7 +323,6 @@ function merci_ui_views_default_views() {
 	),
 	'default' => '-1',
   ));
-
 
   $views[$view->name] = $view;
   
