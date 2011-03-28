@@ -112,7 +112,7 @@ function merci_ui_node_reservations($node) {
 function merci_ui_my_reservations_redirect($uid) {
   global $user;
   if($user->uid){
-    drupal_goto('user/' . $user->uid . '/my-reservations');
+    drupal_goto('user/' . $user->uid . '/reservations');
   } else {
     drupal_access_denied();
   }
