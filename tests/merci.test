@@ -172,16 +172,19 @@ class MerciUserTestCase extends MerciTestCase {
 
     $this->bucket2 = $this->merciCreateNode($type,$edit);
     $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
+    /*
     $edit = array(
       'title' => $this->randomName()
     );
 
     $this->bucket3 = $this->merciCreateNode($type,$edit);
     $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
+     */
     $settings = array (
         'type'  => 'resource'
         );
     $type = $this->merciCreateContentType($settings,'resource');
+
     // Create resource item
     $edit = array(
       'title' => $this->randomName()
@@ -481,6 +484,19 @@ class MerciUserTestCase extends MerciTestCase {
     $first = $this->merciCreateNode('merci-reservation',$edit);
     $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
+    // Assign an item to test issue #1103328
+    // Login the admin user.
+    $this->drupalLogin($this->admin_user);
+    // Cancel the last reservation.  This should Pass
+    $edit = array(
+      'merci_reservation_items[1][merci_item_nid]' => $node->nid,
+      );
+
+    $title = $first->title;
+    $first = $this->merciUpdateNode($first->nid,$edit);
+    $this->assertText(t("@title has been updated.", array('@title' => $title)));
+    // Login the merci user.
+    $this->drupalLogin($this->merci_user);
     // Create our second reservation
     $node = $this->bucket2;
     $edit = array(
@@ -652,7 +668,69 @@ class MerciUserTestCase extends MerciTestCase {
 
   }
 
-  function testIssue1070662() {
+  function _testIssue1103328() {
+
+    // Test we can reserve our three bucket items all at the same time.
+    // Test the fourth reservation at the same time will fail.
+
+    // Create our first reservation
+    $node = $this->bucket1;
+    $edit = array(
+      'title' => $this->randomName(),
+      'field_merci_date[0][value][date]' => '2011-03-25',
+      'field_merci_date[0][value][time]' => '09:45',
+      'field_merci_date[0][value2][date]' => '2011-03-25',
+      'field_merci_date[0][value2][time]' => '10:45',
+      'merci_reservation_items[choice_1][merci_item_nid]' => $node->type
+    );
+
+    $first = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
+
+    // Assign an item to test issue #1103328
+    // Login the admin user.
+    $this->drupalLogin($this->admin_user);
+    // Cancel the last reservation.  This should Pass
+    $node = $this->bucket2;
+    $edit = array(
+      'merci_reservation_items[1][merci_item_nid]' => $node->nid,
+      );
+
+    $title = $first->title;
+    $first = $this->merciUpdateNode($first->nid,$edit);
+    $this->assertText(t("@title has been updated.", array('@title' => $title)));
+    // Login the merci user.
+    $this->drupalLogin($this->merci_user);
+    // Create our second reservation
+    $node = $this->bucket2;
+    $edit = array(
+      'title' => $this->randomName(),
+      'field_merci_date[0][value][date]' => '2011-03-25',
+      'field_merci_date[0][value][time]' => '13:45',
+      'field_merci_date[0][value2][date]' => '2011-03-25',
+      'field_merci_date[0][value2][time]' => '15:45',
+      'merci_reservation_items[choice_1][merci_item_nid]' => $node->type
+    );
+
+    $second = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
+
+    // Create our third reservation
+    $node = $this->bucket1;
+    $edit = array(
+      'title' => $this->randomName(),
+      'field_merci_date[0][value][date]' => '2011-03-25',
+      'field_merci_date[0][value][time]' => '10:00',
+      'field_merci_date[0][value2][date]' => '2011-03-25',
+      'field_merci_date[0][value2][time]' => '15:00',
+      'merci_reservation_items[choice_1][merci_item_nid]' => $node->type
+    );
+
+    $third = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
+  }
+
+  function _testIssue1070662() {
     // Create our reservation with no title.
     $node = $this->resource;
     $edit = array(
@@ -668,7 +746,7 @@ class MerciUserTestCase extends MerciTestCase {
     $this->assertNoText(t("Reservations cannot start at a time before"));
   }
 
-  function testIssue1070658() {
+  function _testIssue1070658() {
     // Create our first reservation
     $node = $this->bucket1;
     $edit = array(
@@ -707,7 +785,7 @@ class MerciUserTestCase extends MerciTestCase {
     $this->assertText(t("You've selected too many @name", array('@name' => $node->title)));
   }
 
-  function testMerciCheckedOutCase() {
+  function _testMerciCheckedOutCase() {
     $today = date('Y-m-d',time() + 3600 * 24);
 
     // Create our first reservation
@@ -768,14 +846,17 @@ class MerciUserTestCase extends MerciTestCase {
 
   }
 
-  function _testMerciUserCase() {
+  function testMerciUserCase() {
     //$this->_testIssue1070662();
     //$this->_testIssue1070658();
+    $this->_testIssue1103328();
+    /*
     $this->_testMerciResourceAvailability();
     $this->_testMerciBucketAvailability();
     $this->_testMerciHoursOfOperation();
     $this->_testMerciClosedDays();
     $this->_testMerciMaxDays();
+     */
     // This test fails because of the globlal user varible used in simpletest.  Not sure how to fix.
     //$this->_testMerciStaffModule();
   }
