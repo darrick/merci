@@ -134,15 +134,22 @@ function merci_has_accessories($content_type) {
  */
 function merci_total_usage($id, $type = 'user', $date = NULL) {
 
+  // Determine CCK table and columns the date data is stored in.
+  $field             = content_fields('field_merci_date');
+  $db_info           = content_database_info($field);
+  $table             = $db_info['table'];
+  $column_start_date = $db_info['columns']['value']['column'];
+  $column_end_date   = $db_info['columns']['value2']['column'];
+
   if ($type == 'project') {
-    $result = db_query("SELECT * FROM {merci_reservation} mr JOIN node n ON n.vid = mr.vid JOIN og_ancestry og ON og.nid = n.nid JOIN content_type_merci_reservation ct ON n.vid = ct.vid WHERE group_nid = %d", $id);
+    $result = db_query("SELECT $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 FROM {merci_reservation} mr JOIN node n ON n.vid = mr.vid JOIN og_ancestry og ON og.nid = n.nid JOIN {" .$table ."} ct ON n.vid = ct.vid WHERE group_nid = %d", $id);
   }
   else {
     if ($date) {
-      $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE uid = %d AND field_merci_date_value > '%s'", $id, $date);
+      $result = db_query("SELECT $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 FROM {merci_reservation} mr JOIN {node} n ON n.vid = mr.vid JOIN {" . $table . "} ct ON n.vid = ct.vid WHERE uid = %d AND $column_start_date > '%s'", $id, $date);
     }
     else {
-      $result = db_query("SELECT * FROM {merci_reservation} JOIN node ON node.vid = merci_reservation.vid JOIN content_type_merci_reservation ON node.vid = content_type_merci_reservation.vid WHERE uid = %d", $id);
+      $result = db_query("SELECT $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 FROM {merci_reservation} mr JOIN {node} n ON n.vid = mr.vid JOIN {" . $table . "} ct ON n.vid = ct.vid WHERE uid = %d", $id);
     }
   }
 

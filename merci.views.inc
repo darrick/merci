@@ -334,7 +334,9 @@ function merci_views_data() {
       'handler' => 'views_handler_sort',
     ),
     'filter' => array(
-      'handler' => 'views_handler_filter_in_operator',
+      'handler' => 'merci_views_handler_filter_reserved_item_nid',
+      'numeric' => TRUE,
+      'help' => t('<strong>Reservations</strong> are filtered for specific reserved items.'),
     ),
     'relationship' => array(
       'base' => 'node',
