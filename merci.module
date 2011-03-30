@@ -695,7 +695,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
 
   case $type . '_node_form':
     if (merci_is_merci_type($type)) {
-
+      
       $node = (object) $form['#node'];
 
       $sub_type = $node->merci_sub_type ? $node->merci_sub_type : MERCI_SUB_TYPE_ITEM;
@@ -722,11 +722,13 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'value',
         '#value' => $sub_type,
       );
-
+      
+      //D7 check
       merci_add_settings_form(&$form, $form_state);
     } else if ($type == 'merci_reservation') {
       $form['#after_build'][] = '_merci_after_build';
     }
+    dsm($form);
     break;
 
   case 'node_type_form':
@@ -2620,11 +2622,6 @@ function merci_get_count($type,$default_availability=MERCI_AVA_F) {
       $type['type'],$default_availability,MERCI_SUB_TYPE_ITEM
     ));
 }
-/** 
- * merci_get_reservation_count($content_type[string])
- * returns total number of checked out items for content type. 
- * @ $content_type resource to be counted
- */
  
 /**
  * Builds an array representing reservations for a Resource within a given timespan

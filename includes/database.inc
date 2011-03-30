@@ -45,6 +45,11 @@ function merci_reservation_items($node) {
   return $reservation_items;
 }
 
+/** 
+ * merci_get_reservation_count($content_type[string])
+ * returns total number of checked out items for content type. 
+ * @ $content_type resource to be counted
+ */
 function merci_get_reservation_count($content_type) {
   return db_result(db_query("SELECT COUNT(n.nid) as total FROM {node} n 
     JOIN {merci_reservation_detail} mrin ON mrin.vid = n.vid 
