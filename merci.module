@@ -360,6 +360,34 @@ function merci_validate_status($form, &$form_state) {
   }
 }
 
+function merci_validate_empty_reservation_items($form, &$form_state) {
+  $node = (object) $form_state['values'];
+
+  $choices = $node->merci_reservation_items;
+
+  $unselected = 0;
+
+  foreach ($choices as $did => $item) {
+    if (is_array($item)) {
+      $value = $item['merci_item_nid'];
+    } else {
+      $value = $item;
+    }
+
+    if (is_numeric($did) and !$value) {
+      $value = $item['type'];
+    }
+    
+    if (!$value) {
+      $unselected++;
+    }
+  }
+  if ($unselected == count($choices)) {
+    $first = array_shift(array_keys($choices));
+    form_set_error("merci_reservation_items][$first][merci_item_nid", t("You cannot create a reservation without any items selected."));
+  }
+}
+
 function merci_validate_merci_selected_items($form, &$form_state) {
   $node = (object) $form_state['values'];
 
@@ -496,6 +524,7 @@ function merci_node_validate($form, &$form_state) {
   // Tests for existing items.
 
   //merci_validate_existing_items($form, $form_state);
+  merci_validate_empty_reservation_items($form, &$form_state);
   merci_validate_merci_selected_items($form, &$form_state);
   //merci_validate_merci_choices($form, $form_state);
   
