@@ -1254,6 +1254,10 @@ function merci_views_handlers() {
         'parent' => 'views_handler_filter_in_operator',
         'file' => 'merci_handler_filter_in_operator.inc',
       ),
+      // filter
+      'merci_views_handler_filter_reserved_item_nid' => array(
+        'parent' => 'views_handler_filter_many_to_one',
+      ),
       'merci_handler_field_merci_reservation_item_node_item_status' => array(
         'parent' => 'views_handler_field',
         'file' => 'merci_handler_field.inc',
