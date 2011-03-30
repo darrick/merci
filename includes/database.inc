@@ -144,7 +144,7 @@ function merci_total_usage($id, $type = 'user', $date = NULL) {
       $result = db_query("SELECT $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 FROM {merci_reservation} mr JOIN {node} n ON n.vid = mr.vid JOIN {" . $table . "} ct ON n.vid = ct.vid WHERE uid = %d AND $column_start_date > '%s'", $id, $date);
     }
     else {
-      $result = db_query("SELECT $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 FROM {merci_reservation} mr JOIN node ON n.vid = mr.vid JOIN {" . $table . "} ct ON n.vid = ct.vid WHERE uid = %d", $id);
+      $result = db_query("SELECT $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 FROM {merci_reservation} mr JOIN {node} n ON n.vid = mr.vid JOIN {" . $table . "} ct ON n.vid = ct.vid WHERE uid = %d", $id);
     }
   }
 
