@@ -129,7 +129,6 @@ function merci_staff_node_validate($form, &$form_state) {
   merci_staff_user_load($form_state['values']);
   foreach ($form['#merci_staff_validated'] as $function) {
     $function($form,$form_state);
-    unset($form['#validate'][$function]);
   }
   merci_staff_user_load();
 }
