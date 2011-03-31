@@ -109,7 +109,6 @@ function merci_menu() {
     'file' => 'includes/merci.admin.inc',
   );
   
-  //TODO move to merci_debug module.
  $items['admin/merci/unlock'] = array(
     'title' => 'Unlock Core MERCI Fields',
     'page callback' => 'merci_unlock',
@@ -227,13 +226,13 @@ function merci_prepare(&$node) {
   }
 }
 
-$merci_debug_setting = variable_get('merci_debug', 0);
-function merci_debug($string) {
-  //set debug state
-  global $merci_debug_setting;
+/**
+ * writes additional info to log to aid in troubleshoot configuration
+ */
+function merci_verbose_logging($string) {
 
-  if ($merci_debug_setting) 
-    watchdog($string);
+  if (variable_get('merci_verbose_logging', 0)) 
+    watchdog('merci', $string);
 }
 
 function merci_validate_merci_reservation_date($form, &$form_state) {
@@ -260,9 +259,7 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
   // Users in role with Administer MERCI permssion or outside hours of operation skip these checks 
   if (user_access('create reservations outside hours of operation')) {
     
-    merci_debug('merci', 'SKIP Hours of Operation Check');
-    merci_debug('merci', 'SKIP Max Days Check');
-    merci_debug('merci', 'SKIP Closed Dates Check');
+    merci_verbose_logging('SKIP Hours of Operation Check, Max Days Check, and Closed Dates Check because user has create reservations outside hours of operation permission');
     
     //check to see if warning should be displayed
     if (strtotime(date('G:i', strtotime($start . ' UTC'))) < strtotime($start_hours['open']) || strtotime($start_hours['close']) < strtotime(date('G:i', strtotime($end . ' UTC')))) {
@@ -272,7 +269,7 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
   }
   else {
     // Reservation start date cannot exceed the max advance
-    merci_debug('merci', 'CHECKING Max Days');
+    merci_verbose_logging('CHECKING Max Days');
     if ($max_days) {
       $max_date = new DateTime("+$max_days day");
       //$max_date = date('m-d-Y', mktime(0, 0, 0, date("m"), date("d")+$max_days, date("Y")));
@@ -283,7 +280,7 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
 
     // Can't start or end a reservation on days that are
     // closed dates.
-    merci_debug('merci', 'CHECKING Closed Dates');
+    merci_verbose_logging('CHECKING Closed Dates');
     if (in_array($start_month_day, $hours_of_operation['closed_days'])) {
       $name = date_format($start_object, 'F jS');
       form_set_error('field_merci_date][0][value][date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
@@ -295,7 +292,7 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
 
     // Can't start or end a reservation on a day the facility
     // has no hours of operation, or outside hours of operation.
-    merci_debug('merci', 'CHECKING Hours of Operation');
+    merci_verbose_logging('CHECKING Hours of Operation');
     $start_name = date_format($start_object, 'l');
     if (!$hours_of_operation[$start_day_of_week]) {
       form_set_error('field_merci_date][0][value][date', t('Reservations cannot start on a %day.', array('%day' => $start_name)));
@@ -724,7 +721,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
 
   case $type . '_node_form':
     if (merci_is_merci_type($type)) {
-
+      
       $node = (object) $form['#node'];
 
       $sub_type = $node->merci_sub_type ? $node->merci_sub_type : MERCI_SUB_TYPE_ITEM;
@@ -751,7 +748,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'value',
         '#value' => $sub_type,
       );
-
+      
       merci_add_settings_form(&$form, $form_state);
     } else if ($type == 'merci_reservation') {
       $form['#after_build'][] = '_merci_after_build';
@@ -2651,11 +2648,6 @@ function merci_get_count($type,$default_availability=MERCI_AVA_F) {
       $type['type'],$default_availability,MERCI_SUB_TYPE_ITEM
     ));
 }
-/** 
- * merci_get_reservation_count($content_type[string])
- * returns total number of checked out items for content type. 
- * @ $content_type resource to be counted
- */
  
 /**
  * Builds an array representing reservations for a Resource within a given timespan
