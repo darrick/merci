@@ -92,8 +92,15 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
     $form['#suffix'] = '</div>';
 
     // Override the validation function so we can validate as the submitted user.
-    $key = array_search('merci_node_validate',$form['#validate']);
-    $form['#validate'][$key] = 'merci_staff_node_validate';
+    $form['#merci_staff_validated'][] = 'merci_node_validate';
+    $form['#validate'][] = 'merci_staff_node_validate';
+
+    foreach ($form['#merci_staff_validated'] as $function) {
+      $key = array_search($function, $form['#validate']);
+      if (is_numeric($key)) {
+        unset($form['#validate'][$key]);
+      }
+    }
 
     // Recreate the groups and choices based on the submitted name.
     merci_staff_user_load((array)$node);
@@ -120,7 +127,10 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
 
 function merci_staff_node_validate($form, &$form_state) {
   merci_staff_user_load($form_state['values']);
-  merci_node_validate($form, &$form_state);
+  foreach ($form['#merci_staff_validated'] as $function) {
+    $function($form,$form_state);
+    unset($form['#validate'][$function]);
+  }
   merci_staff_user_load();
 }
 /**
