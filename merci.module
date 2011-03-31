@@ -173,6 +173,8 @@ function merci_node_type($op, $info) {
  */
 function merci_access($op, $node, $account) {
   global $user;
+  dpm($account);
+  dpm($op);
 
   $type = isset($node->type) ? $node->type : $node;
   $uid = isset($node->uid) ? $node->uid : FALSE;
@@ -189,7 +191,7 @@ function merci_access($op, $node, $account) {
       //users working with their own reservations access reservation
       //additional check in merci_form permission to edit confirmed reservations
   // Users without administer or manage reservations permission can only alter their own Unconfirmed Reservations.
-      if ($op == 'edit' && isset($node->merci_reservation_status) 
+      if (($op == 'delete' or $op == 'update') && isset($node->merci_reservation_status) 
         && $node->merci_reservation_status != MERCI_STATUS_UNCONFIRMED 
         && !user_access('create confirmed reservations')) {
           return FALSE;
