@@ -173,8 +173,6 @@ function merci_node_type($op, $info) {
  */
 function merci_access($op, $node, $account) {
   global $user;
-  dpm($account);
-  dpm($op);
 
   $type = isset($node->type) ? $node->type : $node;
   $uid = isset($node->uid) ? $node->uid : FALSE;
