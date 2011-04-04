@@ -521,8 +521,8 @@ function merci_node_validate($form, &$form_state) {
   // Tests for existing items.
 
   //merci_validate_existing_items($form, $form_state);
-  merci_validate_empty_reservation_items($form, &$form_state);
-  merci_validate_merci_selected_items($form, &$form_state);
+  merci_validate_empty_reservation_items($form, $form_state);
+  merci_validate_merci_selected_items($form, $form_state);
   //merci_validate_merci_choices($form, $form_state);
   
 }
@@ -749,7 +749,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#value' => $sub_type,
       );
       
-      merci_add_settings_form(&$form, $form_state);
+      merci_add_settings_form($form, $form_state);
     } else if ($type == 'merci_reservation') {
       $form['#after_build'][] = '_merci_after_build';
     }
@@ -873,7 +873,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       '#default_value' => $settings ? $settings->merci_allow_weekends : 0,
       '#description' => filter_xss(t('Allow a reservation to be made over days defined as weekend.') . $warning),
     );
-    merci_add_settings_form(&$form, $form_state);
+    merci_add_settings_form($form, $form_state);
 
     $form['#validate'][] = 'merci_node_type_save_validate';
     $form['#submit'][]   = 'merci_node_type_save_submit';
@@ -3047,7 +3047,7 @@ function merci_ahah_get_form() {
 function merci_disable_validation(&$form) {
   foreach (element_children($form) as $child) {
     $form[$child]['#validated'] = TRUE;
-    merci_disable_validation(&$form[$child]);
+    merci_disable_validation($form[$child]);
   }
 
 }
