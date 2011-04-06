@@ -170,7 +170,8 @@ function merci_staff_update_name() {
   //$output = theme('status_messages') . drupal_render($selected_portion);
   theme('status_messages') . 
   // BAD HACK to not show validation error messages for the date combo.  Not sure how to turn validation off for that.
-  $output = drupal_render($selected_portion);
+  $output = drupal_get_js();
+  $output .= drupal_render($selected_portion);
 
   // Final rendering callback.
   drupal_json(array('status' => TRUE, 'data' => $output));
