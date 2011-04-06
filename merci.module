@@ -3041,6 +3041,8 @@ function merci_ahah_get_form() {
    */
   drupal_process_form($form_id, $form, $form_state);
   $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
+  // Clear any validation errors.
+  form_set_error(NULL,'',TRUE);
   return array($form, $form_state);
 }
 
