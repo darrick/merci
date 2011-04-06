@@ -2001,14 +2001,14 @@ function merci_add_reservation_items($node) {
 
           $item['type']        = $item['merci_item_nid'];
           $item['name']  = node_get_types('name',$item['type']);
-          $settings = merci_load_item_settings($type);
-          if ($settings->auto_assign_bucket_item) {
+          $settings = merci_load_item_settings($item['type']);
+          if ($settings->merci_auto_assign_bucket_item) {
             $date_info = $node->field_merci_date[0];
             $start     = $date_info['value'];
             $end       = $date_info['value2'];
 
             $item['merci_item_nid'] = merci_get_suggested_bucket_item($item['type'], $start, $end, $exempt_items);
-            $exempt_items[] = $item['item_nid'];
+            $exempt_items[] = $item['merci_item_nid'];
             $item_node        = node_load($item['merci_item_nid']);
             $item['item_title'] = $item_node->title;
             $settings = $item_node;
