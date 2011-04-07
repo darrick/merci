@@ -2,7 +2,7 @@
 
 /**
  * @file
- * merci reservable item view 
+ * merci reservable item view
  */
 
 

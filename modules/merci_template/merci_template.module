@@ -19,7 +19,7 @@ function merci_template_menu() {
     'type' => MENU_NORMAL_ITEM,
     'weight' => 10,
   );
-  
+
   // Administration settings.
   $items['admin/settings/merci/template'] = array(
     'title' => 'Template',
@@ -31,7 +31,7 @@ function merci_template_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 4,
   );
-  
+
   return $items;
 }
 
@@ -40,14 +40,14 @@ function merci_template_menu() {
  */
 function merci_template_admin_settings() {
   $form = array();
-  
+
   $form['merci_template_hide_details'] = array(
     '#type' => 'checkbox',
     '#title' => t('Hide Details of Reservation When Using a Template'),
     '#default_value' => variable_get('merci_template_hide_details', 0),
   );
 
-  return system_settings_form($form);  
+  return system_settings_form($form);
 }
 
 
@@ -55,15 +55,15 @@ function merci_template_list() {
   $result = db_query("SELECT title, draft_id, node_type FROM {drafts} WHERE title IS NOT NULL");
 
   while ($merci_template = db_fetch_object($result)) {
-    
-    $output .= l(t('Reserve ' . $merci_template->title), 'node/add/'. str_replace("_", "-", $merci_template->node_type), array('query' => array('draft_id' => $merci_template->draft_id), 'attributes' => array('class' => 'button'))) . '<br />';
+
+    $output .= l(t('Reserve ' . $merci_template->title), 'node/add/' . str_replace("_", "-", $merci_template->node_type), array('query' => array('draft_id' => $merci_template->draft_id), 'attributes' => array('class' => 'button'))) . '<br />';
 
   }
-  
+
   if (!$output) {
     $output = t('There are no Templates.');
   }
-  
+
   return $output;
 }
 
@@ -72,25 +72,25 @@ function merci_template_list() {
  */
 function merci_template_form_merci_reservation_node_form_alter(&$form, $form_state) {
   //dsm($form);
-  drupal_add_js(drupal_get_path('module', 'merci_template') .'/merci_template.js');
-  
-      
+  drupal_add_js(drupal_get_path('module', 'merci_template') . '/merci_template.js');
+
+
   if (isset($_GET['draft_id']) && is_numeric($_GET['draft_id']) && variable_get('merci_template_hide_details', 0)) {
     $draft_id = $_GET['draft_id'];
-    
+
     drupal_add_js("$(document).ready(function() { $('#merci-choices').toggle(); $('#edit-merci-more').toggle(); });", 'inline');
-    
+
     $result = db_fetch_object(db_query("SELECT * FROM {drafts} WHERE draft_id = %d", $_GET['draft_id']));
-    
+
     $form['draft_name'] = array(
       '#type' => 'markup',
       '#title' => t('Room'),
       '#value' => '<div class="message status"><div style="padding: 10px">Reserving ' . $result->title . ' (<a id="show-merci-choices">show details</a>)</div></div>',
-      '#weight' => -4
+      '#weight' => -4,
     );
-    
+
   }
-  
+
   $form['update_draft_id'] = array(
     '#type' => 'hidden',
     '#value' => $draft_id,

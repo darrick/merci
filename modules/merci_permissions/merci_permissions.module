@@ -8,18 +8,18 @@
 function merci_permissions_menu() {
 
 
-    // Administration settings.
-    $items['admin/settings/merci/permissions'] = array(
-      'title' => 'Permissions',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('merci_permissions_form'),
-      'access callback' => 'user_access',
-      'access arguments' => array('administer permissions'),
-      'description' => t('Configure reservation permissions for MERCI.'),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => 3,
-    );
- 
+  // Administration settings.
+  $items['admin/settings/merci/permissions'] = array(
+    'title' => 'Permissions',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('merci_permissions_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer permissions'),
+    'description' => t('Configure reservation permissions for MERCI.'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 3,
+  );
+
   return $items;
 }
 
@@ -42,13 +42,25 @@ function theme_merci_permissions_form($form) {
       $row = array();
       // Module name
       if (is_numeric($key)) {
-        $row[] = array('data' => t('@module', array('@module' => drupal_render($form['permission'][$key]))), 'class' => 'module', 'id' => 'module-'. $form['permission'][$key]['#value'], 'colspan' => count($form['role_names']) + 1);
+        $row[] = array(
+          'data' => t('@module', array('@module' => drupal_render($form['permission'][$key]))),
+          'class' => 'module',
+          'id' => 'module-' . $form['permission'][$key]['#value'],
+          'colspan' => count($form['role_names']) + 1,
+        );
       }
       else {
-        $row[] = array('data' => drupal_render($form['permission'][$key]), 'class' => 'permission');
+        $row[] = array(
+          'data' => drupal_render($form['permission'][$key]),
+          'class' => 'permission',
+        );
         foreach (element_children($form['checkboxes']) as $rid) {
           if (is_array($form['checkboxes'][$rid])) {
-            $row[] = array('data' => drupal_render($form['checkboxes'][$rid][$key]), 'class' => 'checkbox', 'title' => $roles[$rid] .' : '. t($key));
+            $row[] = array(
+              'data' => drupal_render($form['checkboxes'][$rid][$key]),
+              'class' => 'checkbox',
+              'title' => $roles[$rid] . ' : ' . t($key),
+            );
           }
         }
       }
@@ -58,7 +70,10 @@ function theme_merci_permissions_form($form) {
   $header[] = (t(''));
   foreach (element_children($form['role_names']) as $rid) {
     if (is_array($form['role_names'][$rid])) {
-      $header[] = array('data' => drupal_render($form['role_names'][$rid]), 'class' => 'checkbox');
+      $header[] = array(
+        'data' => drupal_render($form['role_names'][$rid]),
+        'class' => 'checkbox',
+      );
     }
   }
   $output = theme('table', $header, $rows, array('id' => 'permissions'));
@@ -119,7 +134,7 @@ function merci_permissions_add_form(&$form) {
   // always search for "$perm," to make sure we do not confuse
   // permissions that are substrings of each other.
   while ($role = db_fetch_object($result)) {
-    $role_permissions[$role->rid] = $role->perm .',';
+    $role_permissions[$role->rid] = $role->perm . ',';
   }
 
   $merci_types = merci_content_types();
@@ -139,12 +154,13 @@ function merci_permissions_add_form(&$form) {
     $form['permission'][$perm] = array('#value' => t($perm));
     foreach ($role_names as $rid => $name) {
       // Builds arrays for checked boxes for each role
-      if (strpos($role_permissions[$rid], $perm .',') !== FALSE) {
+      if (strpos($role_permissions[$rid], $perm . ',') !== FALSE) {
         $status[$rid][] = $perm;
       }
     }
   }
-  $form['permission'][] = array('#value' => t('Bucket and Resource Permissions'),
+  $form['permission'][] = array(
+    '#value' => t('Bucket and Resource Permissions'),
   );
   foreach ($merci_types as $type => $merci_type) {
     $name = $merci_type['type'];
@@ -154,13 +170,13 @@ function merci_permissions_add_form(&$form) {
     foreach ($role_names as $rid => $name) {
       // Builds arrays for checked boxes for each role
       if (
-        strpos($role_permissions[$rid], 'delete own '. $type .' content,') !== FALSE &&
-        strpos($role_permissions[$rid], 'edit own '. $type .' content,') !== FALSE
+        strpos($role_permissions[$rid], 'delete own ' . $type . ' content,') !== FALSE &&
+        strpos($role_permissions[$rid], 'edit own ' . $type . ' content,') !== FALSE
       ) {
         $status[$rid][] = $perm;
       }
-      if (strpos($role_permissions[$rid], 'delete any '. $type .' content,') !== FALSE &&
-        strpos($role_permissions[$rid], 'edit any '. $type .' content,') !== FALSE
+      if (strpos($role_permissions[$rid], 'delete any ' . $type . ' content,') !== FALSE &&
+        strpos($role_permissions[$rid], 'edit any ' . $type . ' content,') !== FALSE
       ) {
         if (!strstr($admin[$rid], 'false')) {
           $admin[$rid] = 'true';
@@ -179,11 +195,21 @@ function merci_permissions_add_form(&$form) {
 
   // Have to build checkboxes here after checkbox arrays are built
   foreach ($role_names as $rid => $name) {
-    $form['checkboxes'][$rid] = array('#type' => 'checkboxes', '#options' => $options, '#default_value' => isset($status[$rid]) ? $status[$rid] : array());
-    $form['role_names'][$rid] = array('#value' => $name, '#tree' => TRUE);
+    $form['checkboxes'][$rid] = array(
+      '#type' => 'checkboxes',
+      '#options' => $options,
+      '#default_value' => isset($status[$rid]) ? $status[$rid] : array(),
+    );
+    $form['role_names'][$rid] = array(
+      '#value' => $name,
+      '#tree' => TRUE,
+    );
   }
 
-  $form['buttons']['submit'] = array('#type' => 'submit', '#value' => t('Save Permissions'));
+  $form['buttons']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save Permissions'),
+  );
   $form['#submit'][] = 'merci_permissions_settings_form_submit';
 }
 

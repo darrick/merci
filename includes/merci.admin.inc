@@ -77,7 +77,7 @@ function merci_admin_settings() {
   // Hours of operation
 
   $hours_description = '<div>' . t('Enter military time for both opening and closing time, separated by a dash, in the format') . ' <em>hh:mm-hh:mm</em></div>' . t('ex.') . ' <em>09:00-17:00</em> ' . t('would be open at 9AM, close at 5PM. Leave blank to indicate not being open.');
-  
+
   $form['merci_hours_mon'] = array(
     '#type' => 'textfield',
     '#title' => t('Monday hours'),
@@ -153,15 +153,15 @@ function merci_admin_settings() {
     '#default_value' => variable_get('merci_closed_dates', ''),
     '#description' => '<div>' . t('Enter dates which are closed regardless of the day of the week, one date per line, in the format') . ' <em>mm-dd</em></div>' . t('ex.') . ' <em>07-04</em> ' . t('would mean July 4th is always closed, regardless of what day of the week it falls on.'),
   );
-  
+
   $form['merci_advanced'] = array(
     '#type' => 'fieldset',
     '#title' => t('Advanced settings'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
-  
-   $form['merci_advanced']['merci_verbose_logging'] = array(
+
+  $form['merci_advanced']['merci_verbose_logging'] = array(
     '#type' => 'checkbox',
     '#title' => t('Verbose Logging Mode'),
     '#default_value' => variable_get('merci_verbose_logging', 0),
@@ -169,26 +169,26 @@ function merci_admin_settings() {
   );
 
   //check to see if the fields are locked
-  $result = db_query("SELECT locked FROM {content_node_field} WHERE field_name = '%s'", 'field_merci_date');  
-  
+  $result = db_query("SELECT locked FROM {content_node_field} WHERE field_name = '%s'", 'field_merci_date');
+
   $message = t('MERCI requires a Date field to function. This field is locked by default.  Altering or deleting the Date field could cause serious problems.  Always backup before altering this field!') . '<br /><br />';
-  
+
   $field_state = db_fetch_object($result);
   if ($field_state->locked) {
-    $value = t('Core MERCI fields are currently locked.') . ' ' . l(t('Unlock them.'), 'admin/merci/unlock',  array('query' => drupal_get_destination()));
-    
-  } 
-  else {
-    $value = t('Core MERCI fields are currently unlocked.') . ' ' . l(t('Lock them.'), 'admin/merci/lock',  array('query' => drupal_get_destination()));
+    $value = t('Core MERCI fields are currently locked.') . ' ' . l(t('Unlock them.'), 'admin/merci/unlock',   array('query' => drupal_get_destination()));
+
   }
-  
+  else {
+    $value = t('Core MERCI fields are currently unlocked.') . ' ' . l(t('Lock them.'), 'admin/merci/lock',   array('query' => drupal_get_destination()));
+  }
+
   //TODO: Change this to AHAH call
   $form['merci_advanced']['merci_unlock'] = array(
     '#type' => 'markup',
     '#title' => t('Unlock Fields'),
-    '#value' => '<div>' . $message . $value . '</div>'
+    '#value' => '<div>' . $message . $value . '</div>',
   );
-  
+
   return system_settings_form($form);
 }
 

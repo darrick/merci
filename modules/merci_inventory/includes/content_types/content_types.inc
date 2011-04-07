@@ -2,7 +2,7 @@
 
 /**
  * @file
- * merci inventory content types 
+ * merci inventory content types
  */
 
 

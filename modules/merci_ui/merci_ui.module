@@ -42,7 +42,7 @@ function merci_ui_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 15,
   );
- 
+
   $items['user/reservations'] = array(
     'title' => 'My Reservations',
     'description' => 'Redirects to My Reservations tab',
@@ -61,11 +61,11 @@ function merci_ui_user_reservations_access($context) {
   if ($context->uid == $user->uid && user_access('create reservations')) {
     return TRUE;
   }
-  
+
   if (user_access('manage_reservations')) {
     return TRUE;
   }
-  
+
   return FALSE;
 }
 
@@ -77,9 +77,9 @@ function merci_ui_user_reservations($user) {
   $output              = $view->preview();
 
   $output .= '<div id="make-merci-reservation">';
-  $output .= l(t('Make a Reservation'), 'node/add/merci-reservation'); 
+  $output .= l(t('Make a Reservation'), 'node/add/merci-reservation');
   $output .= '</div>';
-  
+
   print theme('page', $output);
 }
 
@@ -87,13 +87,13 @@ function merci_ui_user_reservations($user) {
 function merci_ui_node_reservations_access($node) {
 
   global $user;
-  
+
   if (merci_is_merci_type($node->type) && user_access('manage reservations')) {
     return TRUE;
   }
-    
+
   return FALSE;
-  
+
 }
 
 function merci_ui_node_reservations($node) {
@@ -103,17 +103,18 @@ function merci_ui_node_reservations($node) {
   $output              = $view->preview();
 
   $output .= '<div id="make-merci-reservation">';
-  $output .= l(t('Make a Reservation'), 'node/add/merci-reservation'); 
+  $output .= l(t('Make a Reservation'), 'node/add/merci-reservation');
   $output .= '</div>';
-  
+
   print theme('page', $output);
 }
 
 function merci_ui_my_reservations_redirect($uid) {
   global $user;
-  if($user->uid){
+  if ($user->uid) {
     drupal_goto('user/' . $user->uid . '/reservations');
-  } else {
+  }
+  else {
     drupal_access_denied();
   }
 }

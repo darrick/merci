@@ -14,5 +14,5 @@ class merci_views_handler_filter_reserved_item_nid extends views_handler_filter_
     }
     return $options;
   }
-  
+
 }

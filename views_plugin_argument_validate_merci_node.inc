@@ -57,7 +57,7 @@ class views_plugin_argument_validate_merci_node extends views_plugin_argument_va
 
     $types = array_filter($this->argument->options[$this->option_name]);
 
-    $sub_types = array_filter($this->argument->options['validate_argument_merci_sub_type']); 
+    $sub_types = array_filter($this->argument->options['validate_argument_merci_sub_type']);
 
     if (!isset($types[$node->merci_type_setting])) {
       return FALSE;

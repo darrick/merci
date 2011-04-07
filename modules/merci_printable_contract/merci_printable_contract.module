@@ -11,7 +11,7 @@
 function merci_printable_contract_menu() {
 
   $admin = array('administer MERCI');
-  
+
   $items['node/%node/contract'] = array(
     'title' => 'Printable contract',
     'description' => 'Takes a node object and returns a printable contract',
@@ -22,7 +22,7 @@ function merci_printable_contract_menu() {
     'type' => MENU_LOCAL_TASK,
   );
 
-   // Standard Administration settings.
+  // Standard Administration settings.
   $items['admin/settings/merci/contract'] = array(
     'title' => 'Printable Contract',
     'page callback' => 'drupal_get_form',
@@ -44,13 +44,13 @@ function merci_printable_contract_content_access($node, $perm) {
 function merci_printable_contract_theme() {
   $path = drupal_get_path('module', 'merci_printable_contract');
 
-  return array (
+  return array(
     'merci_printable_contract' => array(
       'template' => 'merci-printable-contract',
       'path' => "$path/",
       'arguments' => array('start_date' => NULL, 'end_date' => NULL, 'hours' => NULL, 'username' => NULL, 'email' => NULL, 'phone' => NULL, 'items' => NULL),
-      ),
-    );
+    ),
+  );
 }
 
 /**
@@ -100,7 +100,7 @@ function merci_printable_contract_admin_settings() {
       '#value' => theme('token_help', 'node'),
     );
   }
-  
+
   return system_settings_form($form);
 }
 
@@ -112,17 +112,17 @@ function merci_printable_contract($node) {
   $username = $user->name;
   $email    = $user->mail;
   if (module_exists('civicrm')) {
-    
+
     civicrm_initialize(TRUE);
     global $civicrm_root;
     //include_once($civicrm_root .'/api/UFGroup.php');
     //$userID = crm_uf_get_match_id($user->uid);
-    
+
     require_once $civicrm_root . '/CRM/Core/BAO/UFMatch.php';
     $userID = CRM_Core_BAO_UFMatch::getContactId( $user->uid );
-    
+
     $cg = array('contact_id' => $userID);
-    include_once($civicrm_root .'/api/v2/Contact.php');
+    include_once($civicrm_root . '/api/v2/Contact.php');
     $ob = civicrm_contact_get($cg);
     //print '<pre>';
     //print_r($ob);
@@ -141,11 +141,11 @@ function merci_printable_contract($node) {
   date_timezone_set($start_date, timezone_open($timezone));
   date_timezone_set($end_date, timezone_open($timezone));
 
-  $hours = round((intval(date_format($end_date,"U")) - intval(date_format($start_date,"U"))) / 3600, 2);
+  $hours = round((intval(date_format($end_date, "U")) - intval(date_format($start_date, "U"))) / 3600, 2);
 
-  
+
   $html = theme('merci_printable_contract', $start_date, $end_date, $hours, $username, $email, $phone, $items);
-  
+
   print $html;
 }
 // merci_printable_contract

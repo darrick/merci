@@ -2,7 +2,7 @@
 
 /**
  * @file
- * merci inventory content types installation 
+ * merci inventory content types installation
  */
 
 
@@ -19,7 +19,7 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
   'body_label' => 'Body',
   'min_word_count' => '0',
   'help' => '',
-  'node_options' => 
+  'node_options' =>
   array (
     'status' => true,
     'promote' => false,
@@ -62,36 +62,36 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
   'ant_php' => 0,
 );
 \$content[groups]  = array (
-  0 => 
+  0 =>
   array (
     'label' => 'MERCI Inventory',
     'group_type' => 'standard',
-    'settings' => 
+    'settings' =>
     array (
-      'form' => 
+      'form' =>
       array (
         'style' => 'fieldset',
         'description' => '',
       ),
-      'display' => 
+      'display' =>
       array (
         'description' => '',
-        'teaser' => 
+        'teaser' =>
         array (
           'format' => 'fieldset',
           'exclude' => 0,
         ),
-        'full' => 
+        'full' =>
         array (
           'format' => 'fieldset',
           'exclude' => 0,
         ),
-        4 => 
+        4 =>
         array (
           'format' => 'fieldset',
           'exclude' => 0,
         ),
-        'token' => 
+        'token' =>
         array (
           'format' => 'fieldset',
           'exclude' => 0,
@@ -104,7 +104,7 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
   ),
 );
 \$content[fields]  = array (
-  0 => 
+  0 =>
   array (
     'label' => 'Model',
     'field_name' => 'field_merci_model',
@@ -115,9 +115,9 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
     'rows' => 5,
     'size' => '60',
     'description' => '',
-    'default_value' => 
+    'default_value' =>
     array (
-      0 => 
+      0 =>
       array (
         'value' => '',
         '_error_element' => 'default_value_widget][field_merci_model][0][value',
@@ -135,9 +135,9 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
     'op' => 'Save field settings',
     'module' => 'text',
     'widget_module' => 'text',
-    'columns' => 
+    'columns' =>
     array (
-      'value' => 
+      'value' =>
       array (
         'type' => 'text',
         'size' => 'big',
@@ -145,36 +145,36 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
         'sortable' => true,
       ),
     ),
-    'display_settings' => 
+    'display_settings' =>
     array (
-      'label' => 
+      'label' =>
       array (
         'format' => 'above',
         'exclude' => 0,
       ),
-      'teaser' => 
+      'teaser' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      'full' => 
+      'full' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      4 => 
+      4 =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      'token' => 
+      'token' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
     ),
   ),
-  1 => 
+  1 =>
   array (
     'label' => 'Make',
     'field_name' => 'field_merci_make',
@@ -185,20 +185,20 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
     'rows' => 5,
     'size' => '60',
     'description' => '',
-    'default_value' => 
+    'default_value' =>
     array (
-      0 => 
+      0 =>
       array (
         'value' => '',
         '_error_element' => 'default_value_widget][field_merci_make][0][value',
       ),
     ),
     'default_value_php' => '',
-    'default_value_widget' => 
+    'default_value_widget' =>
     array (
-      'field_merci_make' => 
+      'field_merci_make' =>
       array (
-        0 => 
+        0 =>
         array (
           'value' => '',
           '_error_element' => 'default_value_widget][field_merci_make][0][value',
@@ -215,9 +215,9 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
     'op' => 'Save field settings',
     'module' => 'text',
     'widget_module' => 'text',
-    'columns' => 
+    'columns' =>
     array (
-      'value' => 
+      'value' =>
       array (
         'type' => 'text',
         'size' => 'big',
@@ -225,36 +225,36 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
         'sortable' => true,
       ),
     ),
-    'display_settings' => 
+    'display_settings' =>
     array (
-      'label' => 
+      'label' =>
       array (
         'format' => 'above',
         'exclude' => 0,
       ),
-      'teaser' => 
+      'teaser' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      'full' => 
+      'full' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      4 => 
+      4 =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      'token' => 
+      'token' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
     ),
   ),
-  2 => 
+  2 =>
   array (
     'label' => 'Serial Number',
     'field_name' => 'field_merci_serial_number',
@@ -265,20 +265,20 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
     'rows' => 5,
     'size' => '60',
     'description' => '',
-    'default_value' => 
+    'default_value' =>
     array (
-      0 => 
+      0 =>
       array (
         'value' => '',
         '_error_element' => 'default_value_widget][field_merci_serial_number][0][value',
       ),
     ),
     'default_value_php' => '',
-    'default_value_widget' => 
+    'default_value_widget' =>
     array (
-      'field_merci_serial_number' => 
+      'field_merci_serial_number' =>
       array (
-        0 => 
+        0 =>
         array (
           'value' => '',
           '_error_element' => 'default_value_widget][field_merci_serial_number][0][value',
@@ -295,9 +295,9 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
     'op' => 'Save field settings',
     'module' => 'text',
     'widget_module' => 'text',
-    'columns' => 
+    'columns' =>
     array (
-      'value' => 
+      'value' =>
       array (
         'type' => 'text',
         'size' => 'big',
@@ -305,36 +305,36 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
         'sortable' => true,
       ),
     ),
-    'display_settings' => 
+    'display_settings' =>
     array (
-      'label' => 
+      'label' =>
       array (
         'format' => 'above',
         'exclude' => 0,
       ),
-      'teaser' => 
+      'teaser' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      'full' => 
+      'full' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      4 => 
+      4 =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      'token' => 
+      'token' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
     ),
   ),
-  3 => 
+  3 =>
   array (
     'label' => 'Inventory Code',
     'field_name' => 'field_merci_inventory_code',
@@ -345,20 +345,20 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
     'rows' => 5,
     'size' => '60',
     'description' => '',
-    'default_value' => 
+    'default_value' =>
     array (
-      0 => 
+      0 =>
       array (
         'value' => '',
         '_error_element' => 'default_value_widget][field_merci_inventory_code][0][value',
       ),
     ),
     'default_value_php' => '',
-    'default_value_widget' => 
+    'default_value_widget' =>
     array (
-      'field_merci_inventory_code' => 
+      'field_merci_inventory_code' =>
       array (
-        0 => 
+        0 =>
         array (
           'value' => '',
           '_error_element' => 'default_value_widget][field_merci_inventory_code][0][value',
@@ -375,9 +375,9 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
     'op' => 'Save field settings',
     'module' => 'text',
     'widget_module' => 'text',
-    'columns' => 
+    'columns' =>
     array (
-      'value' => 
+      'value' =>
       array (
         'type' => 'text',
         'size' => 'big',
@@ -385,36 +385,36 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
         'sortable' => true,
       ),
     ),
-    'display_settings' => 
+    'display_settings' =>
     array (
-      'label' => 
+      'label' =>
       array (
         'format' => 'above',
         'exclude' => 0,
       ),
-      'teaser' => 
+      'teaser' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      'full' => 
+      'full' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      4 => 
+      4 =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      'token' => 
+      'token' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
     ),
   ),
-  4 => 
+  4 =>
   array (
     'label' => 'Warranty',
     'field_name' => 'field_merci_warranty',
@@ -425,20 +425,20 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
     'rows' => 5,
     'size' => '60',
     'description' => '',
-    'default_value' => 
+    'default_value' =>
     array (
-      0 => 
+      0 =>
       array (
         'value' => '',
         '_error_element' => 'default_value_widget][field_merci_warranty][0][value',
       ),
     ),
     'default_value_php' => '',
-    'default_value_widget' => 
+    'default_value_widget' =>
     array (
-      'field_merci_warranty' => 
+      'field_merci_warranty' =>
       array (
-        0 => 
+        0 =>
         array (
           'value' => '',
           '_error_element' => 'default_value_widget][field_merci_warranty][0][value',
@@ -455,9 +455,9 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
     'op' => 'Save field settings',
     'module' => 'text',
     'widget_module' => 'text',
-    'columns' => 
+    'columns' =>
     array (
-      'value' => 
+      'value' =>
       array (
         'type' => 'text',
         'size' => 'big',
@@ -465,29 +465,29 @@ function _merci_inventory_install_create_merci_inventory_master_content_type() {
         'sortable' => true,
       ),
     ),
-    'display_settings' => 
+    'display_settings' =>
     array (
-      'label' => 
+      'label' =>
       array (
         'format' => 'above',
         'exclude' => 0,
       ),
-      'teaser' => 
+      'teaser' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      'full' => 
+      'full' =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      4 => 
+      4 =>
       array (
         'format' => 'default',
         'exclude' => 0,
       ),
-      'token' => 
+      'token' =>
       array (
         'format' => 'default',
         'exclude' => 0,

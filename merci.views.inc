@@ -347,7 +347,7 @@ function merci_views_data() {
   );
   $data['merci_reservation_detail']['item_nid2'] = array(
     'title' => t('Reserved items'),
-      'help' => t('Display all items reserved by this reservation.'),
+    'help' => t('Display all items reserved by this reservation.'),
     'field' => array(
       'title' => t('Reserved items'),
       'help' => t('Display all items reserved by this reservation.'),
@@ -503,7 +503,7 @@ function merci_views_plugins() {
       'merci' => array(
         'title' => t('MERCI'),
         'handler' => 'views_plugin_argument_validate_merci_node',
-        'path' => drupal_get_path('module', 'merci') , // not necessary for most modules
+        'path' => drupal_get_path('module', 'merci'), // not necessary for most modules
       ),
     ),
   );

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * merci inventory install / uninstall 
+ * merci inventory install / uninstall
  */
 
 /**
@@ -12,13 +12,13 @@ function merci_inventory_install() {
   //module isn't enabled on install, calling this processes node_info so node types are created before processing create_content_types()
   //this keeps the content type tied to the module, but simplifies the process of adding fields
   drupal_load('module', 'merci_inventory');
-  
+
   drupal_set_message(t('MERCI Inventory module successfully installed. merci_inventory and merci_inventory_master content types created.  Do not add nodes to merci_inventory_master content type.  Only use it to push CCK fields out to other MERCI managed content types.'));
 }
 
 function merci_inventory_enable() {
   // create content types
-  include_once('./'. drupal_get_path('module', 'merci_inventory') .'/includes/content_types/content_types.inc');
+  include_once('./' . drupal_get_path('module', 'merci_inventory') . '/includes/content_types/content_types.inc');
   _merci_inventory_install_create_content_types();
 }
 // function merci_inventory_install

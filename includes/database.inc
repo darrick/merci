@@ -10,20 +10,20 @@
 function merci_node_type_update($info) {
   if (isset($info->old_type) && $info->type != $info->old_type) {
     db_query("UPDATE {merci_node_type} SET type = '%s' WHERE type = '%s'", $info->type, $info->old_type);
-    cache_clear_all('merci_' . $info->type . '_data','cache');
-    cache_clear_all('merci_content_type_info','cache');
+    cache_clear_all('merci_' . $info->type . '_data', 'cache');
+    cache_clear_all('merci_content_type_info', 'cache');
   }
 }
 
 function merci_node_type_existing($type) {
-  return db_result(db_query("SELECT type FROM {merci_node_type} WHERE type = '%s'",$type));
+  return db_result(db_query("SELECT type FROM {merci_node_type} WHERE type = '%s'", $type));
 }
 
 function merci_node_type_delete($type) {
   db_query("DELETE FROM {merci_node_type} WHERE type = '%s'", $type);
   variable_del('merci_type_setting_' . $info->type);
-  cache_clear_all('merci_' . $info->type . '_data','cache');
-  cache_clear_all('merci_content_type_info','cache');
+  cache_clear_all('merci_' . $info->type . '_data', 'cache');
+  cache_clear_all('merci_content_type_info', 'cache');
 }
 
 function merci_reservation_status($node) {
@@ -45,15 +45,15 @@ function merci_reservation_items($node) {
   return $reservation_items;
 }
 
-/** 
+/**
  * merci_get_reservation_count($content_type[string])
- * returns total number of checked out items for content type. 
+ * returns total number of checked out items for content type.
  * @ $content_type resource to be counted
  */
 function merci_get_reservation_count($content_type) {
-  return db_result(db_query("SELECT COUNT(n.nid) as total FROM {node} n 
-    JOIN {merci_reservation_detail} mrin ON mrin.vid = n.vid 
-    JOIN {node} ctn ON mrin.merci_item_nid = ctn.nid 
+  return db_result(db_query("SELECT COUNT(n.nid) as total FROM {node} n
+    JOIN {merci_reservation_detail} mrin ON mrin.vid = n.vid
+    JOIN {node} ctn ON mrin.merci_item_nid = ctn.nid
     WHERE ctn.type = '%s' and mrin.merci_item_status = %d", $content_type, MERCI_ITEM_STATUS_CHECKED_OUT));
 }
 
@@ -116,7 +116,7 @@ function merci_delete_record($table, &$object, $update = array()) {
  *
  * @return
  *   Total reservation number for that type betweent the start and end dates
-TODO NOT USER.
+ TODO NOT USER.
  */
 function merci_reservation_totals($type, $startdate, $enddate) {
   $result = db_query("SELECT COUNT(nid) as total  FROM {node} WHERE type LIKE '%s' and status = 0 AND created > %d AND created < %d", $type, $startdate, $enddate);
@@ -124,7 +124,9 @@ function merci_reservation_totals($type, $startdate, $enddate) {
   return $reservationnode->total;
 }
 function merci_has_accessories($content_type) {
-  if(empty($content_type)) return;
+  if (empty($content_type)) {
+    return;
+  }
   return db_fetch_object(db_query("SELECT * FROM {vocabulary_node_types} WHERE type = '%s'", $content_type));
 }
 
@@ -142,7 +144,7 @@ function merci_total_usage($id, $type = 'user', $date = NULL) {
   $column_end_date   = $db_info['columns']['value2']['column'];
 
   if ($type == 'project') {
-    $result = db_query("SELECT $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 FROM {merci_reservation} mr JOIN node n ON n.vid = mr.vid JOIN og_ancestry og ON og.nid = n.nid JOIN {" .$table ."} ct ON n.vid = ct.vid WHERE group_nid = %d", $id);
+    $result = db_query("SELECT $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 FROM {merci_reservation} mr JOIN node n ON n.vid = mr.vid JOIN og_ancestry og ON og.nid = n.nid JOIN {" . $table . "} ct ON n.vid = ct.vid WHERE group_nid = %d", $id);
   }
   else {
     if ($date) {

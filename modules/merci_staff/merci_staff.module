@@ -31,30 +31,32 @@ function merci_staff_menu() {
 function merci_staff_user_load($post = NULL) {
   static $admin_user;
   global $user;
-  if(empty($admin_user)) {
+  if (empty($admin_user)) {
     $admin_user = $user;
   }
-  if($post and !$post['override'] and ($newuser = user_load(array('name' => $post['name'])))){
+  if ($post and !$post['override'] and ($newuser = user_load(array('name' => $post['name'])))) {
     $user = $newuser;
-  } else {
+  }
+  else {
     $user = $admin_user;
   }
 }
 
 /**
-* Implementation of hook_form_alter
-**/
+ * Implementation of hook_form_alter
+ **/
 
-function merci_staff_form_alter(&$form, &$form_state,$form_id) {
+function merci_staff_form_alter(&$form, &$form_state, $form_id) {
 
   global $user;
 
-  if($form_id != 'merci_reservation_node_form') {
+  if ($form_id != 'merci_reservation_node_form') {
     return;
   }
   if (isset($form_state['node'])) {
-      $node = $form_state['node'] + (array)$form['#node'];
-  } else {
+    $node = $form_state['node'] + (array) $form['#node'];
+  }
+  else {
     $node = $form['#node'];
   }
   $node = (object) $node;
@@ -74,19 +76,18 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
       'wrapper' => 'merci-staff-edit-form-wrapper',
       'method' => 'replace',
       'effect' => 'fade',
-
-      );
+    );
 
     unset($form['author']['name']);
 
-    //create override checkbox          
+    //create override checkbox
     $form['override'] = array(
       //'#type' => 'optionwidgets_onoff',
       '#type' => 'checkbox',
       '#title' => 'Override Validation',
       '#default_value' => $node->override,
       '#weight' => -97,
-      '#columns' => 0
+      '#columns' => 0,
     );
     $form['#prefix'] = '<div id="merci-staff-edit-form-wrapper">';
     $form['#suffix'] = '</div>';
@@ -103,21 +104,21 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
     }
 
     // Recreate the groups and choices based on the submitted name.
-    merci_staff_user_load((array)$node);
+    merci_staff_user_load((array) $node);
 
     if (module_exists('og')) {
-      og_form_add_og_audience($form,$form_state);
+      og_form_add_og_audience($form, $form_state);
     }
 
     // Add the current choices to the form.
     $reset = true;
-    foreach(element_children($form['choice_wrapper']['merci_reservation_items']) as $delta){
+    foreach (element_children($form['choice_wrapper']['merci_reservation_items']) as $delta) {
       if (is_numeric($delta)) {
         continue;
       }
-      $delta = substr($delta,7);
+      $delta = substr($delta, 7);
       $default = isset($node->merci_reservation_items["choice_" . $delta]['merci_item_nid']) ? $node->merci_reservation_items["choice_" . $delta]['merci_item_nid'] : '';
-      $form['choice_wrapper']['merci_reservation_items']["choice_".$delta]['merci_item_nid'] = 
+      $form['choice_wrapper']['merci_reservation_items']["choice_" . $delta]['merci_item_nid'] =
         _merci_choice_form($node, $form_state, $delta, $default, $reset);
       unset($reset);
     }
@@ -128,7 +129,7 @@ function merci_staff_form_alter(&$form, &$form_state,$form_id) {
 function merci_staff_node_validate($form, &$form_state) {
   merci_staff_user_load($form_state['values']);
   foreach ($form['#merci_staff_validated'] as $function) {
-    $function($form,$form_state);
+    $function($form, $form_state);
   }
   merci_staff_user_load();
 }
@@ -149,7 +150,7 @@ function merci_staff_autocomplete($string = '') {
     $references = _merci_staff_potential_references($field, $string);
     foreach ($references as $id => $row) {
       // Add a class wrapper for a few required CSS overrides.
-      $matches["{$row['title']}"] = '<div class="reference-autocomplete">'. $row['rendered'] . '</div>';
+      $matches["{$row['title']}"] = '<div class="reference-autocomplete">' . $row['rendered'] . '</div>';
     }
   }
   drupal_json($matches);
@@ -168,7 +169,7 @@ function merci_staff_update_name() {
   unset($selected_portion['#prefix'], $selected_portion['#suffix']);
 
   //$output = theme('status_messages') . drupal_render($selected_portion);
-  theme('status_messages') . 
+  theme('status_messages') .
   // BAD HACK to not show validation error messages for the date combo.  Not sure how to turn validation off for that.
   $output = drupal_get_js();
   $output .= drupal_render($selected_portion);
@@ -179,14 +180,14 @@ function merci_staff_update_name() {
 }
 
 function _merci_staff_potential_references($field, $string = '', $exact_string = FALSE) {
-    static $results = array();
+  static $results = array();
 
-    $references = _merci_staff_potential_references_standard($field, $string, $exact_string);
+  $references = _merci_staff_potential_references_standard($field, $string, $exact_string);
 
-    // Store the results.
-    $results[$field['field_name']][$string][$exact_string] = $references;
+  // Store the results.
+  $results[$field['field_name']][$string][$exact_string] = $references;
 
-    return $results[$field['field_name']][$string][$exact_string];
+  return $results[$field['field_name']][$string][$exact_string];
 }
 
 /**
@@ -194,55 +195,55 @@ function _merci_staff_potential_references($field, $string = '', $exact_string =
  * referenceable nodes defined by content types.
  */
 function _merci_staff_potential_references_standard( $field, $string = '', $exact_string = FALSE, $limit = '10' ) {
-    $args = $whereClause = $contactTypes = $contactSubTypes = array();
-    
-    if ( ! civicrm_initialize( ) ) {
-        return;
-    }
+  $args = $whereClause = $contactTypes = $contactSubTypes = array();
 
-    require_once 'CRM/Contact/BAO/ContactType.php';
-    require_once 'CRM/Core/BAO/UFMatch.php';
-    $basicTypes = CRM_Contact_BAO_ContactType::basicTypePairs( );
-      
-    foreach ( $basicTypes as $name => $label ) {
-        if ( is_array( $field[$name] ) ) {
-            $contactNames = array_filter( $field[$name] );
-            if ( !empty( $contactNames ) ) {
-                if ( in_array( $name, $contactNames ) ) {
-                    $contactTypes[] = $name;
-                } 
-                else {
-                    $contactSubTypes = array_merge( $contactSubTypes, array_keys( $contactNames ) );
-                }
-            }
+  if ( ! civicrm_initialize( ) ) {
+    return;
+  }
+
+  require_once 'CRM/Contact/BAO/ContactType.php';
+  require_once 'CRM/Core/BAO/UFMatch.php';
+  $basicTypes = CRM_Contact_BAO_ContactType::basicTypePairs( );
+
+  foreach ( $basicTypes as $name => $label ) {
+    if ( is_array( $field[$name] ) ) {
+      $contactNames = array_filter( $field[$name] );
+      if ( !empty( $contactNames ) ) {
+        if ( in_array( $name, $contactNames ) ) {
+          $contactTypes[] = $name;
         }
-    } 
-  
-    if ( !empty( $contactTypes ) ) {
-        $contactTypes  = implode( "','", $contactTypes );
-        $whereClause[] = "contact_type IN ( '{$contactTypes}' )";
-    }
-    
-    if ( !empty( $contactSubTypes ) ) {
-        $contactSubTypes = implode( "','", $contactSubTypes );
-        $whereClause[]   = "contact_sub_type IN ( '{$contactSubTypes}' )";
-    }
-   
-    $whereClause = empty( $whereClause ) ? '' : '(' . implode( ' OR ', $whereClause ) . ') AND';
-    $related_clause = "";
-
-    if (isset($string)) {
-        if ($exact_string) {
-            $string_clause = " AND display_name = %1";
-            $args[] = $string;
-        } 
         else {
-            $string_clause = " AND display_name LIKE %1";
-            $args[] = "%%" . $string ."%";
+          $contactSubTypes = array_merge( $contactSubTypes, array_keys( $contactNames ) );
         }
+      }
     }
-      
-    $q = "
+  }
+
+  if ( !empty( $contactTypes ) ) {
+    $contactTypes  = implode( "','", $contactTypes );
+    $whereClause[] = "contact_type IN ( '{$contactTypes}' )";
+  }
+
+  if ( !empty( $contactSubTypes ) ) {
+    $contactSubTypes = implode( "','", $contactSubTypes );
+    $whereClause[]   = "contact_sub_type IN ( '{$contactSubTypes}' )";
+  }
+
+  $whereClause = empty( $whereClause ) ? '' : '(' . implode( ' OR ', $whereClause ) . ') AND';
+  $related_clause = "";
+
+  if (isset($string)) {
+    if ($exact_string) {
+      $string_clause = " AND display_name = %1";
+      $args[] = $string;
+    }
+    else {
+      $string_clause = " AND display_name LIKE %1";
+      $args[] = "%%" . $string . "%";
+    }
+  }
+
+  $q = "
     SELECT civicrm_contact.id, display_name
     FROM civicrm_contact
     JOIN civicrm_uf_match ON civicrm_contact.id = civicrm_uf_match.contact_id
@@ -255,20 +256,20 @@ function _merci_staff_potential_references_standard( $field, $string = '', $exac
     AND display_name NOT LIKE '- -%%'
     AND display_name NOT LIKE ',%%'
     AND display_name NOT LIKE '..%%'
-    ". $string_clause ." LIMIT $limit";
-    $params = array( 1 => array( $args[0], "String" ) );
-    $dao = CRM_Core_DAO::executeQuery( $q, $params );
+    " . $string_clause . " LIMIT $limit";
+  $params = array(1 => array($args[0], "String"));
+  $dao = CRM_Core_DAO::executeQuery( $q, $params );
 
-    $references = array();
-    while ($dao->fetch()) {
-        $uid = CRM_Core_BAO_UFMatch::getUFId($dao->id);
-        $username = db_result(db_query("SELECT name FROM {users} WHERE uid=%d",$uid));
-        $references[$dao->id] = array(
-                                      'title' => $username,
-                                      'rendered' => $dao->display_name,
-                                      );
-    }
+  $references = array();
+  while ($dao->fetch()) {
+    $uid = CRM_Core_BAO_UFMatch::getUFId($dao->id);
+    $username = db_result(db_query("SELECT name FROM {users} WHERE uid=%d", $uid));
+    $references[$dao->id] = array(
+      'title' => $username,
+      'rendered' => $dao->display_name,
+    );
+  }
 
-    return $references;
+  return $references;
 }
 

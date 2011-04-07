@@ -28,7 +28,7 @@ function merci_uninstall() {
 
   // Need to load the CCK include file where content_field_instance_create() is defined.
   module_load_include('inc', 'content', 'includes/content.crud');
-  $results = db_query("SELECT field_name,type_name FROM {". content_instance_tablename() ."} WHERE type_name = 'merci_reservation'");
+  $results = db_query("SELECT field_name,type_name FROM {" . content_instance_tablename() . "} WHERE type_name = 'merci_reservation'");
   while ($field = db_fetch_array($results)) {
     content_field_instance_delete($field['field_name'], $field['type_name'], FALSE);
   }
@@ -87,7 +87,7 @@ function merci_enable() {
     $new_types = db_query("SELECT type FROM {node_type}");
   }
   else {
-    $new_types = db_query(db_rewrite_sql("SELECT type FROM {node} n WHERE type NOT IN (". db_placeholders($types, 'varchar') .")"), $types);
+    $new_types = db_query(db_rewrite_sql("SELECT type FROM {node} n WHERE type NOT IN (" . db_placeholders($types, 'varchar') . ")"), $types);
   }
   while ($new_type = db_fetch_object($new_types)) {
     db_query("INSERT INTO {merci_node_type} (type) VALUES ('%s')", $new_type->type);
@@ -178,7 +178,7 @@ function merci_schema() {
         'not null' => TRUE,
         'default' => 0,
         'description' => t("Number of hours the item can be used before fees are charged."),
-      ),      
+      ),
       'merci_active_status' => array(
         'type' => 'int',
         'not null' => TRUE,
@@ -606,7 +606,7 @@ function merci_update_6204() {
   $ret[] = update_sql("ALTER TABLE {merci_bucket_node}  ADD daypart1_price FLOAT NOT NULL, ADD daypart2_price FLOAT NOT NULL, ADD daypart3_price FLOAT NOT NULL;");
   $ret[] = update_sql("ALTER TABLE {merci_resource_node}  ADD daypart1_price FLOAT NOT NULL, ADD daypart2_price FLOAT NOT NULL, ADD daypart3_price FLOAT NOT NULL;");
   $ret[] = update_sql("ALTER TABLE {merci_node_type}  ADD daypart1_price FLOAT NOT NULL, ADD daypart2_price FLOAT NOT NULL, ADD daypart3_price FLOAT NOT NULL;");
-  
+
   return $ret;
 }
 
@@ -615,7 +615,7 @@ function merci_update_6205() {
   $ret[] = update_sql("ALTER TABLE {merci_bucket_node}  ADD weekend_price FLOAT NOT NULL;");
   $ret[] = update_sql("ALTER TABLE {merci_resource_node}  ADD weekend_price FLOAT NOT NULL;");
   $ret[] = update_sql("ALTER TABLE {merci_node_type}  ADD weekend_price FLOAT NOT NULL;");
-  
+
   return $ret;
 }
 
@@ -625,8 +625,8 @@ function merci_update_6206() {
 
   $results = db_query("SELECT type,type_setting FROM {merci_node_type}");
 
-  while($result = db_fetch_array($results)) {
-    variable_set('merci_type_setting_'.$result['type'],$result['type_setting']);
+  while ($result = db_fetch_array($results)) {
+    variable_set('merci_type_setting_' . $result['type'], $result['type_setting']);
   }
 
   return $ret;
@@ -657,8 +657,8 @@ function merci_update_6208() {
 
   $results = db_query("SELECT type,grouping FROM {merci_node_type}");
 
-  while($result = db_fetch_array($results)) {
-    variable_set('merci_grouping_'.$result['type'],$result['grouping']);
+  while ($result = db_fetch_array($results)) {
+    variable_set('merci_grouping_' . $result['type'], $result['grouping']);
   }
 
   return $ret;
@@ -667,19 +667,19 @@ function merci_update_6208() {
 function merci_update_6209() {
   $ret = array();
 
-  $ret[] = update_sql("ALTER TABLE {merci_bucket_node} 
-    CHANGE default_availability merci_default_availability TINYINT(4) NOT NULL DEFAULT '0', 
-    CHANGE late_fee_per_hour merci_late_fee_per_hour FLOAT NOT NULL DEFAULT '0', 
-    CHANGE rate_per_hour merci_rate_per_hour FLOAT NOT NULL DEFAULT '0', 
-    CHANGE daypart1_price merci_daypart1_price FLOAT NOT NULL DEFAULT '0', 
-    CHANGE daypart2_price merci_daypart2_price FLOAT NOT NULL DEFAULT '0', 
-    CHANGE daypart3_price merci_daypart3_price FLOAT NOT NULL DEFAULT '0', 
-    CHANGE weekend_price merci_weekend_price FLOAT NOT NULL DEFAULT '0', 
-    CHANGE fee_free_hours merci_fee_free_hours FLOAT NOT NULL DEFAULT '0', 
-    CHANGE min_cancel_hours merci_min_cancel_hours INT(11) NOT NULL DEFAULT '0', 
-    CHANGE autocheckout merci_autocheckout TINYINT(4) NOT NULL DEFAULT '0', 
-    CHANGE autocheckin merci_autocheckin TINYINT(4) NOT NULL DEFAULT '0', 
-    CHANGE selfcheckout merci_selfcheckout TINYINT(4) NOT NULL DEFAULT '0', 
+  $ret[] = update_sql("ALTER TABLE {merci_bucket_node}
+    CHANGE default_availability merci_default_availability TINYINT(4) NOT NULL DEFAULT '0',
+    CHANGE late_fee_per_hour merci_late_fee_per_hour FLOAT NOT NULL DEFAULT '0',
+    CHANGE rate_per_hour merci_rate_per_hour FLOAT NOT NULL DEFAULT '0',
+    CHANGE daypart1_price merci_daypart1_price FLOAT NOT NULL DEFAULT '0',
+    CHANGE daypart2_price merci_daypart2_price FLOAT NOT NULL DEFAULT '0',
+    CHANGE daypart3_price merci_daypart3_price FLOAT NOT NULL DEFAULT '0',
+    CHANGE weekend_price merci_weekend_price FLOAT NOT NULL DEFAULT '0',
+    CHANGE fee_free_hours merci_fee_free_hours FLOAT NOT NULL DEFAULT '0',
+    CHANGE min_cancel_hours merci_min_cancel_hours INT(11) NOT NULL DEFAULT '0',
+    CHANGE autocheckout merci_autocheckout TINYINT(4) NOT NULL DEFAULT '0',
+    CHANGE autocheckin merci_autocheckin TINYINT(4) NOT NULL DEFAULT '0',
+    CHANGE selfcheckout merci_selfcheckout TINYINT(4) NOT NULL DEFAULT '0',
     CHANGE sub_type merci_sub_type INT(11) NOT NULL DEFAULT '0'");
 
   $ret[] = update_sql("ALTER TABLE  {merci_node_type}
@@ -706,19 +706,19 @@ function merci_update_6209() {
 
   $ret[] = update_sql("ALTER TABLE  {merci_reservation} CHANGE  status  merci_reservation_status TINYINT( 4 ) NOT NULL DEFAULT  '1'");
 
-  $ret[] = update_sql("ALTER TABLE  {merci_reservation_detail} 
+  $ret[] = update_sql("ALTER TABLE  {merci_reservation_detail}
     CHANGE  placeholder_nid  merci_placeholder_nid INT( 11 ) NOT NULL DEFAULT  '0',
     CHANGE  item_nid  merci_item_nid INT( 11 ) NOT NULL DEFAULT  '0',
     CHANGE  item_status  merci_item_status INT( 11 ) NOT NULL DEFAULT  '0'
     ");
 
-  $ret[] = update_sql("ALTER TABLE  {merci_reservation_item_node} 
+  $ret[] = update_sql("ALTER TABLE  {merci_reservation_item_node}
     CHANGE  default_availability  merci_default_availability TINYINT( 4 ) NOT NULL DEFAULT  '0',
     CHANGE  sub_type  merci_sub_type INT( 11 ) NOT NULL DEFAULT  '0',
     CHANGE  item_status  merci_item_status INT( 11 ) NOT NULL DEFAULT  '0'
     ");
 
-  $ret[] = update_sql("ALTER TABLE  {merci_resource_node} 
+  $ret[] = update_sql("ALTER TABLE  {merci_resource_node}
     CHANGE  default_availability  merci_default_availability TINYINT( 4 ) NOT NULL DEFAULT  '0',
     CHANGE  late_fee_per_hour  merci_late_fee_per_hour FLOAT NOT NULL DEFAULT  '0',
     CHANGE  rate_per_hour  merci_rate_per_hour FLOAT NOT NULL DEFAULT  '0',
@@ -733,8 +733,8 @@ function merci_update_6209() {
     CHANGE  selfcheckout  merci_selfcheckout TINYINT( 4 ) NOT NULL DEFAULT  '0',
     CHANGE  sub_type  merci_sub_type INT( 11 ) NOT NULL DEFAULT  '0'");
 
-    cache_clear_all('merci_content_type_info','cache');
-    return $ret;
+  cache_clear_all('merci_content_type_info', 'cache');
+  return $ret;
 }
 function merci_update_6210() {
   $ret = array();
@@ -746,7 +746,7 @@ function merci_update_6210() {
 
 function merci_update_6211() {
 
-  return array(array('success' => TRUE, 'query' => 'Permissions have been changed.  Please edit your user permissions to make sure they are what you want.  I have done nothing for you.  Please refer to ' . l("MERCI Permissions","http://drupal.org/node/1013528") . ' documentation for more information'));
+  return array(array('success' => TRUE, 'query' => 'Permissions have been changed.  Please edit your user permissions to make sure they are what you want.  I have done nothing for you.  Please refer to ' . l("MERCI Permissions", "http://drupal.org/node/1013528") . ' documentation for more information'));
 }
 
 function merci_create_cck_fields() {
@@ -836,17 +836,17 @@ function merci_create_cck_fields() {
       ),
     ),
   );
-  
+
   // Need to load the CCK include file where content_field_instance_create() is defined.
   module_load_include('inc', 'content', 'includes/content.crud');
-  
+
   foreach ($merci_reservation_fields as $field) {
-    
-    
+
+
     // Create the fields
     if (!content_field_instance_read(array('field_name' => $field['field_name']), TRUE)) {
       content_field_instance_create($field, FALSE);
-      if  (array_key_exists('group',$field)) {
+      if (array_key_exists('group', $field)) {
         fieldgroup_update_fields($field);
       }
 

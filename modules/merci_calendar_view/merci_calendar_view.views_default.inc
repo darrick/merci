@@ -2,7 +2,7 @@
 
 /**
  * @file
- * merci calendar view default views 
+ * merci calendar view default views
  */
 
 

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * merci views handlers 
+ * merci views handlers
  */
 
 
