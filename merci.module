@@ -92,9 +92,8 @@ function merci_menu() {
   $items['admin/merci/manage/current_inventory'] = array(
     'title' => 'Current Inventory',
     'description' => 'Displays list',
-    'page callback' => 'merci_current_inventory',
-    'access arguments' => array('manage reservations'),
-    'file' => 'includes/menu.inc',
+    'page callback' => 'theme',
+    'access arguments' => array('merci_current_inventory'),
     'type' => MENU_NORMAL_ITEM,
   );
 
@@ -1051,6 +1050,10 @@ function merci_theme() {
         'title' => NULL,
       ),
     ),
+    'merci_current_inventory' => array(
+      'arguments' => array(),
+      'path' => drupal_get_path('module', 'merci') . '/theme',
+      'file' => 'theme.inc',
   );
 }
 
@@ -3046,32 +3049,15 @@ function merci_ahah_get_form() {
   // Stash original form action to avoid overwriting with drupal_rebuild_form().
   $form_state['action'] = $form['#action'];
 
-  //$form_state['submitted'] = TRUE;
-  // Continued from the above: when an AHAH update of the form is triggered
-  // without using a button, you generally don't want any validation to kick
-  // in. A typical example is adding new fields, possibly even required ones.
-  // You don't want errors to be thrown at the user until they actually submit
-  // their values. (Well, actually you want to be smart about this: sometimes
-  // you do want instant validation, but that's an even bigger pain to solve
-  // here so I'll leave that for later…)
-  // For the default "{$form_id}_validate" and "{$form_id}_submit" handlers.
-
-  // Disable #required and #element_validate validation.
-  // TODO figure out how to turn off validation for date_combo.
-  /*
-   $form['#validate'] = NULL;
-   $form['#submit'] = NULL;
-   // For customly set #validate and #submit handlers.
-   $form_state['submit_handlers'] = NULL;
-   $form_state['validate_handlers'] = NULL;
-   require_once( drupal_get_path('module', 'date') .'/date_elements.inc');
-   merci_disable_validation($form);
-   $element = $form['field_merci_date'][0];
-   date_combo_validate($element,$form_state);
-   */
+  // Ripped off from drupal_process_form.  
+  // We do the same except call validation.
   $form = form_builder($form_id, $form, $form_state);
+
+  // We have to do this in order for the date_combo to be rebuilt properly.
   $element = $form['field_merci_date'][0];
   date_combo_validate($element, $form_state);
+
+  // Continue ripping off drupal_proecss_form
   form_clean_id(NULL, TRUE);
   $form_state['redirect'] = NULL;
   form_execute_handlers('submit', $form, $form_state);
@@ -3084,18 +3070,31 @@ function merci_ahah_get_form() {
     cache_clear_all('storage_' . $form_state['values']['form_build_id'], 'cache_form');
   }
 
-  //  drupal_process_form($form_id, $form, $form_state);
+  // END ripping drupal_process_form.
   $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
-  // Clear any validation errors.
+  // Clear any validation errors.  Only the date field is validated so this will clear the error so it won't
+  // be outlined in red.
   form_set_error(NULL, '', TRUE);
   return array($form, $form_state);
 }
 
-function merci_disable_validation(&$form) {
-  foreach (element_children($form) as $child) {
-    $form[$child]['#validated'] = TRUE;
-    merci_disable_validation($form[$child]);
+function merci_ahah_output($selected_portion, $show_status = FALSE) {
+  if ($show_status) {
+    $output .= theme('status_messages');
   }
+  // To avoid doubling-up the wrapper, we have to remove it here.
+  if (is_array($selected_portion)) {
+    unset($selected_portion['#prefix'], $selected_portion['#suffix']);
+
+    //$output = theme('status_messages') . drupal_render($selected_portion);
+    // BAD HACK to not show validation error messages for the date combo.  Not sure how to turn validation off for that.
+    $output .= drupal_render($selected_portion);
+  } else if (is_string($selected_portion)) {
+    $output .= $selected_portion;
+  }
+
+  // Final rendering callback.
+  drupal_json(array('status' => TRUE, 'data' => $output));
 
 }
 

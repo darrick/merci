@@ -6,6 +6,26 @@
  */
 
 
+function merci_taxonomy_node_delete_vocabulary($node, $vid) {
+
+  if (empty($vid) or empty($node->vid)) {
+    return;
+  }
+  db_query("DELETE FROM {term_node} WHERE vid = %d and tid IN (SELECT tid FROM {term_data} td WHERE td.vid = %d)", $node->vid, $vid);
+}
+
+function merci_taxonomy_node_save_terms($node, $tids) {
+
+  if (empty($tids) or empty($node->vid)) {
+    return;
+  }
+
+  foreach ($tids as $tid) {
+    if ($tid) {
+      drupal_write_record('term_node', array('nid' => $node->nid, 'vid' => $node->vid, 'tid' => $tid));
+    }
+  }
+}
 
 function merci_node_type_update($info) {
   if (isset($info->old_type) && $info->type != $info->old_type) {

@@ -179,3 +179,59 @@ function theme_merci_build_reservation_table_form($form) {
   return $output;
 }
 
+/**
+ * returns the number of items currently checked out for each content type
+ * TODO: change this to a views view.
+ */
+function theme_merci_current_inventory() {
+
+  $header = array(
+    t('Item'),
+    t('On Hand'),
+    t('Unavailable'),
+    t('Checked Out'),
+    t('Total'),
+    t('Operations'),
+  );
+
+  $merci_types = merci_content_types();
+
+
+  $rows   = array();
+
+  foreach ($merci_types as $merci_type) {
+
+    $info = content_types($merci_type['type']);
+
+    $operations = l(t('Edit'), 'admin/content/node-type/' . $info['url_str'], array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+    $operations .= " | ";
+    $operations .= l(t('Add Item'), 'node/add/' . $info['url_str'], array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+
+    $checked_out = merci_get_reservation_count($merci_type['type']);
+
+    $available = merci_get_count($merci_type, MERCI_AVA_F);
+    $onhand = $available - $checked_out;
+
+    $unavailable = merci_get_count($merci_type, MERCI_UNA_F);
+    $total = $onhand + $unavailable + $checked_out;
+    $available = l($onhand, 'admin/merci/manage/current_inventory/' . $info['type'] . '/Available');
+    $checked_out = l($checked_out, 'admin/merci/manage/current_inventory/' . $info['type'] . '/checked-out');
+    $unavailable = l($unavailable, 'admin/merci/manage/current_inventory/' . $info['type'] . '/Unavailable');
+
+    $title = views_get_view('merci_inventory_view')
+       ? l($info['name'], 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'type[0]=' . $merci_type['type']))
+       : $info['name'];
+
+    $rows[] = array(
+      $title,
+      $available,
+      $unavailable,
+      $checked_out,
+      $total,
+      $operations,
+    );
+  }
+  $output = theme('table', $header, $rows);
+  $output .= '&raquo; ' . l(t('Add a new content type'), 'admin/content/types/add', array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+  return $output;
+}
