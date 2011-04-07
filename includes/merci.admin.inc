@@ -174,7 +174,7 @@ function merci_admin_settings() {
     '#type' => 'checkbox',
     '#title' => t('Lock Fields'),
     '#default_value' => $field['locked'],
-    '#description' =>  t('MERCI requires a Date field to function. This field is locked by default.  Altering or deleting the Date field could cause serious problems.  Always backup before altering this field!'),
+    '#description' => t('MERCI requires a Date field to function. This field is locked by default.  Altering or deleting the Date field could cause serious problems.  Always backup before altering this field!'),
   );
 
   $form = system_settings_form($form);
@@ -182,6 +182,10 @@ function merci_admin_settings() {
   return ($form);
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_admin_settings_submit($form, &$form_state) {
   $field             = content_fields('field_merci_date');
   if ($form_state['values']['merci_lock'] != $field['locked']) {

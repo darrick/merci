@@ -109,22 +109,6 @@ function merci_menu() {
     'file' => 'includes/merci.admin.inc',
   );
 
-  $items['admin/merci/unlock'] = array(
-    'title' => 'Unlock Core MERCI Fields',
-    'page callback' => 'merci_unlock',
-    'access arguments' => array('access administration pages'),
-    'file' => 'includes/merci.admin.inc',
-    'type' => MENU_CALLBACK,
-  );
-
-  $items['admin/merci/lock'] = array(
-    'title' => 'Lock Core MERCI Fields',
-    'page callback' => 'merci_lock',
-    'access arguments' => array('access administration pages'),
-    'file' => 'includes/merci.admin.inc',
-    'type' => MENU_CALLBACK,
-  );
-
   $items['admin/settings/merci/edit'] = array(
     'title' => 'Edit',
     'type' => MENU_DEFAULT_LOCAL_TASK,
