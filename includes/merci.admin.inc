@@ -168,47 +168,27 @@ function merci_admin_settings() {
     '#description' => t('This option will add log messages at several points in the resevervation process making it easier to diagnose configuration issues.'),
   );
 
-  //check to see if the fields are locked
-  $result = db_query("SELECT locked FROM {content_node_field} WHERE field_name = '%s'", 'field_merci_date');
+  $field             = content_fields('field_merci_date');
 
-  $message = t('MERCI requires a Date field to function. This field is locked by default.  Altering or deleting the Date field could cause serious problems.  Always backup before altering this field!') . '<br /><br />';
-
-  $field_state = db_fetch_object($result);
-  if ($field_state->locked) {
-    $value = t('Core MERCI fields are currently locked.') . ' ' . l(t('Unlock them.'), 'admin/merci/unlock',   array('query' => drupal_get_destination()));
-
-  }
-  else {
-    $value = t('Core MERCI fields are currently unlocked.') . ' ' . l(t('Lock them.'), 'admin/merci/lock',   array('query' => drupal_get_destination()));
-  }
-
-  //TODO: Change this to AHAH call
-  $form['merci_advanced']['merci_unlock'] = array(
-    '#type' => 'markup',
-    '#title' => t('Unlock Fields'),
-    '#value' => '<div>' . $message . $value . '</div>',
+  $form['merci_advanced']['merci_lock'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Lock Fields'),
+    '#default_value' => $field['locked'],
+    '#description' =>  t('MERCI requires a Date field to function. This field is locked by default.  Altering or deleting the Date field could cause serious problems.  Always backup before altering this field!'),
   );
 
-  return system_settings_form($form);
+  $form = system_settings_form($form);
+  $form['#submit'][] = 'merci_admin_settings_submit';
+  return ($form);
 }
 
-
-
-function merci_unlock() {
-  db_query("UPDATE {content_node_field} SET locked = 0 WHERE field_name = 'field_merci_date'");
-  $return = $_GET["destination"];
-  if (!$return) {
-    $return = 'admin/settings/merci';
+function merci_admin_settings_submit($form, &$form_state) {
+  $field             = content_fields('field_merci_date');
+  if ($form_state['values']['merci_lock'] != $field['locked']) {
+    $field['locked'] = $form_state['values']['merci_lock'];
+    module_load_include('inc', 'content', 'includes/content.crud');
+    content_field_instance_update($field);
   }
-  drupal_goto($return);
 }
 
-function merci_lock() {
-  db_query("UPDATE {content_node_field} SET locked = 1 WHERE field_name = 'field_merci_date'");
-  $return = $_GET["destination"];
-  if (!$return) {
-    $return = 'admin/settings/merci';
-  }
-  drupal_goto($return);
-}
 
