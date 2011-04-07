@@ -1,6 +1,0 @@
-
-name = MERCI Role Rule Override
-package = MERCI
-description = "Allows overriding of MERCI checkout rules for users with specific roles"
-core = 6.x
-dependencies[] = merci
