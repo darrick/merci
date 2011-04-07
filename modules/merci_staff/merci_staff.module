@@ -5,6 +5,10 @@
  * merci_staff functions
  */
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_staff_menu() {
   $items = array();
 
@@ -46,6 +50,10 @@ function merci_staff_user_load($post = NULL) {
  * Implementation of hook_form_alter
  **/
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_staff_form_alter(&$form, &$form_state, $form_id) {
 
   global $user;
@@ -126,6 +134,10 @@ function merci_staff_form_alter(&$form, &$form_state, $form_id) {
   }
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_staff_node_validate($form, &$form_state) {
   merci_staff_user_load($form_state['values']);
   foreach ($form['#merci_staff_validated'] as $function) {

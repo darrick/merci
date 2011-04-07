@@ -7,7 +7,7 @@
  */
 
 /**
- * Implementation of hook_views_data().
+ * Implements hook_views_data().
  */
 function merci_views_data() {
   $data = array();
@@ -496,6 +496,10 @@ function merci_views_data() {
   return $data;
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_views_plugins() {
   return array(
     'module' => 'views', // This just tells our themes are elsewhere.

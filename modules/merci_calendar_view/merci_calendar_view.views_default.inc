@@ -7,7 +7,7 @@
 
 
 /**
- * Implementation of hook_views_default_views().
+ * Implements hook_views_default_views().
  */
 function merci_calendar_view_views_default_views() {
 

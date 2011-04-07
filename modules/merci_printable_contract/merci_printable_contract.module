@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function merci_printable_contract_menu() {
 
@@ -37,10 +37,18 @@ function merci_printable_contract_menu() {
   return $items;
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_printable_contract_content_access($node, $perm) {
   return (user_access($perm) and $node->type == 'merci_reservation');
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_printable_contract_theme() {
   $path = drupal_get_path('module', 'merci_printable_contract');
 

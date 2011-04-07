@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_install().
+ * Implements hook_install().
  */
 function merci_inventory_install() {
   //module isn't enabled on install, calling this processes node_info so node types are created before processing create_content_types()
