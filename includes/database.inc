@@ -27,6 +27,9 @@ function merci_taxonomy_node_save_terms($node, $tids) {
   }
 }
 
+function merci_nodes_for_type_count($type) {
+  return db_result(db_query("SELECT COUNT(nid) FROM {node} WHERE type = '%s'", $type));
+}
 function merci_node_type_update($info) {
   if (isset($info->old_type) && $info->type != $info->old_type) {
     db_query("UPDATE {merci_node_type} SET type = '%s' WHERE type = '%s'", $info->type, $info->old_type);

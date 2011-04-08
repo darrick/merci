@@ -67,6 +67,7 @@ class MerciTestCase extends DrupalWebTestCase {
       'merci_hours_sun' => '09:00-17:00',
       'merci_hours_admin' => '07:00-22:00',
       'merci_closed_dates' => '12-25',
+      'merci_lock'    => FALSE,
     );
 
     $this->merciCreateConfig($settings);
@@ -77,8 +78,6 @@ class MerciTestCase extends DrupalWebTestCase {
     $this->drupalPost('admin/settings/date-time' , $settings, t('Save configuration'));
     $this->assertText(t("The configuration options have been saved."));
 
-    $this->drupalGet('admin/merci/unlock');
-    node_types_rebuild();
     $settings = array ( 
       'input_format' => 'Y-m-d H:i',
     );

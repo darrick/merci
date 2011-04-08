@@ -128,6 +128,23 @@ function template_preprocess_merci_conflict_grid(&$variables) {
   $variables['pretty_hours'] = $pretty_hours;
 }
 
+function theme_merci_type_setting(&$element) {
+  $element['#description'] = filter_xss(theme('item_list', $element['#description_items']));
+  $element['#type'] = 'radios';
+  unset($element['#title']);
+  return drupal_render($element);
+}
+/**
+ * Theme the reservation form for choices.
+ */
+function theme_merci_choices($form) {
+  // Change the button title to reflect the behavior when using JavaScript.
+  //drupal_add_js('if (Drupal.jsEnabled) { $(document).ready(function() { $("#edit-merci-more").val("'. t('Add another item') {  .'"); }); }', 'inline');}
+
+  $output = '';
+  $output .= drupal_render($form);
+  return $output;
+}
 /**
  * Builds the reserved items table.
  */
