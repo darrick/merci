@@ -50,6 +50,7 @@ function merci_taxonomy_node_save_terms($node, $tids) {
 function merci_nodes_for_type_count($type) {
   return db_result(db_query("SELECT COUNT(nid) FROM {node} WHERE type = '%s'", $type));
 }
+
 function merci_node_type_update($info) {
   if (isset($info->old_type) && $info->type != $info->old_type) {
     db_query("UPDATE {merci_node_type} SET type = '%s' WHERE type = '%s'", $info->type, $info->old_type);
@@ -62,8 +63,8 @@ function merci_node_type_existing($type) {
   return db_result(db_query("SELECT type FROM {merci_node_type} WHERE type = '%s'", $type));
 }
 
-function merci_node_type_delete($type) {
-  db_query("DELETE FROM {merci_node_type} WHERE type = '%s'", $type);
+function merci_node_type_delete($info) {
+  db_query("DELETE FROM {merci_node_type} WHERE type = '%s'", $info->type);
   variable_del('merci_type_setting_' . $info->type);
   cache_clear_all('merci_' . $info->type . '_data', 'cache');
   cache_clear_all('merci_content_type_info', 'cache');
@@ -205,4 +206,25 @@ function merci_total_usage($id, $type = 'user', $date = NULL) {
   }
 
   return $minutes;
+}
+
+function merci_incomplete_reservations_for_item_nid($nid) {
+    // Determine CCK table and columns the date data is stored in.
+    $field           = content_fields('field_merci_date');
+    $db_info         = content_database_info($field);
+    $table           = $db_info['table'];
+    $column_end_date = $db_info['columns']['value2']['column'];
+
+    $time = gmdate('Y-m-d H:i:s');
+
+    // Pull any incomplete reservations that use the item in question
+    $reservations = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {" . $table . "} ct ON ct.vid = n.vid INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid WHERE md.merci_item_nid = %d AND " . $column_end_date . " >= '%s' AND NOT (md.merci_item_status <= %d)"), $nid, $time, MERCI_ITEM_STATUS_AVAILABLE);
+
+    $bad_reservations = array();
+    while ($reservation = db_fetch_object($reservations)) {
+      $bad_reservations[] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
+    }
+
+    return $bad_reservations;
+
 }

@@ -141,7 +141,7 @@ function merci_node_type($op, $info) {
       break;
 
     case 'delete':
-      merci_node_type_delete($info->type);
+      merci_node_type_delete($info);
       break;
   }
 }
@@ -184,17 +184,14 @@ function merci_access($op, $node, $account) {
  * Implementation of hook_load().
  */
 function merci_load($node) {
-  if ($node->type == 'merci_reservation') {
-    $return = new stdClass();
-    $return->merci_reservation_status = merci_reservation_status($node);
+  $return = new stdClass();
+  $return->merci_reservation_status = merci_reservation_status($node);
 
-    // TODO get rid of merci array.  should match form api post fields.
-    $return->merci_reservation_items = merci_reservation_items($node);
+  // TODO get rid of merci array.  should match form api post fields.
+  $return->merci_reservation_items = merci_reservation_items($node);
 
-    return $return;
-  }
+  return $return;
 }
-
 
 /**
  * Implementation of hook_nodeapi().
@@ -211,12 +208,6 @@ function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         // Merge in reservable items settings or else just use the default defined in the content type.
         if ($type != 'reservation') {
           return (array) (merci_load_item_settings($node));
-        }
-        break;
-
-      case 'validate':
-        if ($type != 'reservation') {
-          merci_validate_default_availability($node);
         }
         break;
 
@@ -501,37 +492,6 @@ function _merci_content_type_info($reset = FALSE) {
   return $info;
 }
 
-/**
- * Validates the state change of a reservable item.
- *
- * @param $node
- *   The item node.
- */
-function merci_validate_default_availability($node) {
-
-  // Only perform the check if the item is set to an unavailable state.
-  if (in_array((int) $node->merci_default_availability, array(MERCI_UNA_F, MERCI_UNA_S))) {
-    // Determine CCK table and columns the date data is stored in.
-    $field           = content_fields('field_merci_date');
-    $db_info         = content_database_info($field);
-    $table           = $db_info['table'];
-    $column_end_date = $db_info['columns']['value2']['column'];
-
-    $time = gmdate('Y-m-d H:i:s');
-
-    // Pull any incomplete reservations that use the item in question
-    $reservations = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {" . $table . "} ct ON ct.vid = n.vid INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid WHERE md.merci_item_nid = %d AND " . $column_end_date . " >= '%s' AND NOT (md.merci_item_status <= %d)"), $node->nid, $time, MERCI_ITEM_STATUS_AVAILABLE);
-
-    $bad_reservations = array();
-    while ($reservation = db_fetch_object($reservations)) {
-      $bad_reservations[] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
-    }
-
-    if (!empty($bad_reservations)) {
-      form_set_error('merci_default_availability', t('%title can not be set to an unavailable status until it is removed from the following reservations:', array('%title' => $node->title)) . theme('item_list', $bad_reservations));
-    }
-  }
-}
 
 /**
  * Validates if an item node can be deleted.

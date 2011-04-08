@@ -542,6 +542,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
             '#options' => merci_item_status(),
             '#description' => t('If no availability information is defined for a given time, the resource falls back onto this setting.'),
             '#default_value' => $default_availability,
+            '#element_validate' => array('merci_validate_default_availability'),
           );
         }
         $form['merci_sub_type'] = array(
@@ -1673,20 +1674,20 @@ function merci_load_item_settings($object) {
     // resource or bucket.
     $merci_type = $content_settings['merci_type_setting'];
 
-    $item_settings = merci_reservation_item_node_settings($vid);;
+    $item_settings = merci_reservation_item_node_settings($vid);
     switch ($merci_type) {
       case 'bucket':
         // TODO: move to seperate module.
         if ($item_settings['merci_sub_type'] == MERCI_SUB_TYPE_RESERVATION) {
           unset($item_settings['merci_default_availability']);
           unset($item_settings['merci_item_status']);
-          $item_settings += merci_bucket_node_settings($vid);;
+          $item_settings += merci_bucket_node_settings($vid);
         }
         break;
 
       case 'resource':
         // TODO: move to seperate module.
-        $item_settings += merci_resource_node_settings($vid);;
+        $item_settings += merci_resource_node_settings($vid);
         break;
     }
   }
@@ -1696,5 +1697,28 @@ function merci_load_item_settings($object) {
   }
   else {
     return (object) ($content_settings);
+  }
+}
+/**
+ * Validates the state change of a reservable item.
+ *
+ * @param $node
+ *   The item node.
+ */
+function merci_validate_default_availability($element, &$form_state) {
+
+  // Only perform the check if the item is set to an unavailable state.
+  if (in_array((int) $element['#value'], array(MERCI_UNA_F, MERCI_UNA_S))) {
+
+    $bad_reservations = merci_incomplete_reservations_for_item_nid($form_state['values']['nid']);
+    if (!empty($bad_reservations)) {
+      $output = '<ul>'
+      foreach ($bad_reservations as $node) {
+        $output .= '<li>' . $node . '</li>';
+      }
+      $output .= '</ul>'
+      form_set_error('merci_default_availability', t('%title can not be set to an unavailable status until it is removed from the following reservations:', array('%title' => $form_state['values']['title'])) . $output);
+      
+    }
   }
 }
