@@ -193,60 +193,90 @@ function merci_load($node) {
   return $return;
 }
 
+function merci_node_load(&$nodes, $types) {
+  // Process active MERCI node types and reservation nodes.
+  foreach ($nodes as $nid => $node) {
+    if (merci_is_merci_type($node->type)) {
+      $settings = merci_load_item_settings($node);
+      foreach ($settings as $key => $value) {
+        $nodes[$nid]->{$key} = $value;
+      }
+    }
+  }
+}
+
+function merci_node_insert($node) {
+  // Process active MERCI node types and reservation nodes.
+  if (merci_is_merci_type($node->type)) {
+    $merci_type = merci_type_setting($node->type);
+    drupal_write_record('merci_' . $merci_type . '_node', $node);
+    drupal_write_record('merci_reservation_item_node', $node);
+  }
+}
+function merci_node_update($node) {
+  // Process active MERCI node types and reservation nodes.
+  if (merci_is_merci_type($node->type)) {
+    $merci_type = merci_type_setting($node->type);
+    if ($node->revision) {
+      drupal_write_record('merci_' . $merci_type . '_node', $node);
+      drupal_write_record('merci_reservation_item_node', $node);
+    } else {
+      drupal_write_record('merci_' . $merci_type . '_node', $node, 'vid');
+      drupal_write_record('merci_reservation_item_node', $node, 'vid');
+    }
+  }
+}
+function merci_node_delete($node) {
+  // Process active MERCI node types and reservation nodes.
+  if (merci_is_merci_type($node->type)) {
+    $merci_type = merci_type_setting($node->type);
+    $node->merci_placeholder_nid = $node->nid;
+    merci_delete_record('merci_reservation_detail', $node, 'merci_placeholder_nid');
+    merci_delete_record('merci_' . $merci_type . '_node', $node, 'nid');
+    merci_delete_record('merci_reservation_item_node', $node, 'nid');
+  }
+}
+function merci_node_revision_delete($node) {
+  // Process active MERCI node types and reservation nodes.
+  if (merci_is_merci_type($node->type)) {
+    $merci_type = merci_type_setting($node->type);
+    merci_delete_record('merci_' . $merci_type . '_node', $node, 'vid');
+    merci_delete_record('merci_reservation_item_node', $node, 'vid');
+  }
+  else if ($type == 'merci_reservation') {
+    merci_delete_record('merci_reservation', $node, 'vid');
+    merci_delete_record('merci_reservation_detail', $node, 'vid');
+  }
+}
 /**
  * Implementation of hook_nodeapi().
  */
 function merci_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 
-  // Process active MERCI node types and reservation nodes.
-  if (merci_is_merci_type($node->type) || $node->type == 'merci_reservation') {
-    // reservation, bucket or resource.
-    $type = $node->type == 'merci_reservation' ? 'reservation' : merci_type_setting($node->type);
-    switch ($op) {
-      //case 'prepare': prepare and load are always called one after the other.  Just need to use one.
-      case 'load':
-        // Merge in reservable items settings or else just use the default defined in the content type.
-        if ($type != 'reservation') {
-          return (array) (merci_load_item_settings($node));
-        }
-        break;
+  switch ($op) {
+    //case 'prepare': prepare and load are always called one after the other.  Just need to use one.
+    case 'load':
+      // Merge in reservable items settings or else just use the default defined in the content type.
+      if (merci_is_merci_type($node->type)) {
+        return (array) (merci_load_item_settings($node));
+      }
+      break;
 
-      case 'insert':
-      case 'update':
-        if ($type != 'reservation') {
-          if ($op == 'insert' || $node->revision) {
-            drupal_write_record('merci_' . $type . '_node', $node);
-            drupal_write_record('merci_reservation_item_node', $node);
-          }
-          else {
-            drupal_write_record('merci_' . $type . '_node', $node, 'vid');
-            drupal_write_record('merci_reservation_item_node', $node, 'vid');
-          }
-        }
-        break;
+    case 'insert':
+      merci_node_insert($node);
+      break;
 
-      case 'delete':
-        // In the case were a reservation placeholder node is being
-        // deleted, remove it from the detail table here.
-        if ($type != 'reservation') {
-          $node->merci_placeholder_nid = $node->nid;
-          merci_delete_record('merci_reservation_detail', $node, 'merci_placeholder_nid');
-          merci_delete_record('merci_' . $type . '_node', $node, 'nid');
-          merci_delete_record('merci_reservation_item_node', $node, 'nid');
-        }
-        break;
+    case 'update':
+      merci_node_update($node);
+      break;
 
-      case 'delete revision':
-        if ($type != 'reservation') {
-          merci_delete_record('merci_' . $type . '_node', $node, 'vid');
-          merci_delete_record('merci_reservation_item_node', $node, 'vid');
-        }
-        else {
-          merci_delete_record('merci_reservation', $node, 'vid');
-          merci_delete_record('merci_reservation_detail', $node, 'vid');
-        }
-        break;
-    }
+    case 'delete':
+      merci_node_delete($node);
+      break;
+
+    case 'delete revision':
+      merci_node_revision_delete($node);
+      break;
   }
 }
 

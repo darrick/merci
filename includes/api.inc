@@ -1712,11 +1712,11 @@ function merci_validate_default_availability($element, &$form_state) {
 
     $bad_reservations = merci_incomplete_reservations_for_item_nid($form_state['values']['nid']);
     if (!empty($bad_reservations)) {
-      $output = '<ul>'
+      $output = '<ul>';
       foreach ($bad_reservations as $node) {
         $output .= '<li>' . $node . '</li>';
       }
-      $output .= '</ul>'
+      $output .= '</ul>';
       form_set_error('merci_default_availability', t('%title can not be set to an unavailable status until it is removed from the following reservations:', array('%title' => $form_state['values']['title'])) . $output);
       
     }
