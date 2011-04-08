@@ -34,6 +34,123 @@ function merci_verbose_logging($string) {
 }
 
 
+function merci_validate_merci_selected_items($form, &$form_state) {
+  $node = (object) $form_state['values'];
+
+  $choices = $node->merci_reservation_items;
+
+  $reservation_nid = $node->nid;
+
+  // ****
+  // Build date objects we'll need for our different validations.
+  // ****
+  $start              = $node->field_merci_date[0]['value'];
+  $end                = $node->field_merci_date[0]['value2'];
+
+  // Do this even for reservations with merci status of canceled and checked in.
+  $choice_counts = array();
+  $total_counts = array();
+  $messages = array();
+  $conflicts = array();
+  foreach ($choices as $did => $item) {
+
+    if (is_array($item)) {
+      $value = $item['merci_item_nid'];
+    }
+    else {
+      $value = $item;
+    }
+
+    if (is_numeric($did) and !$value) {
+      $value = $item['type'];
+    }
+
+    if ($value) {
+      // Only include active buckets, and content types the user
+      // can reserve.
+      $messages[$did] = '';
+      if (is_numeric($value)) {
+        $new_item = node_load($value);
+        $title    = $new_item->title;
+        $type     = $new_item->type;
+      }
+      else {
+        $title = node_get_types('name', $value);
+        $type = $value;
+      }
+
+      $content_settings = merci_load_item_settings($type);
+
+      // Is this content type active?
+      if ($content_settings->merci_active_status != MERCI_STATUS_ACTIVE) {
+        $messages[$did] = '<div> ' . t("%name is not active.", array('%name' => $title)) . '</div>';
+        continue;
+      }
+
+      // Does the user have access to manage reservations or this content type?
+      if (!user_access('manage reservations') && !merci_check_content_type_user_permissions($type)) {
+        $messages[$did] = '<div> ' . t("You do not have permission to reserve %name.", array('%name' => $title)) . '</div>';
+        continue;
+      }
+
+      // Do we have the item available at this time?
+      if (!isset($total_counts[$type])) {
+        if (is_numeric($value)) {
+          $item_options = merci_get_reservable_items($type, $start, $end, $reservation_nid);
+          if (merci_type_setting($type) == 'bucket') {
+            $total_counts[$type][$type] = $choice_counts[$type][$type] = merci_get_available_bucket_count($type, $start, $end, $node->vid) - $content_settings->merci_spare_items;
+          }
+          foreach ($item_options as $nid => $item_nid) {
+            $total_counts[$type][$nid] = $choice_counts[$type][$nid] = 1;
+          }
+        }
+        else {
+          $total_counts[$type][$value] = $choice_counts[$type][$value] = merci_get_available_bucket_count($type, $start, $end, $node->vid) - $content_settings->merci_spare_items;
+        }
+      }
+      if (!$choice_counts[$type][$value] and $total_counts[$type][$value]) {
+        $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount available at the times you've selected.", array('%name' => $title, '%amount' => $total_counts[$type][$value])) . '</div>';
+      }
+      elseif (!$choice_counts[$type][$value]) {
+        $overdue_items_array = merci_overdue_items($type, $start, $reservation_nid = NULL);
+        if (!empty($overdue_items_array)) {
+          $messages[$did] = '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
+          foreach ($overdue_items_array as $reservations) {
+            foreach (array_keys($reservations) as $nid) {
+              $overdue = node_load($nid);
+              $messages[$did] .= '<div> ' . l($overdue->title, 'node/' . $overdue->nid) . '</div>';
+            }
+          }
+        }
+        else {
+          //TODO: should not be doing theming here.
+          $messages[$did] .= merci_theme_conflict_grid($type, $title, $start, $end, $value, $node->vid);
+        }
+      }
+      else {
+        //drupal_set_message(t('There are no time conflicts with this Reservation.'));
+      }
+      $choice_counts[$type][$value]--;
+      if (is_numeric($value) ) {
+        $choice_counts[$type][$type]--;
+      }
+
+      // Check item restrictions.  max hours, etc.
+      $restrictions = merci_check_content_type_restrictions($type, $start, $end);
+
+      if (!empty($restrictions)) {
+        foreach ($restrictions as $restriction) {
+          $messages[$did] .= '<div>' . t($restriction, array('%name' => $title)) . '</div>';
+        }
+      }
+      if (!empty($messages[$did])) {
+        form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
+      }
+    }
+  }
+  return $messages;
+}
+
 function merci_validate_merci_reservation_date($form, &$form_state) {
   $node = (object) $form_state['values'];
 
@@ -1529,4 +1646,55 @@ function _merci_after_build($form, &$form_state) {
     ),
   );
   return $form;
+}
+// Loads the current settings for reservable item nodes.
+/* If you just want the content type settings just pass only node->type.
+ */
+
+function merci_load_item_settings($object) {
+
+  if (is_string($object)) {
+    $type = $object;
+  }
+  else {
+    $node = (array) $object;
+    $type = $node['type'];
+  }
+
+  $item_settings = array();
+  // Settings from the content type edit page.
+  $content_settings = merci_content_types($type);
+  if (empty($content_settings)) {
+    $content_settings = array();
+  }
+
+  if ($node['nid']) {
+    // Settings common to all merci item nodes.
+    // resource or bucket.
+    $merci_type = $content_settings['merci_type_setting'];
+
+    $item_settings = merci_reservation_item_node_settings($vid);;
+    switch ($merci_type) {
+      case 'bucket':
+        // TODO: move to seperate module.
+        if ($item_settings['merci_sub_type'] == MERCI_SUB_TYPE_RESERVATION) {
+          unset($item_settings['merci_default_availability']);
+          unset($item_settings['merci_item_status']);
+          $item_settings += merci_bucket_node_settings($vid);;
+        }
+        break;
+
+      case 'resource':
+        // TODO: move to seperate module.
+        $item_settings += merci_resource_node_settings($vid);;
+        break;
+    }
+  }
+
+  if ($item_settings) {
+    return (object) ($item_settings + $content_settings);
+  }
+  else {
+    return (object) ($content_settings);
+  }
 }

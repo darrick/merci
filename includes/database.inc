@@ -5,6 +5,26 @@
  * MERCI - Managed Equipment Reservation Checkout and Inventory
  */
 
+function merci_reservation_item_node_settings($vid) {
+  if(!$vid) {
+    return;
+  }
+  return db_fetch_array(db_query("SELECT merci_default_availability, merci_sub_type, merci_item_status FROM {merci_reservation_item_node} WHERE vid = %d", $vid));
+}
+
+function merci_bucket_node_settings($vid) {
+  if(!$vid) {
+    return;
+  }
+  return db_fetch_array(db_query("SELECT merci_late_fee_per_hour, merci_rate_per_hour, merci_fee_free_hours FROM {merci_bucket_node} WHERE vid = %d", $vid));
+}
+
+function merci_resource_node_settings($vid) {
+  if(!$vid) {
+    return;
+  }
+  return db_fetch_array(db_query("SELECT merci_late_fee_per_hour, merci_rate_per_hour, merci_fee_free_hours, merci_min_cancel_hours, merci_autocheckout, merci_autocheckin, merci_selfcheckout FROM {merci_resource_node} WHERE vid = %d", $vid)); 
+}
 
 function merci_taxonomy_node_delete_vocabulary($node, $vid) {
 
