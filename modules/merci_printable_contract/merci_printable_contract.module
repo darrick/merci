@@ -50,13 +50,11 @@ function merci_printable_contract_content_access($node, $perm) {
  * @see http://drupal.org/node/1354
  */
 function merci_printable_contract_theme() {
-  $path = drupal_get_path('module', 'merci_printable_contract');
 
   return array(
     'merci_printable_contract' => array(
       'template' => 'merci-printable-contract',
-      'path' => "$path/",
-      'arguments' => array('start_date' => NULL, 'end_date' => NULL, 'hours' => NULL, 'username' => NULL, 'email' => NULL, 'phone' => NULL, 'items' => NULL),
+      'arguments' => array('node' => NULL),
     ),
   );
 }
@@ -114,6 +112,14 @@ function merci_printable_contract_admin_settings() {
 
 function merci_printable_contract($node) {
 
+  print theme('merci_printable_contract', $node);
+
+}
+// merci_printable_contract
+
+function merci_preprocess_merci_printable_contract($variables) {
+
+  $node = $variables['node'];
   setlocale(LC_MONETARY, 'en_US');
 
   $user     = user_load($node->uid);
@@ -151,10 +157,14 @@ function merci_printable_contract($node) {
 
   $hours = round((intval(date_format($end_date, "U")) - intval(date_format($start_date, "U"))) / 3600, 2);
 
+  $variables['start_date'] = $start_date;
+  $variables['end_date'] = $end_date;
+  $variables['hours'] = $hours;
+  $variables['username'] = $username;
+  $variables['email'] = $email;
+  $variables['phone'] = $phone;
+  $variables['items'] = $items;
 
-  $html = theme('merci_printable_contract', $start_date, $end_date, $hours, $username, $email, $phone, $items);
-
-  print $html;
 }
 // merci_printable_contract
 
