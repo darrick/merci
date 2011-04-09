@@ -6,24 +6,24 @@
  */
 
 function merci_reservation_item_node_settings($vid) {
-  if(!$vid) {
+  if (!$vid) {
     return;
   }
   return db_fetch_array(db_query("SELECT merci_default_availability, merci_sub_type, merci_item_status FROM {merci_reservation_item_node} WHERE vid = %d", $vid));
 }
 
 function merci_bucket_node_settings($vid) {
-  if(!$vid) {
+  if (!$vid) {
     return;
   }
   return db_fetch_array(db_query("SELECT merci_late_fee_per_hour, merci_rate_per_hour, merci_fee_free_hours FROM {merci_bucket_node} WHERE vid = %d", $vid));
 }
 
 function merci_resource_node_settings($vid) {
-  if(!$vid) {
+  if (!$vid) {
     return;
   }
-  return db_fetch_array(db_query("SELECT merci_late_fee_per_hour, merci_rate_per_hour, merci_fee_free_hours, merci_min_cancel_hours, merci_autocheckout, merci_autocheckin, merci_selfcheckout FROM {merci_resource_node} WHERE vid = %d", $vid)); 
+  return db_fetch_array(db_query("SELECT merci_late_fee_per_hour, merci_rate_per_hour, merci_fee_free_hours, merci_min_cancel_hours, merci_autocheckout, merci_autocheckin, merci_selfcheckout FROM {merci_resource_node} WHERE vid = %d", $vid));
 }
 
 function merci_taxonomy_node_delete_vocabulary($node, $vid) {
@@ -209,23 +209,23 @@ function merci_total_usage($id, $type = 'user', $date = NULL) {
 }
 
 function merci_incomplete_reservations_for_item_nid($nid) {
-    // Determine CCK table and columns the date data is stored in.
-    $field           = content_fields('field_merci_date');
-    $db_info         = content_database_info($field);
-    $table           = $db_info['table'];
-    $column_end_date = $db_info['columns']['value2']['column'];
+  // Determine CCK table and columns the date data is stored in.
+  $field           = content_fields('field_merci_date');
+  $db_info         = content_database_info($field);
+  $table           = $db_info['table'];
+  $column_end_date = $db_info['columns']['value2']['column'];
 
-    $time = gmdate('Y-m-d H:i:s');
+  $time = gmdate('Y-m-d H:i:s');
 
-    // Pull any incomplete reservations that use the item in question
-    $reservations = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {" . $table . "} ct ON ct.vid = n.vid INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid WHERE md.merci_item_nid = %d AND " . $column_end_date . " >= '%s' AND NOT (md.merci_item_status <= %d)"), $nid, $time, MERCI_ITEM_STATUS_AVAILABLE);
+  // Pull any incomplete reservations that use the item in question
+  $reservations = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {" . $table . "} ct ON ct.vid = n.vid INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid WHERE md.merci_item_nid = %d AND " . $column_end_date . " >= '%s' AND NOT (md.merci_item_status <= %d)"), $nid, $time, MERCI_ITEM_STATUS_AVAILABLE);
 
-    $bad_reservations = array();
-    while ($reservation = db_fetch_object($reservations)) {
-      $bad_reservations[] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
-    }
+  $bad_reservations = array();
+  while ($reservation = db_fetch_object($reservations)) {
+    $bad_reservations[] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
+  }
 
-    return $bad_reservations;
+  return $bad_reservations;
 
 }
 

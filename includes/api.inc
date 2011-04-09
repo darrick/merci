@@ -233,185 +233,185 @@ function merci_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     // Node settings form.
 
-  case $type . '_node_form':
-    if (merci_is_merci_type($type)) {
+    case $type . '_node_form':
+      if (merci_is_merci_type($type)) {
 
-      $node = (object) $form['#node'];
+        $node = (object) $form['#node'];
 
-      $sub_type = $node->merci_sub_type ? $node->merci_sub_type : MERCI_SUB_TYPE_ITEM;
-      $default_availability = $node->merci_default_availability ? $node->merci_default_availability : MERCI_AVA_F;
+        $sub_type = $node->merci_sub_type ? $node->merci_sub_type : MERCI_SUB_TYPE_ITEM;
+        $default_availability = $node->merci_default_availability ? $node->merci_default_availability : MERCI_AVA_F;
 
-      if ($sub_type == MERCI_SUB_TYPE_ITEM) {
-        if (empty($form['merci'])) {
-          $form['merci'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('MERCI settings'),
-            '#collapsible' => TRUE,
-            '#collapsed' => TRUE,
+        if ($sub_type == MERCI_SUB_TYPE_ITEM) {
+          if (empty($form['merci'])) {
+            $form['merci'] = array(
+              '#type' => 'fieldset',
+              '#title' => t('MERCI settings'),
+              '#collapsible' => TRUE,
+              '#collapsed' => TRUE,
+            );
+          }
+          $form['merci']['merci_default_availability'] = array(
+            '#title' => t('Default booking availability'),
+            '#type' => 'radios',
+            '#options' => merci_item_status(),
+            '#description' => t('If no availability information is defined for a given time, the resource falls back onto this setting.'),
+            '#default_value' => $default_availability,
+            '#element_validate' => array('merci_validate_default_availability'),
           );
         }
-        $form['merci']['merci_default_availability'] = array(
-          '#title' => t('Default booking availability'),
-          '#type' => 'radios',
-          '#options' => merci_item_status(),
-          '#description' => t('If no availability information is defined for a given time, the resource falls back onto this setting.'),
-          '#default_value' => $default_availability,
-          '#element_validate' => array('merci_validate_default_availability'),
+        $form['merci_sub_type'] = array(
+          '#type' => 'value',
+          '#value' => $sub_type,
+        );
+
+        merci_add_settings_form($form, $form_state);
+      }
+      break;
+
+    case 'node_type_form':
+      // Reservation content type can't used for other MERCI functionality.
+      if (isset($form['#node_type']->type) && $form['#node_type']->type == 'merci_reservation') {
+        return;
+      }
+      $type     = $form['old_type']['#value'];
+
+      // If any nodes have already been created, lock the type setting.
+      if ($type) {
+        $nodes = merci_nodes_for_type_count($type);
+        $settings = merci_load_item_settings($type);
+      }
+
+      if (empty($settings) and $nodes) {
+        return;
+      }
+
+      $warning  = '<div>' . t('<strong> WARNING:</strong> changing this setting has no effect on existing reserved items.') . '</div>';
+
+      $options  = array(
+        'disabled' => t('Disabled'),
+        'bucket' => t('Bucket'),
+        'resource' => t('Resource'),
+      );
+
+      $form['merci']       = array(
+        '#type' => 'fieldset',
+        '#title' => t('MERCI settings'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+
+      // If any nodes have already been created, lock the type setting.
+      if ($nodes) {
+        $form['merci']['merci_type_setting'] = array(
+          '#type' => 'value',
+          '#value' => $settings->merci_type_setting,
+        );
+        $form['merci']['merci_type_setting_display'] = array(
+          '#type' => 'item',
+          '#title' => t('Reservable item type'),
+          '#value' => $options[$settings->merci_type_setting],
+          '#description' => t('The setting can not be changed because content already exists for this type.'),
         );
       }
-      $form['merci_sub_type'] = array(
-        '#type' => 'value',
-        '#value' => $sub_type,
+      else {
+        $description_items = array(
+          t('Resource:  Use this content type to create unique items that can be reserved.'),
+          t('Bucket:  Use this content type to create interchangable items that can be reserved (ex. Camera). Buckets reference interchangable items. The actual item does not have to be chosen until the reservation is checked out.'),
+        );
+        $form['merci']['merci_type_setting'] = array(
+          '#type' => 'radios',
+          '#title' => t('Reservable item type'),
+          '#options' => $options,
+          '#default_value' => $settings ? $settings->merci_type_setting : 'disabled',
+          '#description_items' => $description_items,
+          '#theme' => 'merci_type_setting',
+        );
+      }
+
+      $status = array(
+        MERCI_STATUS_ACTIVE => t('Active'),
+        MERCI_STATUS_INACTIVE => t('Inactive'),
       );
-
-      merci_add_settings_form($form, $form_state);
-    }
-    break;
-
-  case 'node_type_form':
-    // Reservation content type can't used for other MERCI functionality.
-    if (isset($form['#node_type']->type) && $form['#node_type']->type == 'merci_reservation') {
-      return;
-    }
-    $type     = $form['old_type']['#value'];
-
-    // If any nodes have already been created, lock the type setting.
-    if ($type) {
-      $nodes = merci_nodes_for_type_count($type);
-      $settings = merci_load_item_settings($type);
-    }
-
-    if (empty($settings) and $nodes) {
-      return;
-    }
-
-    $warning  = '<div>' . t('<strong> WARNING:</strong> changing this setting has no effect on existing reserved items.') . '</div>';
-
-    $options  = array(
-      'disabled' => t('Disabled'),
-      'bucket' => t('Bucket'),
-      'resource' => t('Resource'),
-    );
-
-    $form['merci']       = array(
-      '#type' => 'fieldset',
-      '#title' => t('MERCI settings'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-
-    // If any nodes have already been created, lock the type setting.
-    if ($nodes) {
-      $form['merci']['merci_type_setting'] = array(
-        '#type' => 'value',
-        '#value' => $settings->merci_type_setting,
-      );
-      $form['merci']['merci_type_setting_display'] = array(
-        '#type' => 'item',
-        '#title' => t('Reservable item type'),
-        '#value' => $options[$settings->merci_type_setting],
-        '#description' => t('The setting can not be changed because content already exists for this type.'),
-      );
-    }
-    else {
-      $description_items = array(
-        t('Resource:  Use this content type to create unique items that can be reserved.'),
-        t('Bucket:  Use this content type to create interchangable items that can be reserved (ex. Camera). Buckets reference interchangable items. The actual item does not have to be chosen until the reservation is checked out.'),
-      );
-      $form['merci']['merci_type_setting'] = array(
+      $form['merci']['merci_active_status'] = array(
         '#type' => 'radios',
-        '#title' => t('Reservable item type'),
-        '#options' => $options,
-        '#default_value' => $settings ? $settings->merci_type_setting : 'disabled',
-        '#description_items' => $description_items,
-        '#theme' => 'merci_type_setting',
+        '#title' => t('Status'),
+        '#options' => $status,
+        '#default_value' => isset($settings->merci_active_status) ? intval($settings->merci_active_status) : MERCI_STATUS_ACTIVE,
+        '#description' => t('Set to active to allow this type to be reserved.'),
       );
-    }
 
-    $status = array(
-      MERCI_STATUS_ACTIVE => t('Active'),
-      MERCI_STATUS_INACTIVE => t('Inactive'),
-    );
-    $form['merci']['merci_active_status'] = array(
-      '#type' => 'radios',
-      '#title' => t('Status'),
-      '#options' => $status,
-      '#default_value' => isset($settings->merci_active_status) ? intval($settings->merci_active_status) : MERCI_STATUS_ACTIVE,
-      '#description' => t('Set to active to allow this type to be reserved.'),
-    );
+      // This setting is only valid for buckets.
+      if (!isset($settings->merci_type_setting) || $settings->merci_type_setting == 'bucket') {
+        $form['merci']['merci_spare_items'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Spare items'),
+          '#size' => 10,
+          '#default_value' => $settings ? $settings->merci_spare_items : 0,
+          '#element_validate' => array('merci_is_numeric_validate'),
+          '#description' => filter_xss(t("Set this to the number of items of this type that should always be unavailable and thus unreservable.  This way you'll still have enough items for future reservations in case something breaks.") . $warning),
+        );
+        $form['merci']['merci_auto_assign_bucket_item'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Automatically assign a bucket item'),
+          '#default_value' => $settings ? $settings->merci_auto_assign_bucket_item : 0,
+          '#description' => t('Automatically assign the best fit bucket item when reserving a new bucket item.'),
+        );
+      }
 
-    // This setting is only valid for buckets.
-    if (!isset($settings->merci_type_setting) || $settings->merci_type_setting == 'bucket') {
-      $form['merci']['merci_spare_items'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Spare items'),
-        '#size' => 10,
-        '#default_value' => $settings ? $settings->merci_spare_items : 0,
-        '#element_validate' => array('merci_is_numeric_validate'),
-        '#description' => filter_xss(t("Set this to the number of items of this type that should always be unavailable and thus unreservable.  This way you'll still have enough items for future reservations in case something breaks.") . $warning),
-      );
-      $form['merci']['merci_auto_assign_bucket_item'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Automatically assign a bucket item'),
-        '#default_value' => $settings ? $settings->merci_auto_assign_bucket_item : 0,
-        '#description' => t('Automatically assign the best fit bucket item when reserving a new bucket item.'),
-      );
-    }
+      $vid = variable_get('merci_equipment_grouping_vid', 0);
 
-    $vid = variable_get('merci_equipment_grouping_vid', 0);
-
-    $form['merci']['merci_grouping'] = taxonomy_form(
+      $form['merci']['merci_grouping'] = taxonomy_form(
       $vid,
       variable_get('merci_grouping_' . $type, 0),
       t('This will alter order the content types are displayed to users reserving items from buckets.  Terms added to the MERCI Equipment Groupings taxonomy will appear here.'),
       t('Grouping')
     );
 
-    $form['merci']['merci_max_hours_per_reservation'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Maximum hours per reservation'),
-      '#size' => 10,
-      '#default_value' => $settings ? $settings->merci_max_hours_per_reservation : 0,
-      '#element_validate' => array('merci_is_numeric_validate'),
-      '#description' => filter_xss(t('The maximum hours the item can be reserved for in one reservation. Set to zero for no limit.') . $warning),
-    );
-    $form['merci']['merci_allow_overnight'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Allow overnight reservation'),
-      '#default_value' => $settings ? $settings->merci_allow_overnight : 0,
-      '#description' => filter_xss(t('Allow a reservation to continue over multiple days.  If this is not checked, items in this content type must be returned before the checkout closes.') . $warning),
-    );
-    $form['merci']['merci_allow_weekends'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Allow weekend reservation'),
-      '#default_value' => $settings ? $settings->merci_allow_weekends : 0,
-      '#description' => filter_xss(t('Allow a reservation to be made over days defined as weekend.') . $warning),
-    );
-    merci_add_settings_form($form, $form_state);
+      $form['merci']['merci_max_hours_per_reservation'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Maximum hours per reservation'),
+        '#size' => 10,
+        '#default_value' => $settings ? $settings->merci_max_hours_per_reservation : 0,
+        '#element_validate' => array('merci_is_numeric_validate'),
+        '#description' => filter_xss(t('The maximum hours the item can be reserved for in one reservation. Set to zero for no limit.') . $warning),
+      );
+      $form['merci']['merci_allow_overnight'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Allow overnight reservation'),
+        '#default_value' => $settings ? $settings->merci_allow_overnight : 0,
+        '#description' => filter_xss(t('Allow a reservation to continue over multiple days.  If this is not checked, items in this content type must be returned before the checkout closes.') . $warning),
+      );
+      $form['merci']['merci_allow_weekends'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Allow weekend reservation'),
+        '#default_value' => $settings ? $settings->merci_allow_weekends : 0,
+        '#description' => filter_xss(t('Allow a reservation to be made over days defined as weekend.') . $warning),
+      );
+      merci_add_settings_form($form, $form_state);
 
-    $form['#validate'][] = 'merci_node_type_save_validate';
-    $form['#submit'][]   = 'merci_node_type_save_submit';
+      $form['#validate'][] = 'merci_node_type_save_validate';
+      $form['#submit'][]   = 'merci_node_type_save_submit';
 
-    break;
+      break;
 
-  case 'node_delete_confirm':
-    $node = node_load((int) arg(1));
-    if (!merci_delete_item_validate($node)) {
-      unset($form['actions']['submit']);
-    }
-    break;
+    case 'node_delete_confirm':
+      $node = node_load((int) arg(1));
+      if (!merci_delete_item_validate($node)) {
+        unset($form['actions']['submit']);
+      }
+      break;
 
-  case 'node_type_delete_confirm':
-    $type = str_replace('-', '_', arg(3));
-    merci_delete_node_type_validate($form);
-    break;
+    case 'node_type_delete_confirm':
+      $type = str_replace('-', '_', arg(3));
+      merci_delete_node_type_validate($form);
+      break;
 
-  case 'node_admin_content':
-    if (!isset($form['#validate'])) {
-      $form['#validate'] = array();
-    }
-    $form['#validate'][] = 'merci_node_admin_delete_validate';
-    break;
+    case 'node_admin_content':
+      if (!isset($form['#validate'])) {
+        $form['#validate'] = array();
+      }
+      $form['#validate'][] = 'merci_node_admin_delete_validate';
+      break;
   }
 }
 /**
@@ -462,32 +462,32 @@ function merci_token_list($type = 'all') {
  */
 function merci_token_values($type, $object = NULL, $options = array()) {
   switch ($type) {
-  case 'node':
-    $node = merci_load($object);
-    if ($node) {
-      $values['merci_resources'] = '';
+    case 'node':
+      $node = merci_load($object);
+      if ($node) {
+        $values['merci_resources'] = '';
 
-      // We want these timestamps generated in UTC.
-      $old_timezone = date_default_timezone_get();
-      date_default_timezone_set('UTC');
-      $starthour = strtotime($node->field_merci_date[0]['value']);
-      $endhour = strtotime($node->field_merci_date[0]['value2']);
-      date_default_timezone_set($old_timezone);
-      $hours = round(($endhour - $starthour) / 3600, 2);
-      $titles = array();
-      foreach ($node->merci_reservation_items as $item) {
-        $item_node = node_load($item['merci_placeholder_nid']);
-        if ($item['item_title'] != '') {
-          $titles[] = $item['item_title'];
+        // We want these timestamps generated in UTC.
+        $old_timezone = date_default_timezone_get();
+        date_default_timezone_set('UTC');
+        $starthour = strtotime($node->field_merci_date[0]['value']);
+        $endhour = strtotime($node->field_merci_date[0]['value2']);
+        date_default_timezone_set($old_timezone);
+        $hours = round(($endhour - $starthour) / 3600, 2);
+        $titles = array();
+        foreach ($node->merci_reservation_items as $item) {
+          $item_node = node_load($item['merci_placeholder_nid']);
+          if ($item['item_title'] != '') {
+            $titles[] = $item['item_title'];
+          }
+          else {
+            $titles[] = $item['merci_placeholder_title'];
+          }
         }
-        else {
-          $titles[] = $item['merci_placeholder_title'];
-        }
+
+        $values['merci_resources'] = check_plain(implode(", ", $titles));
+        return $values;
       }
-
-      $values['merci_resources'] = check_plain(implode(", ", $titles));
-      return $values;
-    }
   }
 }
 
@@ -1129,8 +1129,8 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
             $grouping = $term->name;
           }
         }
-        foreach($item_options as $key => $value) {
-        $options['options'][$grouping][$key] = $value;
+        foreach ($item_options as $key => $value) {
+          $options['options'][$grouping][$key] = $value;
         }
       }
     }
@@ -1630,19 +1630,19 @@ function merci_load_item_settings($object) {
 
     $item_settings = merci_reservation_item_node_settings($vid);
     switch ($merci_type) {
-    case 'bucket':
-      // TODO: move to seperate module.
-      if ($item_settings['merci_sub_type'] == MERCI_SUB_TYPE_RESERVATION) {
-        unset($item_settings['merci_default_availability']);
-        unset($item_settings['merci_item_status']);
-        $item_settings += merci_bucket_node_settings($vid);
-      }
-      break;
+      case 'bucket':
+        // TODO: move to seperate module.
+        if ($item_settings['merci_sub_type'] == MERCI_SUB_TYPE_RESERVATION) {
+          unset($item_settings['merci_default_availability']);
+          unset($item_settings['merci_item_status']);
+          $item_settings += merci_bucket_node_settings($vid);
+        }
+        break;
 
-    case 'resource':
-      // TODO: move to seperate module.
-      $item_settings += merci_resource_node_settings($vid);
-      break;
+      case 'resource':
+        // TODO: move to seperate module.
+        $item_settings += merci_resource_node_settings($vid);
+        break;
     }
   }
 
@@ -1715,7 +1715,7 @@ function merci_add_reservation_items($node) {
         else {
           break;
         }
-        $title = $item['item_title'] ? $item['item_title']   : $item['name'];
+        $title = $item['item_title'] ? $item['item_title']    : $item['name'];
 
         // Build the item's placeholder node.
         $reservation = new stdClass();
@@ -1751,7 +1751,7 @@ function merci_add_reservation_items($node) {
 
       // Update the state of all items with associations.
       switch ((int) $node->merci_reservation_status) {
-      case MERCI_STATUS_UNCONFIRMED:
+        case MERCI_STATUS_UNCONFIRMED:
         case MERCI_STATUS_PENDING:
           $item_status = MERCI_ITEM_STATUS_RESERVED;
           break;
