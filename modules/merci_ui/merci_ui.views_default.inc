@@ -110,16 +110,16 @@ function merci_ui_views_default_views() {
   ));
   $handler->override_option('arguments', array(
     'uid' => array(
-      'default_action' => 'default',
+      'default_action' => 'not found',
       'style_plugin' => 'default_summary',
       'style_options' => array(),
       'wildcard' => 'all',
       'wildcard_substitution' => 'All',
-      'title' => '%2',
+      'title' => '%1 Reservations',
       'breadcrumb' => '',
       'default_argument_type' => 'user',
       'default_argument' => '',
-      'validate_type' => 'none',
+      'validate_type' => 'php',
       'validate_fail' => 'not found',
       'break_phrase' => 0,
       'not' => 0,
@@ -130,14 +130,6 @@ function merci_ui_views_default_views() {
       'validate_user_roles' => array(
         '2' => 0,
         '3' => 0,
-        '8' => 0,
-        '5' => 0,
-        '11' => 0,
-        '4' => 0,
-        '9' => 0,
-        '10' => 0,
-        '7' => 0,
-        '6' => 0,
       ),
       'relationship' => 'none',
       'default_options_div_prefix' => '',
@@ -145,75 +137,20 @@ function merci_ui_views_default_views() {
       'default_argument_fixed' => '',
       'default_argument_php' => '',
       'validate_argument_node_type' => array(
-        'blog' => 0,
         'merci_reservation' => 0,
-        'merci_inventory' => 0,
-        'merci_inventory_master' => 0,
-        'om_project' => 0,
-        'om_project_type' => 0,
-        'audio_mixer_field' => 0,
-        'camera_canon_gl1' => 0,
-        'camera_canon_gl2' => 0,
-        'camera_panasonic_hdctm700_field' => 0,
-        'firestore_dte_tech' => 0,
-        'header_image' => 0,
-        'merci_bnc_cable' => 0,
-        'merci_boom_pole' => 0,
-        'merci_camera_canon_xl1s' => 0,
-        'merci_camera_sony_hdr_hc9' => 0,
-        'merci_dv_deck' => 0,
-        'merci_edit_facility' => 0,
-        'merci_facility' => 0,
-        'merci_flipcam' => 0,
-        'merci_harddrive' => 0,
-        'merci_headphones' => 0,
-        'merci_laptop' => 0,
-        'merci_light_kit' => 0,
-        'merci_mac_adaptor' => 0,
-        'merci_mic_stand' => 0,
-        'merci_portacom' => 0,
-        'merci_projector' => 0,
-        'merci_reflector' => 0,
-        'merci_sb_camera_panasonic_hdc' => 0,
-        'merci_sb_headphones' => 0,
-        'merci_sb_tripod_velbon' => 0,
-        'merci_sb_xlr_breakout_box' => 0,
-        'merci_sb_xlr_cable_25feet' => 0,
-        'merci_shotgun_mount' => 0,
-        'merci_sony_dsr250' => 0,
-        'merci_staff_equipment' => 0,
-        'merci_titler_box' => 0,
-        'merci_white_card' => 0,
-        'merci_xlr_12ft' => 0,
-        'merci_xlr_cable50' => 0,
-        'merci_xlr_cable_100' => 0,
-        'merci_xlr_cable_25' => 0,
-        'mic_handheld' => 0,
-        'mic_lavalier' => 0,
-        'mic_shotgun' => 0,
-        'mic_wireless' => 0,
-        'monitor_field_large' => 0,
-        'monitor_field_small' => 0,
+        'om_show' => 0,
+        'dv_camera' => 0,
+        'eafe' => 0,
         'om_timeslot_theme' => 0,
         'page' => 0,
-        'simplenews' => 0,
+        'room' => 0,
         'story' => 0,
-        'studio_cmap' => 0,
-        'tripod_manfrotto' => 0,
-        'tripod_small' => 0,
-        'xlr_breakout_box' => 0,
       ),
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
       'validate_argument_vocabulary' => array(
-        '1' => 0,
-        '5' => 0,
-        '6' => 0,
-        '8' => 0,
         '2' => 0,
         '3' => 0,
-        '9' => 0,
-        '7' => 0,
         '4' => 0,
       ),
       'validate_argument_type' => 'tid',
@@ -226,22 +163,36 @@ function merci_ui_views_default_views() {
       'validate_argument_user_flag_test' => 'flaggable',
       'validate_argument_user_flag_id_type' => 'id',
       'validate_argument_is_member' => 'OG_VIEWS_DO_NOT_VALIDATE_MEMBERSHIP',
-      'validate_argument_php' => '',
-      'validate_argument_signup_status' => 'any',
-      'validate_argument_signup_node_access' => 0,
-      'validate_argument_merci_type' => array(
-        'disabled' => 0,
-        'bucket' => 0,
-        'resource' => 0,
-      ),
-      'validate_argument_merci_sub_type' => array(
-        '1' => 0,
-        '2' => 0,
-      ),
-      'validate_argument_group_node_type' => array(
-        'om_project' => 0,
-      ),
+      'validate_argument_php' => 'global $user;
+
+  if ($context->uid == $user->uid && user_access(\'create reservations\')) {
+    return TRUE;
+  }
+
+  if (user_access(\'manage_reservations\')) {
+    return TRUE;
+  }
+
+  return FALSE;
+  ',
+    'validate_argument_signup_status' => 'any',
+    'validate_argument_signup_node_access' => 0,
+    'validate_argument_merci_type' => array(
+      'disabled' => 0,
+      'bucket' => 0,
+      'resource' => 0,
     ),
+    'validate_argument_merci_sub_type' => array(
+      '1' => 0,
+      '2' => 0,
+    ),
+    'validate_argument_group_node_type' => array(
+      'page' => 0,
+    ),
+    'override' => array(
+      'button' => 'Override',
+    ),
+  ),
   ));
   $handler->override_option('filters', array(
     'type' => array(
@@ -300,8 +251,8 @@ function merci_ui_views_default_views() {
   $handler->override_option('cache', array(
     'type' => 'none',
   ));
-  $handler->override_option('footer_format', '3');
-  $handler->override_option('footer_empty', 0);
+  $handler->override_option('footer_format', '2');
+  $handler->override_option('footer_empty', 1);
   $handler->override_option('empty', 'You have no upcoming reservations.');
   $handler->override_option('empty_format', '1');
   $handler->override_option('items_per_page', 25);
@@ -323,6 +274,23 @@ function merci_ui_views_default_views() {
     ),
     'default' => '-1',
   ));
+  $handler = $view->new_display('page', 'My Reservations', 'page_1');
+  $handler->override_option('path', 'user/%/my-reservations');
+  $handler->override_option('menu', array(
+    'type' => 'tab',
+    'title' => 'My Reservations',
+    'description' => 'Takes user object and returns Reservations',
+    'weight' => '0',
+    'name' => 'navigation',
+  ));
+  $handler->override_option('tab_options', array(
+    'type' => 'none',
+    'title' => '',
+    'description' => '',
+    'weight' => 0,
+    'name' => 'navigation',
+  ));
+
 
   $views[$view->name] = $view;
 
@@ -496,16 +464,16 @@ function merci_ui_views_default_views() {
   ));
   $handler->override_option('arguments', array(
     'nid' => array(
-      'default_action' => 'default',
+      'default_action' => 'not found',
       'style_plugin' => 'default_summary',
       'style_options' => array(),
       'wildcard' => 'all',
       'wildcard_substitution' => 'All',
-      'title' => '',
+      'title' => 'Reservations for %1',
       'breadcrumb' => '',
       'default_argument_type' => 'node',
       'default_argument' => '',
-      'validate_type' => 'none',
+      'validate_type' => 'php',
       'validate_fail' => 'not found',
       'break_phrase' => 0,
       'not' => 0,
@@ -515,7 +483,6 @@ function merci_ui_views_default_views() {
       'validate_user_argument_type' => 'uid',
       'validate_user_roles' => array(
         '2' => 0,
-        '4' => 0,
         '3' => 0,
       ),
       'relationship' => 'item_nid',
@@ -536,9 +503,10 @@ function merci_ui_views_default_views() {
       ),
       'validate_argument_node_type' => array(
         'merci_reservation' => 0,
-        'om_project' => 0,
-        'om_project_type' => 0,
+        'om_show' => 0,
         'dv_camera' => 0,
+        'eafe' => 0,
+        'om_timeslot_theme' => 0,
         'page' => 0,
         'room' => 0,
         'story' => 0,
@@ -546,17 +514,27 @@ function merci_ui_views_default_views() {
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
       'validate_argument_vocabulary' => array(
-        '4' => 0,
+        '2' => 0,
         '3' => 0,
+        '4' => 0,
       ),
       'validate_argument_type' => 'tid',
       'validate_argument_transform' => 0,
       'validate_user_restrict_roles' => 0,
-      'validate_argument_php' => '',
-      'override' => array(
-        'button' => 'Override',
-      ),
+      'validate_argument_php' => '  $node = node_load($argument);
+  if (merci_is_merci_type($node->type)) {
+    return TRUE;
+  }
+
+  return FALSE;',
+    'override' => array(
+      'button' => 'Override',
     ),
+    'validate_argument_is_member' => 'OG_VIEWS_DO_NOT_VALIDATE_MEMBERSHIP',
+    'validate_argument_group_node_type' => array(
+      'page' => 0,
+    ),
+  ),
   ));
   $handler->override_option('filters', array(
     'type' => array(
@@ -610,11 +588,13 @@ function merci_ui_views_default_views() {
     ),
   ));
   $handler->override_option('access', array(
-    'type' => 'none',
+    'type' => 'perm',
+    'perm' => 'manage reservations',
   ));
   $handler->override_option('cache', array(
     'type' => 'none',
   ));
+  $handler->override_option('title', 'Item Reservations');
   $handler->override_option('footer_format', '1');
   $handler->override_option('footer_empty', 0);
   $handler->override_option('empty', 'There are no reservations for this item.');
@@ -637,6 +617,22 @@ function merci_ui_views_default_views() {
       ),
     ),
     'default' => '-1',
+  ));
+  $handler = $view->new_display('page', 'Page', 'page_1');
+  $handler->override_option('path', 'node/%/reservations');
+  $handler->override_option('menu', array(
+    'type' => 'tab',
+    'title' => 'Reservations',
+    'description' => 'Takes node and returns list of upcoming and/or past Reservations',
+    'weight' => '0',
+    'name' => 'navigation',
+  ));
+  $handler->override_option('tab_options', array(
+    'type' => 'none',
+    'title' => '',
+    'description' => '',
+    'weight' => 0,
+    'name' => 'navigation',
   ));
 
   $views[$view->name] = $view;

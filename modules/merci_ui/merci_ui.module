@@ -15,106 +15,14 @@ function merci_ui_views_api() {
   );
 }
 
-
-/**
- * Implementation of hook_menu().
- */
-function merci_ui_menu() {
-
-  $items['node/%node/reservations'] = array(
-    'title' => 'Reservations',
-    'description' => 'Takes node and returns list of upcoming and/or past Reservations',
-    'page callback' => 'merci_ui_node_reservations',
-    'page arguments' => array(1),
-    'access callback' => 'merci_ui_node_reservations_access',
-    'access arguments' => array(1),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 9,
-  );
-
-  $items['user/%user/reservations'] = array(
-    'title' => 'Reservations',
-    'description' => 'Takes user object and returns Reservations',
-    'page callback' => 'merci_ui_user_reservations',
-    'page arguments' => array(1),
-    'access callback' => 'merci_ui_user_reservations_access',
-    'access arguments' => array(1),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 15,
-  );
-
-  $items['user/reservations'] = array(
-    'title' => 'My Reservations',
-    'description' => 'Redirects to My Reservations tab',
-    'page callback' => 'merci_ui_my_reservations_redirect',
-    'access arguments' => array('access content'),
-    'type' => MENU_SUGGESTED_ITEM,
-  );
-
-  return $items;
-}
-
-
-function merci_ui_user_reservations_access($context) {
-  global $user;
-
-  if ($context->uid == $user->uid && user_access('create reservations')) {
-    return TRUE;
-  }
-
-  if (user_access('manage_reservations')) {
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
-
-function merci_ui_user_reservations($user) {
-
-  $view                = views_get_view('merci_ui_user_reservations', 'default');
-  $view->override_path = implode("/", arg());
-  $output              = $view->preview();
-
-  $output .= '<div id="make-merci-reservation">';
-  $output .= l(t('Make a Reservation'), 'node/add/merci-reservation');
-  $output .= '</div>';
-
-  print theme('page', $output);
-}
-
-
-function merci_ui_node_reservations_access($node) {
-
-  global $user;
-
-  if (merci_is_merci_type($node->type) && user_access('manage reservations')) {
-    return TRUE;
-  }
-
-  return FALSE;
-
-}
-
-function merci_ui_node_reservations($node) {
-
-  $view                = views_get_view('merci_ui_node_reservations', 'default');
-  $view->override_path = implode("/", arg());
-  $output              = $view->preview();
-
-  $output .= '<div id="make-merci-reservation">';
-  $output .= l(t('Make a Reservation'), 'node/add/merci-reservation');
-  $output .= '</div>';
-
-  print theme('page', $output);
-}
-
-function merci_ui_my_reservations_redirect($uid) {
-  global $user;
-  if ($user->uid) {
-    drupal_goto('user/' . $user->uid . '/reservations');
-  }
-  else {
-    drupal_access_denied();
+function merci_ui_preprocess_views_view(&$variables) {
+  if(isset($variables['name'])) {
+    if ($variables['name'] == 'merci_ui_user_reservations' or $variables['name'] == 'merci_ui_node_reservations') {
+      $output = '<div id="make-merci-reservation">';
+      $output .= l(t('Make a Reservation'), 'node/add/merci-reservation');
+      $output .= '</div>';
+      $variables['footer'] .= $output;
+    }
   }
 }
+

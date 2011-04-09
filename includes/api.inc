@@ -1055,7 +1055,7 @@ function merci_add_reservation_items($node) {
 
           $item['type']        = $item['merci_item_nid'];
           $settings = merci_load_item_settings($item['type']);
-          $item['name']  = $settings['type_name'];;
+          $item['name']  = $settings['type_name'];
           if ($settings->merci_auto_assign_bucket_item) {
             $date_info = $node->field_merci_date[0];
             $start     = $date_info['value'];
