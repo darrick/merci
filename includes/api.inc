@@ -47,11 +47,12 @@ function merci_validate_merci_selected_items($form, &$form_state) {
         $type     = $new_item->type;
       }
       else {
-        $title = node_get_types('name', $value);
         $type = $value;
       }
 
       $content_settings = merci_load_item_settings($type);
+
+      $title = $title ? $title : $content_settings['type_name'];
 
       // Is this content type active?
       if ($content_settings->merci_active_status != MERCI_STATUS_ACTIVE) {
@@ -476,15 +477,7 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
         - $value['merci_spare_items'];
 
       if ($available_bucket_items) {
-        $grouping = t('Buckets');
-        $tid = variable_get('merci_grouping_' . $type, 0);
-        if ($tid) {
-          $term = taxonomy_get_term($tid);
-          if ($term) {
-            $grouping = $term->name;
-          }
-        }
-        $options['options'][$grouping][$type] = $value['type_name'];
+        $options['options'][$value['merci_item_grouping']][$type] = $value['type_name'];
       }
     }
     else if ($value['merci_type_setting'] == 'resource') {
@@ -492,16 +485,8 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
       $item_options = merci_get_reservable_items($type, $start, $end, $reservation_nid);
 
       if (!empty($item_options)) {
-        $grouping = $value['type_name'];
-        $tid = variable_get('merci_grouping_' . $type, 0);
-        if ($tid) {
-          $term = taxonomy_get_term($tid);
-          if ($term) {
-            $grouping = $term->name;
-          }
-        }
-        foreach ($item_options as $key => $value) {
-          $options['options'][$grouping][$key] = $value;
+        foreach ($item_options as $key => $item) {
+          $options['options'][$value['merci_item_grouping']][$key] = $item;
         }
       }
     }
@@ -1069,8 +1054,8 @@ function merci_add_reservation_items($node) {
         elseif ($item['merci_item_nid']) {
 
           $item['type']        = $item['merci_item_nid'];
-          $item['name']  = node_get_types('name', $item['type']);
           $settings = merci_load_item_settings($item['type']);
+          $item['name']  = $settings['type_name'];;
           if ($settings->merci_auto_assign_bucket_item) {
             $date_info = $node->field_merci_date[0];
             $start     = $date_info['value'];

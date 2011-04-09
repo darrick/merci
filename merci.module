@@ -974,6 +974,15 @@ function _merci_content_type_info($reset = FALSE) {
       // with the correct stuff..
       while ($merci_setting = db_fetch_array($merci_settings)) {
         $merci_setting['type_name'] = $merci_setting['name'];
+        $grouping = $merci_setting['merci_type_setting'] == 'resource' ? $merci_setting['type_name'] : t('Buckets');
+        $tid = variable_get('merci_grouping_' . $merci_setting['type'], 0);
+        if ($tid) {
+          $term = taxonomy_get_term($tid);
+          if ($term) {
+            $grouping = $term->name;
+          }
+        }
+        $merci_setting['merci_item_grouping'] = $grouping;
         unset($merci_setting['name']);
         $info[$merci_setting['type']] = $merci_setting;
       }
