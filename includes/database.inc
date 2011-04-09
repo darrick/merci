@@ -275,3 +275,385 @@ function merci_db_reservations_by_status_in_timespan($statuses = array(), $start
   }
   return $nodes;
 }
+/**
+ * Pulls an array of items that are reservable for the content type and date range.
+ *
+ * @param $content_type
+ *   The content type name of the bucket/resource.
+ * @param $start
+ *   Start time in DATETIME format UTC timezone.
+ * @param $end
+ *   End time in DATETIME format UTC timezone.
+ * @param $reservation_nid
+ *   (Optional) A reservation nid to exclude from the reserved items.
+ *
+ * @return
+ *   An array of reservable items, in select option format.
+ */
+function merci_get_reservable_items($content_type, $start = NULL, $end = NULL, $reservation_nid = NULL, $overdue = TRUE) {
+
+
+  $merci_type = merci_type_setting($content_type);
+  // Pull reservable items.  This query takes the following into consideration:
+  //   1. Pulls all all item nodes of the content type that are in an available or checked in state,
+  //   2. Excludes all item nodes that have associated reservations in the date range
+  //      of the this reservation where the item is in an already reserved or checked out state.
+  //   3. Allows a reservation to be excluded from the exclusions if necessary (this
+  //      is usually used to allow an already assigned item to not conflict with itself.
+  //   4. Exclude items from past reservations where the item is in a checked out state.
+
+  $query = "SELECT n.nid, n.title FROM {node} n
+    INNER JOIN {merci_reservation_item_node} m ON n.vid = m.vid
+      WHERE m.merci_default_availability IN (%d, %d)
+        AND n.type = '%s'
+        AND m.merci_sub_type = %d
+        ";
+
+  $args = array(MERCI_AVA_F, MERCI_AVA_T, $content_type, MERCI_SUB_TYPE_ITEM);
+
+
+  if ($start) {
+    // Determine CCK table and columns the date data is stored in.
+    $field             = content_fields('field_merci_date');
+    $db_info           = content_database_info($field);
+    $table             = $db_info['table'];
+    $column_start_date = $db_info['columns']['value']['column'];
+    $column_end_date   = $db_info['columns']['value2']['column'];
+
+    $args = array_merge($args, array($start, $end, $start, $end, $start, $end, MERCI_ITEM_STATUS_AVAILABLE));
+
+    // If there's an already selected bucket item, then we need to make sure we
+    // include it in the list of available items.
+    $query .= "
+      AND n.nid NOT IN
+      (SELECT md2.merci_item_nid FROM {" . $table . "} ct
+      INNER JOIN {merci_reservation_detail} md2 ON ct.vid = md2.vid
+      INNER JOIN {merci_reservation_item_node} m2 ON md2.merci_item_nid = m2.nid
+      INNER JOIN {node} ctn ON ctn.vid = ct.vid
+      INNER JOIN {node} m2n ON m2.vid = m2n.vid
+      WHERE (
+        (
+          (($column_start_date >= '%s' AND $column_start_date <= '%s')
+          OR ($column_end_date >= '%s' AND $column_end_date <= '%s')
+          OR ($column_start_date <= '%s' AND $column_end_date >= '%s'))
+          AND NOT md2.merci_item_status <= %d
+        ) ";
+    if ($reservation_nid) {
+      $where = ' AND md2.nid <> %d';
+      $args[] = $reservation_nid;
+    }
+
+    $query .= "
+      )
+      $where
+    )
+    ";
+
+  }
+  $query .= " ORDER BY n.title";
+
+  $items = db_query($query, $args);
+  $options = array();
+
+  while ($item = db_fetch_object($items)) {
+    $options[$item->nid] = $item->title;
+  }
+
+  if ($overdue) {
+    $overdue_items_array = merci_overdue_items($content_type, $start, $reservation_nid);
+    if (!empty($overdue_items_array)) {
+      foreach ($options as $item_nid => $title) {
+        if (array_key_exists($item_nid, $overdue_items_array)) {
+          unset($options[$item_nid]);
+        }
+      }
+    }
+  }
+  return $options;
+}
+
+function merci_overdue_items($content_type, $start, $reservation_nid = NULL) {
+  // Determine CCK table and columns the date data is stored in.
+  $field             = content_fields('field_merci_date');
+  $db_info           = content_database_info($field);
+  $table             = $db_info['table'];
+  $column_start_date = $db_info['columns']['value']['column'];
+  $column_end_date   = $db_info['columns']['value2']['column'];
+
+  // pull reservations in the past which are still checked out.
+  $start = date_create($start, timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
+  $args = array($start, $content_type, MERCI_ITEM_STATUS_CHECKED_OUT);
+
+  $merci_type = merci_type_setting($content_type);
+
+  // If we're checking an existing reservation, exclude it from the
+  // reserved items.
+  if (isset($reservation_nid)) {
+    $where = ' AND ct.nid <> %d';
+    $args[] = $reservation_nid;
+  }
+
+  $reserved_nodes = db_query("
+    SELECT ct.nid,$column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 ,md.merci_item_nid FROM {" . $table . "} ct
+    INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid
+    INNER JOIN {merci_{$merci_type}_node} m on md.merci_placeholder_nid = m.nid
+    INNER JOIN {node} ctn on ct.vid = ctn.vid
+    INNER JOIN {node} mn on m.vid = mn.vid
+    WHERE ($column_end_date <= '%s')
+    AND mn.type = '%s'
+    AND md.merci_item_nid !=0
+    AND md.merci_item_status = %d
+    $where",
+    $args
+  );
+
+  // Use up items for assigned nodes.
+  while ($node = db_fetch_object($reserved_nodes)) {
+    $total_items_array[$node->merci_item_nid][$node->nid] = $node;
+  }
+
+  return $total_items_array;
+}
+
+function _merci_sort_array($a, $b) {
+  return count($b) - count($a);
+}
+//TODO: the following three functions look very much a like.
+function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, $reservation_vid = NULL, $overdue = TRUE) {
+
+  // Determine CCK table and columns the date data is stored in.
+  $field             = content_fields('field_merci_date');
+  $db_info           = content_database_info($field);
+  $table             = $db_info['table'];
+  $column_start_date = $db_info['columns']['value']['column'];
+  $column_end_date   = $db_info['columns']['value2']['column'];
+
+  // Get all assignable nodes for this bucket item.
+  $total_items_nodes = db_query("SELECT n.nid FROM {node} n INNER JOIN {merci_reservation_item_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.merci_sub_type = %d AND m.merci_default_availability IN (%d, %d)", $content_type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_S);
+  $total_items_array = array();
+  while ($ctnodes = db_fetch_array($total_items_nodes)) {
+    $total_items_array[$ctnodes['nid']] = array();
+  }
+
+  $args = array($start, $end, $start, $end, $start, $end, $content_type, MERCI_ITEM_STATUS_AVAILABLE);
+
+  // If we're checking an existing reservation, exclude it from the
+  // reserved items.
+  if (isset($reservation_vid)) {
+    $where = ' AND ct.vid <> %d';
+    $args[] = $reservation_vid;
+  }
+  else {
+    $where = '';
+  }
+
+  // pull reservations with assigned nodes and status of MERCI_ITEM_STATUS_RESERVED or MERCI_ITEM_STATUS_CHECKED_OUT
+  $reserved_nodes = db_query("
+    SELECT ct.nid,$column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 ,md.merci_item_nid FROM {" . $table . "} ct
+      INNER JOIN {merci_reservation_detail} md on ct.vid = md.vid
+      INNER JOIN {merci_bucket_node} m on md.merci_placeholder_nid = m.nid
+      INNER JOIN {node} ctn on ct.vid = ctn.vid
+      INNER JOIN {node} mn on m.vid = mn.vid
+        WHERE (
+                ($column_start_date >= '%s' and $column_start_date <= '%s')
+            OR  ($column_end_date >= '%s' and $column_end_date <= '%s')
+            OR  ($column_start_date <= '%s' and $column_end_date >= '%s')
+          )
+          AND mn.type = '%s'
+          AND md.merci_item_nid !=0
+          AND NOT md.merci_item_status <= %d
+          $where",
+    $args
+  );
+
+  // Use up items for assigned nodes.
+  while ($node = db_fetch_object($reserved_nodes)) {
+    // If item is assigned then item is in use by this node.
+    $total_items_array[$node->merci_item_nid][$node->nid] = $node;
+  }
+
+  if ($overdue) {
+    $overdue_items_array = merci_overdue_items($content_type, $start, $reservation_vid);
+
+    if (!empty($overdue_items_array)) {
+      foreach ($overdue_items_array as $merci_item_nid => $nodes) {
+        foreach ($nodes as $nid => $node) {
+          $total_items_array[$node->merci_item_nid][$node->nid] = $node;
+        }
+      }
+    }
+  }
+
+  // pull reservations without assigned nodes and not status of MERCI_ITEM_STATUS_CHECKED_IN
+  $reserved_nodes = db_query("
+    SELECT ct.nid,$column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2 ,md.merci_item_nid FROM {" . $table . "} ct
+        INNER JOIN {merci_reservation_detail} md ON ct.vid = md.vid
+        INNER JOIN {merci_bucket_node} m ON md.merci_placeholder_nid = m.nid
+        INNER JOIN {node} ctn on ct.vid = ctn.vid
+        INNER JOIN {node} mn ON m.vid = mn.vid
+          WHERE (
+                  ($column_start_date >= '%s' AND $column_start_date <= '%s')
+              OR  ($column_end_date >= '%s' AND $column_end_date <= '%s')
+              OR  ($column_start_date <= '%s' AND $column_end_date >= '%s')
+            )
+            AND mn.type = '%s'
+            AND md.merci_item_nid = 0
+            AND NOT md.merci_item_status < %d
+            $where",
+    $args
+  );
+
+  uasort( $total_items_array, '_merci_sort_array');
+  // Temporarily assign an item for these nodes.
+  while ($node = db_fetch_object($reserved_nodes)) {
+
+    // Eat up a bucket item for this node.
+    // If item is not assigned then temporarily add one.
+    foreach ($total_items_array as $item_nid => $reservations) {
+      $willitfit = TRUE;
+      foreach ($reservations as $oldnode) {
+        // Does the start date overlap this reservation.
+        if (
+          (
+            date_create($node->field_merci_date_value) > date_create($oldnode->field_merci_date_value) and
+            date_create($node->field_merci_date_value) < date_create($oldnode->field_merci_date_value2)
+          ) or
+          // Does the end date overlap this reservation.
+          (
+            date_create($node->field_merci_date_value2) > date_create($oldnode->field_merci_date_value) and
+            date_create($node->field_merci_date_value2) < date_create($oldnode->field_merci_date_value2)
+          ) or
+          // Does the start and end date overlap this reservation.
+          (
+            date_create($node->field_merci_date_value) <= date_create($oldnode->field_merci_date_value) and
+            date_create($node->field_merci_date_value2) >= date_create($oldnode->field_merci_date_value2)
+          )
+        ) {
+          // Can't use this item for this reservation. So try another.
+          $willitfit = FALSE;
+          break;
+        }
+      }
+      if ($willitfit) {
+        $total_items_array[$item_nid][$node->nid] = $node;
+        break;
+      }
+    }
+  }
+
+  return $total_items_array;
+}
+
+// merci_get_reservable_items
+
+/**
+ * Calculates the total number of available bucket items for a reservation.
+ *
+ * @param $content_type
+ *   The bucket content type.
+ * @param $start
+ *   Start time in DATETIME format UTC timezone.
+ * @param $end
+ *   End time in DATETIME format UTC timezone.
+ * @param $reservation_nid
+ *   (Optional) A reservation nid to exclude from the reserved items.
+ *
+ * @return
+ *   The number of available bucket items.
+ */
+function merci_get_available_bucket_count($content_type, $start = NULL, $end = NULL, $reservation = NULL) {
+  //if there are no dates, return the active total
+
+  if (!$start) {
+
+    //if user is admin/manager and merci template is installed
+
+    $count = db_fetch_object(db_query("SELECT COUNT(n.nid) as total FROM {node} n
+      LEFT JOIN {merci_bucket_node} mbn ON n.vid = mbn.vid
+      WHERE n.type = '%s' AND n.status = 1
+      AND mbn.merci_default_availability = 1",
+      $content_type
+    ));
+    return $count->total;
+  }
+
+  $total_items_array = merci_reserved_bucket_items($content_type, $start, $end, $reservation );
+
+  foreach ($total_items_array as $item_nid => $reservations) {
+    if (!empty($reservations)) {
+      $reserved_items++;
+    }
+  }
+
+  return sizeof($total_items_array) - $reserved_items;
+}
+
+/**
+ * merci_get_count ($content_type, $default_availability)
+ * returns total number of items available for check out.
+ * @ $content_type resource to be counted
+ * @ $default_availability
+ */
+
+function merci_get_count($type, $default_availability = MERCI_AVA_F) {
+  return db_result(db_query("SELECT COUNT(n.nid) as total FROM {node} n
+      LEFT JOIN {merci_" . $type['merci_type_setting'] . "_node} mbn ON n.vid = mbn.vid
+      WHERE n.type = '%s'
+      AND mbn.merci_default_availability = %d
+      AND mbn.merci_sub_type = %d",
+      $type['type'], $default_availability, MERCI_SUB_TYPE_ITEM
+    ));
+}
+
+/**
+ * Builds an array representing reservations for a Resource within a given timespan
+ *
+ * @return
+ *   An associative array with keys as times (in MySQL datetime format) and values as number of reservations.
+ */
+function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_date, $end_date, $reservation_vid = NULL) {
+
+  // Determine CCK table and columns the date data is stored in.
+  $field             = content_fields('field_merci_date');
+  $db_info           = content_database_info($field);
+  $table             = $db_info['table'];
+  $column_start_date = $db_info['columns']['value']['column'];
+  $column_end_date   = $db_info['columns']['value2']['column'];
+  /*
+   */
+
+  $type_settings = merci_type_setting($type);
+  if ($type_settings == 'bucket') {
+    return merci_reserved_bucket_items($type, $start_date, $end_date, $reservation_vid);
+  }
+  else {
+    $sql = "SELECT r.nid, $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2, merci_item_nid
+      FROM {node} n
+      JOIN {merci_reservation_detail} d ON n.nid = d.merci_item_nid
+      JOIN {" . $table . "} r ON d.vid = r.vid
+      WHERE n.nid = %d
+        AND
+                    (($column_start_date >= '%s' AND $column_start_date <= '%s')
+                    OR ($column_end_date >= '%s' AND $column_end_date <= '%s')
+                    OR ($column_start_date <= '%s' AND $column_end_date >= '%s'))
+      ";
+  }
+
+  $args = array($item_nid, $start_date, $end_date, $start_date, $end_date, $start_date, $end_date);
+
+  // If we're checking an existing reservation, exclude it from the
+  // reserved items.
+  if ($reservation_vid) {
+    $sql .= " AND d.vid <> %d";
+    $args[] = $reservation_vid;
+  }
+  $sql .= " ORDER BY $column_start_date ";
+
+  $reservations = db_query($sql, $args);
+  while ($reservation = db_fetch_object($reservations)) {
+    $return[$item_nid][$reservation->nid] = $reservation;
+  }
+
+  return $return;
+}
+
