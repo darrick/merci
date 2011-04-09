@@ -919,6 +919,8 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
   $merci_types = merci_content_types();
   $bucket_options = array();
 
+  // Group the buckets.
+  $vid = variable_get('merci_equipment_grouping_vid', 0);
   // This array holds all reservable items the user may reserve.
   // Loop through each bucket type.
 
@@ -941,7 +943,15 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
         - $value['merci_spare_items'];
 
       if ($available_bucket_items) {
-        $bucket_options[$type] = $value['type_name'];
+        $grouping = t('Buckets');
+        $tid = variable_get('merci_grouping_' . $type, 0);
+        if ($tid) {
+          $term = taxonomy_get_term($tid);
+          if ($term) {
+            $grouping = $term->name;
+          }
+        }
+        $options['options'][$grouping][$type] = $value['type_name'];
       }
     }
     else if ($value['merci_type_setting'] == 'resource') {
@@ -949,14 +959,17 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
       $item_options = merci_get_reservable_items($type, $start, $end, $reservation_nid);
 
       if (!empty($item_options)) {
-        $options['options'][$value['type_name']] = $item_options;
+        $grouping = $value['type_name'];
+        $tid = variable_get('merci_grouping_' . $type, 0);
+        if ($tid) {
+          $term = taxonomy_get_term($tid);
+          if ($term) {
+            $grouping = $term->name;
+          }
+        }
+        $options['options'][$grouping] += $item_options;
       }
     }
-  }
-
-  // FIX - NEED TO CHANGE FORMATTING HERE
-  if ($bucket_options) {
-    $options['options'][t('Buckets')] = $bucket_options;
   }
 
   return $options;
@@ -1785,5 +1798,44 @@ function merci_cron() {
     $node->merci_reservation_status = MERCI_STATUS_NO_SHOW;
     node_save($node);
   }
+}
+
+/**
+ * Builds an individual item selector.
+ *
+ * @param $node
+ *   The reservation node object.
+ * @param $form_state
+ *   Current form state array.
+ * @param $delta
+ *   Which selector number to build.
+ * @param $default
+ *   Default value for the select.
+ *
+ * @return
+ *   The form array for the selector.
+ */
+function _merci_choice_form($node, $form_state, $delta, $default = '', $reset = NULL) {
+
+  static $options = array();
+
+  // We'll manually set the #parents property of these fields so that
+  // their values appear in the $form_state['values']['choice'] array.
+  //$buckets = t('Buckets');
+  if (empty($options) or $reset) {
+    // NOTE: we don't filter by node here because we only want items not
+    //reserved by any node including the node calling the function.
+    $options = merci_build_reservable_items($node, $form_state, NULL);
+
+  }
+
+  $form = array(
+    '#type' => 'select',
+    '#options' => $options['options'],
+    '#default_value' => $default,
+    //'#parents' => array('choice', $delta, 'item'),
+  );
+
+  return $form;
 }
 
