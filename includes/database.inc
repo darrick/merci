@@ -228,3 +228,50 @@ function merci_incomplete_reservations_for_item_nid($nid) {
     return $bad_reservations;
 
 }
+
+function merci_db_reservations_by_status_in_timespan($statuses = array(), $start = NULL, $end = NULL) {
+
+  // Determine CCK table and columns the date data is stored in.
+  $field             = content_fields('field_merci_date');
+  $db_info           = content_database_info($field);
+  $table             = $db_info['table'];
+  $column_start_date = $db_info['columns']['value']['column'];
+  $column_end_date   = $db_info['columns']['value2']['column'];
+
+  $where = array();
+  $args = array();
+
+  if (!empty($statuses)) {
+    $status_where = array();
+    foreach ($statuses as $status) {
+      $status_where[] = 'mr.merci_reservation_status = %d';
+      $args[] = $status;
+    }
+    $where[] = '(' . implode(' OR ', $status_where) . ')';
+  }
+
+  if ($start) {
+    $args[] = $start;
+    $where[] = "$colume_start_date <= '%s'";
+  }
+  if ($end) {
+    $args[] = $end;
+    $where[] = "$colume_end_date > '%s'";
+  }
+
+  $where = count($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+  // Select reservation nodes where all reserved items and resources are autocheckout.
+  $reservations = db_query("SELECT n.nid FROM {node} AS n
+        INNER JOIN {" . $table . "} ct ON ct.vid = n.vid
+        INNER JOIN {merci_reservation} AS mr ON n.vid = mr.vid
+          $where", $args);
+
+
+  $nodes = array();
+  while ($reservation_nid = db_result($reservations)) {
+
+    $nodes[$reservation_nid] = $reservation_nid;
+
+  }
+  return $nodes;
+}

@@ -1722,3 +1722,68 @@ function merci_validate_default_availability($element, &$form_state) {
     }
   }
 }
+/**
+ * Implementation of hook_cron().
+ */
+function merci_cron() {
+
+  // 2009-05-22 20:45:00
+  $time = gmdate('Y-m-j H:i:s');
+
+  $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING), $time, $time);
+
+  foreach (array_keys($nodes) as $reservation_nid) {
+
+    $reservation = node_load($reservation_nid);
+
+    //check child items of that reservations for autocheckout
+    foreach ($reservaton->merci_reservation_items as $item) {
+      $node = node_load($item['merci_item_nid']);
+      if (!$node or !$node->merci_autocheckout) {
+        // skip out to the next reservation.
+        continue 2;
+      }
+    }
+
+    //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
+    watchdog('merci', "Setting node " . $reservation_nid . " to checked out");
+    $reservation->merci_reservation_status = MERCI_STATUS_CHECKED_OUT;
+    node_save($reservation);
+  }
+
+  $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_CHECKED_OUT), NULL, $time);
+
+  foreach (array_keys($nodes) as $reservation_nid) {
+
+    //check child items of that reservations for autocheckin
+    $reservation = node_load($reservation_nid);
+
+    foreach ($reservaton->merci_reservation_items as $item) {
+      $node = node_load($item['merci_item_nid']);
+      if (!$node or !$node->merci_autocheckin) {
+        // skip out to the next reservation.
+        continue 2;
+      }
+    }
+
+    //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
+    watchdog('merci', "Setting node " . $reservation_nid . " to checked in");
+    $reservation->merci_reservation_status = MERCI_STATUS_CHECKED_IN;
+    node_save($reservation);
+  }
+
+  // Give no shows a one hour grace period.
+  // TODO: move grace period to admin option.
+  // 2009-05-22 20:45:00
+  $time = gmdate('Y-m-j H:i:s', time() + 3600);
+  //find all pending reservations that have started and set their stauts to no show
+  $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_PENDING), NULL, $time);
+
+  foreach (array_keys($nodes) as $reservation_nid) {
+    watchdog('merci', "Setting node " . $reservation_nid . " to no show");
+    $node = node_load($reservation_nid);
+    $node->merci_reservation_status = MERCI_STATUS_NO_SHOW;
+    node_save($node);
+  }
+}
+
