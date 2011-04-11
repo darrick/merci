@@ -21,11 +21,11 @@ $logourl = theme_get_setting('logo_path', '');
           print variable_get('merci_contract_header','');
         }
         ?>
-        Start: <?php print date_format_date($start_date,"long") . '<br />'; ?>
-        Returned by: <?php print date_format_date($end_date,"long") . '<br />'; ?>
+        Start: <?php print $start_date . '<br />'; ?>
+        Returned by: <?php print $end_date . '<br />'; ?>
         Name: <?php print $username ?><br />
         Email: <?php print $email ?><br />
-        Phone: <?php print $phone ?><br />
+        <?php print $phone ? "Phone: $phone" . '<br />' : '' ?>
         
         </div>
         <table id="cost">

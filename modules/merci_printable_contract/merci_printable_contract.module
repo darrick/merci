@@ -118,7 +118,7 @@ function merci_printable_contract($node) {
 }
 // merci_printable_contract
 
-function merci_preprocess_merci_printable_contract($variables) {
+function merci_preprocess_merci_printable_contract(&$variables) {
 
   $node = $variables['node'];
   setlocale(LC_MONETARY, 'en_US');
@@ -149,17 +149,15 @@ function merci_preprocess_merci_printable_contract($variables) {
 
   $items = $node->merci_reservation_items;
 
-  $timezone = $node->field_merci_date[0]['timezone'];
-  $timezone_db = $node->field_merci_date[0]['timezone_db'];
-  $start_date = date_create($node->field_merci_date[0]['value'], $timezone_db);
-  $end_date = date_create($node->field_merci_date[0]['value2'], $timezone_db);
-  date_timezone_set($start_date, timezone_open($timezone));
-  date_timezone_set($end_date, timezone_open($timezone));
+  $langcode = $node->language;
+  // Convert to site timezone.
+  $start_date       = merci_create_local_date_object($node->field_merci_date[$langcode][0]['value']);
+  $end_date         = merci_create_local_date_object($node->field_merci_date[$langcode][0]['value2']);
 
   $hours = round((intval(date_format($end_date, "U")) - intval(date_format($start_date, "U"))) / 3600, 2);
 
-  $variables['start_date'] = $start_date;
-  $variables['end_date'] = $end_date;
+  $variables['start_date'] = format_date($start_date->format('U'));
+  $variables['end_date'] = format_date($end_date->format('U'));
   $variables['hours'] = $hours;
   $variables['username'] = $username;
   $variables['email'] = $email;
