@@ -17,12 +17,13 @@ function merci_printable_contract_menu() {
     'description' => 'Takes a node object and returns a printable contract',
     'page arguments' => array(1),
     'page callback' => 'merci_printable_contract',
-    'access arguments' => array('access content'),
+    'access callback' => 'merci_printable_contract_content_access',
+    'access arguments' => array(1, 'manage reservations'),
     'type' => MENU_LOCAL_TASK,
   );
 
   // Standard Administration settings.
-  $items['admin/merci/manage/contract'] = array(
+  $items['admin/config/merci/contract'] = array(
     'title' => 'Printable Contract',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('merci_printable_contract_admin_settings'),
@@ -40,14 +41,20 @@ function merci_printable_contract_menu() {
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
+function merci_printable_contract_content_access($node, $perm) {
+  return (user_access($perm) and $node->type == 'merci_reservation');
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function merci_printable_contract_theme() {
-  $path = drupal_get_path('module', 'merci_printable_contract');
 
   return array(
     'merci_printable_contract' => array(
       'template' => 'merci-printable-contract',
-      'path' => "$path/",
-      'variables' => array('start_date' => NULL, 'end_date' => NULL, 'hours' => NULL, 'username' => NULL, 'email' => NULL, 'phone' => NULL, 'items' => NULL),
+      'variables' => array('node' => NULL),
     ),
   );
 }
@@ -106,12 +113,16 @@ function merci_printable_contract_admin_settings($form, &$form_state) {
 
 function merci_printable_contract($node) {
 
-  $langcode = $node->language;
+  print theme('merci_printable_contract', array('node' => $node));
+
+}
+// merci_printable_contract
+
+function merci_preprocess_merci_printable_contract($variables) {
+
+  $node = $variables['node'];
   setlocale(LC_MONETARY, 'en_US');
 
-  // TODO Convert "user_load" to "user_load_multiple" if "$node->uid" is other than a uid.
-  // To return a single user object, wrap "user_load_multiple" with "array_shift" or equivalent.
-  // Example: array_shift(user_load_multiple(array(), $node->uid))
   $user     = user_load($node->uid);
   $username = $user->name;
   $email    = $user->mail;
@@ -136,21 +147,25 @@ function merci_printable_contract($node) {
     $phone = $ob[$userID]['phone'];
   }
 
-  $items = $node->merci['reservation_items'];
+  $items = $node->merci_reservation_items;
 
-  $timezone = $node->field_merci_date[$langcode][0]['timezone'];
-  $timezone_db = $node->field_merci_date[$langcode][0]['timezone_db'];
-  $start_date = new DateObject($node->field_merci_date[$langcode][0]['value'], $timezone_db);
-  $end_date = new DateObject($node->field_merci_date[$langcode][0]['value2'], $timezone_db);
+  $timezone = $node->field_merci_date[0]['timezone'];
+  $timezone_db = $node->field_merci_date[0]['timezone_db'];
+  $start_date = date_create($node->field_merci_date[0]['value'], $timezone_db);
+  $end_date = date_create($node->field_merci_date[0]['value2'], $timezone_db);
   date_timezone_set($start_date, timezone_open($timezone));
   date_timezone_set($end_date, timezone_open($timezone));
 
   $hours = round((intval(date_format($end_date, "U")) - intval(date_format($start_date, "U"))) / 3600, 2);
 
+  $variables['start_date'] = $start_date;
+  $variables['end_date'] = $end_date;
+  $variables['hours'] = $hours;
+  $variables['username'] = $username;
+  $variables['email'] = $email;
+  $variables['phone'] = $phone;
+  $variables['items'] = $items;
 
-  $html = theme('merci_printable_contract', array('start_date' => $start_date, 'end_date' => $end_date, 'hours' => $hours, 'username' => $username, 'email' => $email, 'phone' => $phone, 'items' => $items));
-
-  print $html;
 }
 // merci_printable_contract
 

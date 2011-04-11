@@ -74,3 +74,15 @@ class merci_handler_filter_merci_bucket_resource_node_sub_type extends views_han
   }
 }
 
+/**
+ * Filter by bucket/resource default availability.
+ */
+class merci_handler_filter_merci_reservation_item_node_item_status extends views_handler_filter_in_operator {
+  function get_value_options() {
+    if (!isset($this->value_options)) {
+      $this->value_title = t('Availability');
+      $this->value_options = merci_item_reservation_status();
+    }
+  }
+}
+

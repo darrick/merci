@@ -5,7 +5,18 @@ if (Drupal.jsEnabled) {
       } else {
       $('#edit-save-as-draft').attr('value','Save as Template');
       }
+      
+      $('#show-merci-choices').click(function() {
+        $('#merci-choices').toggle('slow', function() {
+        // Animation complete.
+        });
+        $('#edit-merci-more').toggle('slow', function() {
+        // Animation complete.
+        });
+        
+      });   
       });
+
 }
 
 

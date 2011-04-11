@@ -5,9 +5,8 @@ description = "Adds tabs to user, resources, and buckets that are compatible wit
 core = 7.x
 
 dependencies[] = merci
+dependencies[] = views_bulk_operations
 
 
 files[] = merci_ui.module
-files[] = includes/merci_ui.views.inc
-files[] = includes/merci_ui.views_default.inc
-files[] = includes/views_plugin_access_php.inc 
+files[] = merci_ui.views_default.inc

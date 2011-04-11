@@ -5,45 +5,24 @@
  * merci_ui functions
  */
 
-function merci_ui_php_eval($code, $account = NULL) {
-  ob_start();
-  print eval('?>'. $code);
-  $output = ob_get_clean();
-  return $output;
-}
-
 /**
- * Implements hook_views_api().
+ * Implementation of hook_views_api().
  */
 function merci_ui_views_api() {
   return array(
-    'api' => 3.0,
-    'path' => drupal_get_path('module', 'merci_ui') . '/includes',
+    'api' => 2,
+    'path' => drupal_get_path('module', 'merci_ui'),
   );
 }
 
-/**
- * om_navigation_om_navigation_items function.
- * Sample implementation of hook_om_navigation_items
- * @access public
- *
- * @param mixed $context
- *
- * @return void
- */
-function merci_ui_om_navigation_items($context) {
-  $items = array();
-
-  $items['normal'][0] = array(
-    'zone' => 'private',
-    'status' => 'merci_ui_user_tab_access',
-    'value' => 'merci_ui_user_tab',
-    'label' => 'My Reservation',
-    'path' => 'reservations',
-    'weight' => 10,
-  );
-
-  return $items;
+function merci_ui_preprocess_views_view(&$variables) {
+  if(isset($variables['name'])) {
+    if ($variables['name'] == 'merci_ui_user_reservations' or $variables['name'] == 'merci_ui_node_reservations') {
+      $output = '<div id="make-merci-reservation">';
+      $output .= l(t('Make a Reservation'), 'node/add/merci-reservation');
+      $output .= '</div>';
+      $variables['footer'] .= $output;
+    }
+  }
 }
-
 

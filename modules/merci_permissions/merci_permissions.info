@@ -5,11 +5,4 @@ core = 7.x
 dependencies[] = merci 
 project = "merci"
 
-; Information added by drupal.org packaging script on 2009-11-10
-version = "6.x-1.x-dev"
-core = 7.x
-project = "merci"
-datestamp = "1257855270"
-
-
 files[] = merci_permissions.module
