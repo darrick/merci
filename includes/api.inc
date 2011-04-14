@@ -53,7 +53,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
 
       $content_settings = merci_load_item_settings($type);
 
-      $title = $title ? $title : $content_settings->type_name;
+      $title = (isset($title)) ? $title : $content_settings->type_name;
 
       // Is this content type active?
       if ($content_settings->merci_active_status != MERCI_STATUS_ACTIVE) {
@@ -520,12 +520,12 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
 
 
 function merci_check_content_type_restrictions($content_type, $start, $end) {
+  $return = array();
   if (!user_access("manage reservations")) {
 
     //TODO I don't like this.
     $type_settings = merci_load_item_settings($content_type);
-    $return = array();
-
+    
     // Convert start/end dates to local time.
     // TODO clean this up.
     $start_object = merci_create_local_date_object($start);
@@ -994,7 +994,7 @@ function merci_load_item_settings($object) {
     $content_settings = array();
   }
 
-  if ($node['nid']) {
+  if (isset($node['nid'])) {
     // Settings common to all merci item nodes.
     // resource or bucket.
     $merci_type = $content_settings['merci_type_setting'];

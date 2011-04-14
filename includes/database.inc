@@ -426,7 +426,8 @@ function merci_overdue_items($content_type, $start, $reservation_nid = NULL) {
   $table           = key($field['storage']['details']['sql']['FIELD_LOAD_CURRENT']);
   $column_start_date = $field['storage']['details']['sql']['FIELD_LOAD_CURRENT'][$table]['value'];
   $column_end_date = $field['storage']['details']['sql']['FIELD_LOAD_CURRENT'][$table]['value2'];
-
+  $where = '';
+  
   // pull reservations in the past which are still checked out.
   $start = date_create($start, timezone_open("UTC")) >= date_create("now") ? gmdate("Y-m-d H:i:s") : $start;
   $args = array(
@@ -486,7 +487,7 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
       ':type' => $content_type, 
       ':merci_sub_type' => MERCI_SUB_TYPE_ITEM, 
       ':avail1' => MERCI_AVA_F, 
-      ':avail2' => MERCI_AVA_S
+      ':avail2' => MERCI_AVA_T
     )
   );
   $total_items_array = array();
@@ -655,7 +656,7 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
   $total_items_array = merci_reserved_bucket_items($content_type, $start, $end, $reservation );
 
   foreach ($total_items_array as $item_nid => $reservations) {
-    if (!empty($reservations)) {
+    if (isset($reservations)) {
       $reserved_items++;
     }
   }
