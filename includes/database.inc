@@ -42,7 +42,8 @@ function merci_taxonomy_node_save_terms($node, $tids) {
 
   foreach ($tids as $tid) {
     if ($tid) {
-      drupal_write_record('term_node', array('nid' => $node->nid, 'vid' => $node->vid, 'tid' => $tid));
+      $object = array('nid' => $node->nid, 'vid' => $node->vid, 'tid' => $tid);
+      drupal_write_record('term_node', $object);
     }
   }
 }
