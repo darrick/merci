@@ -656,7 +656,7 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
   $total_items_array = merci_reserved_bucket_items($content_type, $start, $end, $reservation );
 
   foreach ($total_items_array as $item_nid => $reservations) {
-    if (isset($reservations)) {
+    if (!empty($reservations)) {
       $reserved_items++;
     }
   }
