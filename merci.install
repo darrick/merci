@@ -616,7 +616,6 @@ function merci_add_group_taxonomy() {
 function _merci_installed_instances () {
   // Create the date, commercial_total, and member_total fields for the reservation.
   $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
-  $date_only_format = substr($short_date_format, 0, 5);
 
   return  array(
     'field_merci_date' => array(
@@ -645,94 +644,12 @@ function _merci_installed_instances () {
         'default_value2' => 'same',
         ),
       ),
-    'field_merci_commmercial_rental' => array(
-      'field_name' => 'field_merci_commercial_rental',
-      'label' => 'Commercial Rental',
-      'required' => 0,
-      'entity_type' => 'node',
-      'bundle' => 'merci_reservation',
-
-      'widget' => array (
-        'weight' => -2,
-        'type' => 'options_onoff',
-        'module' => 'options',
-        ),
-      'display' => array (
-        'default' => array (
-          'label' => 'above',
-          'type' => 'list_default',
-          'module' => 'list',
-          'weight' => 2,
-        )
-      ),
-      'default_value' => array (
-        '0' => array (
-          'value' => 0,
-        ),
-      ),
-    ),
-    'field_merci_member_cost' => array (
-      'field_name' => 'field_merci_member_cost',
-      'label' => 'Member Cost',
-      'required' => 0,
-      'description' => '',
-      'default_value' => '',
-      'entity_type' => 'node',
-      'bundle' => 'merci_reservation',
-      'widget' => array 
-      (
-        'weight' => '-3',
-        'type' => 'number',
-        'module' => 'number',
-      ),
-
-      'display' => array 
-      (
-        'default' => array 
-        (
-          'label' => 'above',
-      'type' => 'number_decimal',
-          'module' => 'number',
-      'weight' => '1',
-        ),
-      ),
-    ),
-
-    'field_merci_commercial_cost' => array (
-      'field_name' => 'field_merci_commercial_cost',
-      'label' => 'Commercial Cost',
-      'required' => 0,
-      'description' => '',
-      'default_value' => '',
-      'entity_type' => 'node',
-      'bundle' => 'merci_reservation',
-      'widget' => array 
-      (
-        'weight' => '-3',
-        'type' => 'number',
-      'module' => 'number',
-      ),
-
-      'display' => array 
-      (
-        'default' => array 
-        (
-          'label' => 'above',
-          'type' => 'number_decimal',
-          'module' => 'number',
-        'weight' => '1',
-        ),
-      ),
-    ),
   );
 }
 
 function _merci_installed_fields () {
-  // Create the date, commercial_total, and member_total fields for the reservation.
-  $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
-  $date_only_format = substr($short_date_format, 0, 5);
 
-  // Create the date, commercial_total, and member_total fields for the reservation.
+  // Create the date field for the reservation.
   return array(
     'field_merci_date' => array(
       'field_name' => 'field_merci_date',
@@ -753,41 +670,6 @@ function _merci_installed_fields () {
         ),
         'tz_handling' => 'site',
         'timezone_db' => 'UTC',
-      ),
-    ),
-    'field_merci_member_cost' => array(
-      'field_name' => 'field_merci_member_cost',
-      'type' => 'number_decimal',
-      'entity_types' => array('node'),
-      'module' => 'number',
-      'locked' => '1',
-      'settings' => array(
-        'precision' => '10',
-        'scale' => '2',
-        'decimal_seperator' => '.',
-        ),
-      ),
-    'field_merci_commercial_cost' => array(
-      'field_name' => 'field_merci_commercial_cost',
-      'type' => 'number_decimal',
-      'entity_types' => array('node'),
-      'module' => 'number',
-      'locked' => '1',
-      'settings' => array(
-        'precision' => '10',
-        'scale' => '2',
-        'decimal_seperator' => '.',
-        ),
-      ),
-    'field_merci_commercial_rental' => array(
-      'field_name' => 'field_merci_commercial_rental',
-      'type' => 'list_boolean',
-      'entity_types' => array('node'),
-      'module' => 'list',
-      'locked' => '1',
-      'settings' => array (
-        'allowed_values' => '0|0 1|1',
-        'allowed_values_function' => '',
       ),
     ),
   );
