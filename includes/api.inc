@@ -1110,11 +1110,11 @@ function merci_add_reservation_items($node) {
         //Add to commerical rate
         //print '<pre>';
         //print_r();
-        $rate = $settings->merci_rate_per_hour;
+        $rate = (isset($settings->merci_rate_per_hour)) ? $settings->merci_rate_per_hour : 0;
         $commercial_total = $commercial_total + ($hours * $rate);
-        $reservation->merci_late_fee_per_hour = $settings->merci_late_fee_per_hour;
-        $reservation->merci_rate_per_hour = $settings->rate_per_hour;
-        $reservation->merci_fee_free_hours = $settings->fee_free_hours;
+        $reservation->merci_late_fee_per_hour = (isset($settings->merci_late_fee_per_hour)) ? $settings->merci_late_fee_per_hour : 0;
+        $reservation->merci_rate_per_hour = (isset($settings->rate_per_hour)) ? $settings->rate_per_hour : 0;;
+        $reservation->merci_fee_free_hours = (isset($settings->fee_free_hours)) ? $settings->fee_free_hours : 0;;
         $reservation = node_submit($reservation);
         node_save($reservation);
 
