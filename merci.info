@@ -4,6 +4,8 @@ description = "Managed Equipment Reservation Checkout and Inventory"
 
 core = 7.x
 
+configure = admin/config/system/merci
+
 dependencies[] = list 
 dependencies[] = number 
 dependencies[] = date
