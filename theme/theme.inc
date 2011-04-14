@@ -136,7 +136,7 @@ function template_preprocess_merci_conflict_grid(&$variables) {
  * @see http://drupal.org/node/1354
  */
 function theme_merci_type_setting($variables) {
-  $element = $variables['form'];
+  $element = isset($variables['form']) ? $variables['form'] : NULL;
   $element['#description'] = filter_xss(theme('item_list', array('items' => $element['#description_items'])));
   $element['#type'] = 'radios';
   unset($element['#title']);
