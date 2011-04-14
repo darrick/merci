@@ -466,7 +466,7 @@ function merci_overdue_items($content_type, $start, $reservation_nid = NULL) {
     $total_items_array[$node->merci_item_nid][$node->nid] = $node;
   }
 
-  return $total_items_array;
+  return (isset($total_items_array)) ? $total_items_array : NULL;
 }
 
 function _merci_sort_array($a, $b) {
@@ -635,7 +635,7 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
  */
 function merci_get_available_bucket_count($content_type, $start = NULL, $end = NULL, $reservation = NULL) {
   //if there are no dates, return the active total
-
+  $reserved_items = 0;
   if (!$start) {
 
     //if user is admin/manager and merci template is installed
