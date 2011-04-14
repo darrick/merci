@@ -449,6 +449,8 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
   // New reservation, so no date filtering.
   else {
     $is_new = TRUE;
+    $start     = NULL;
+    $end       = NULL;  
   }
 
   $options = array();

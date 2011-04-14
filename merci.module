@@ -345,13 +345,13 @@ function merci_form($node, &$form_state) {
   //if (isset($node->nid)) {
   $form['choice_wrapper']['merci_reservation_items'] = merci_build_reservation_table_form($form, $form_state, $node, TRUE);
   //}
-
+  
   // Choice adding code mostly stolen from poll module.
-  $choice_count = empty($node->choice_count) ? 3 : $node->choice_count;
-
-  if ($form_state['post']['op'] == "Add more items") {
+  $choice_count = (isset($node->choice_count)) ? $node->choice_count : 3;
+   
+  if (isset($form_state['post']['op']) && $form_state['post']['op'] == "Add more items") {
     $choice_count += 3;
-        }
+  }
 
   $form['choice_wrapper']['choice_count'] = array(
     '#type' => 'value',
@@ -406,7 +406,7 @@ function merci_form($node, &$form_state) {
   }
   $form['merci_original_reservation_status'] = array(
     '#type' => 'value',
-    '#value' => $node->merci_original_reservation_status ? $node->merci_original_reservation_status : $node->merci_reservation_status,
+    '#value' => (isset($node->merci_original_reservation_status)) ? $node->merci_original_reservation_status : $node->merci_reservation_status,
   );
 
   // Since hook_validate is broken in 6.x, we add our own
@@ -1313,7 +1313,7 @@ function merci_build_reservation_table_form($form, &$form_state, $node, $edit_pa
   );
 
   $reservation_items = array();
-  $items = $node->merci_reservation_items;
+  $items = (isset($node->merci_reservation_items)) ? $node->merci_reservation_items : NULL;
 
   if (!$items) {
     return $table;
