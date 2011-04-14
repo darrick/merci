@@ -520,12 +520,12 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
 
 
 function merci_check_content_type_restrictions($content_type, $start, $end) {
-  $return = array();
   if (!user_access("manage reservations")) {
 
     //TODO I don't like this.
     $type_settings = merci_load_item_settings($content_type);
-    
+    $return = array();
+
     // Convert start/end dates to local time.
     // TODO clean this up.
     $start_object = merci_create_local_date_object($start);
@@ -607,7 +607,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
       }
     }
   }
-  return $return;
+  return (isset($return)) ? $return : NULL;
 }
 // merci_check_content_type_restrictions
 
@@ -657,7 +657,7 @@ function merci_convert_date_popup($dates, $date_format   = 'm/d/Y g:ia') {
 
   $date_timezone = variable_get('date_default_timezone', 'UTC');
   $start = new DateObject($dates['value']['date'] . ' ' . $dates['value']['time'], $date_timezone, $date_format);
-  $end = new DateObject($dates['value2']['date'] . ' ' . $dates['value2']['time'], $date_timezone, $date_format);
+  $end = new DateObject($dates['valuei2']['date'] . ' ' . $dates['value2']['time'], $date_timezone, $date_format);
   date_timezone_set($start, timezone_open('UTC'));
   date_timezone_set($end, timezone_open('UTC'));
   $start = $start->format(DATE_DATETIME);
