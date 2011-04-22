@@ -249,11 +249,11 @@ function merci_db_reservations_by_status_in_timespan($statuses = array(), $start
 
   if ($start) {
     $args[] = $start;
-    $where[] = "$colume_start_date <= '%s'";
+    $where[] = "$column_start_date <= '%s'";
   }
   if ($end) {
     $args[] = $end;
-    $where[] = "$colume_end_date > '%s'";
+    $where[] = "$column_end_date > '%s'";
   }
 
   $where = count($where) ? 'WHERE ' . implode(' AND ', $where) : '';
