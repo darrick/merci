@@ -46,8 +46,19 @@ function merci_staff_user_load($post = NULL) {
   }
 }
 
-function merci_staff_after_build($form, &$form_state) {
+//function merci_staff_after_build($form, &$form_state) {
+function merci_staff_form_alter(&$form, $form_state, $form_id) {
 
+  if($form_id != 'merci_reservation_node_form') {
+    return;
+  }
+
+  if (isset($form_state['node'])) {
+    $node = $form_state['node'] + (array)$form['#node'];
+  } else {
+    $node = $form['#node'];
+  }
+  $node = (object) $node;
   // Override the validation function so we can validate as the submitted user.
   $form['#merci_staff_validated'][] = 'merci_node_validate';
   $form['#validate'][] = 'merci_staff_node_validate';
@@ -91,7 +102,7 @@ function merci_staff_after_build($form, &$form_state) {
  */
 function merci_staff_form_merci_reservation_node_form_alter(&$form, &$form_state) {
   if (user_access('manage reservations')) {
-    $form['#after_build'][] = 'merci_staff_after_build';
+    //$form['#after_build'][] = 'merci_staff_after_build';
 
     if (isset($form_state['node'])) {
       $node = $form_state['node'] + (array) $form['#node'];
