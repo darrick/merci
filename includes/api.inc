@@ -657,12 +657,19 @@ function merci_convert_date_popup($dates, $date_format   = 'm/d/Y g:ia') {
 
   $date_timezone = variable_get('date_default_timezone', 'UTC');
   $start = new DateObject($dates['value']['date'] . ' ' . $dates['value']['time'], $date_timezone, $date_format);
-  $end = new DateObject($dates['valuei2']['date'] . ' ' . $dates['value2']['time'], $date_timezone, $date_format);
+  $end = new DateObject($dates['value2']['date'] . ' ' . $dates['value2']['time'], $date_timezone, $date_format);
   date_timezone_set($start, timezone_open('UTC'));
   date_timezone_set($end, timezone_open('UTC'));
-  $start = $start->format(DATE_DATETIME);
-  $end = $end->format(DATE_DATETIME);
+  
+  //$start = $start->format(DATE_DATETIME);
+  //$end = $end->format(DATE_DATETIME);
+  
+  $start = $start->format($date_format);
+  $end = $end->format($date_format);
+  
   return array('value' => $start, 'value2' => $end);
+  
+  //@TODO: Figure out why the rest of this even here?
   $start         = array(
     '#value' => array(
       'date' => $dates['value']['date'],
