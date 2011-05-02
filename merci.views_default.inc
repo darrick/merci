@@ -16,6 +16,8 @@ function merci_views_default_views() {
   $view->description = 'Merci Reservable Items';
   $view->tag = '';
   $view->base_table = 'node';
+  $view->human_name = '';
+  $view->core = 0;
   $view->api_version = '3.0-alpha1';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
 
@@ -46,7 +48,7 @@ function merci_views_default_views() {
   $handler->display->display_options['relationships']['vid']['field'] = 'vid';
   $handler->display->display_options['relationships']['vid']['label'] = 'Reservation for placeholder item node id';
   $handler->display->display_options['relationships']['vid']['required'] = 1;
-  /* Field: Node: Nid */
+  /* Field: Content: Nid */
   $handler->display->display_options['fields']['nid']['id'] = 'nid';
   $handler->display->display_options['fields']['nid']['table'] = 'node';
   $handler->display->display_options['fields']['nid']['field'] = 'nid';
@@ -61,7 +63,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['nid']['hide_empty'] = 0;
   $handler->display->display_options['fields']['nid']['empty_zero'] = 0;
   $handler->display->display_options['fields']['nid']['link_to_node'] = 0;
-  /* Field: Node: Type */
+  /* Field: Content: Type */
   $handler->display->display_options['fields']['type']['id'] = 'type';
   $handler->display->display_options['fields']['type']['table'] = 'node';
   $handler->display->display_options['fields']['type']['field'] = 'type';
@@ -77,7 +79,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['type']['empty_zero'] = 0;
   $handler->display->display_options['fields']['type']['link_to_node'] = 0;
   $handler->display->display_options['fields']['type']['machine_name'] = 0;
-  /* Field: Node: Title */
+  /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
@@ -159,14 +161,19 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['max_hours_per_reservation']['alter']['html'] = 0;
   $handler->display->display_options['fields']['max_hours_per_reservation']['hide_empty'] = 0;
   $handler->display->display_options['fields']['max_hours_per_reservation']['empty_zero'] = 0;
-  /* Argument: Node: Type */
+  /* Contextual filter: Content: Type */
   $handler->display->display_options['arguments']['type']['id'] = 'type';
   $handler->display->display_options['arguments']['type']['table'] = 'node';
   $handler->display->display_options['arguments']['type']['field'] = 'type';
-  $handler->display->display_options['arguments']['type']['style_plugin'] = 'default_summary';
+  $handler->display->display_options['arguments']['type']['default_action'] = 'default';
+  $handler->display->display_options['arguments']['type']['exception']['title_enable'] = 1;
+  $handler->display->display_options['arguments']['type']['title_enable'] = 1;
   $handler->display->display_options['arguments']['type']['title'] = '%1 Detail';
   $handler->display->display_options['arguments']['type']['default_argument_type'] = 'fixed';
-  /* Filter: MERCI: MERCI type */
+  $handler->display->display_options['arguments']['type']['default_argument_options']['argument'] = 'all';
+  $handler->display->display_options['arguments']['type']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['type']['specify_validation'] = 1;
+  /* Filter criterion: MERCI: MERCI type */
   $handler->display->display_options['filters']['type_setting']['id'] = 'type_setting';
   $handler->display->display_options['filters']['type_setting']['table'] = 'merci_node_type';
   $handler->display->display_options['filters']['type_setting']['field'] = 'type_setting';
@@ -175,7 +182,7 @@ function merci_views_default_views() {
     'resource' => 'resource',
   );
   $handler->display->display_options['filters']['type_setting']['expose']['operator'] = FALSE;
-  /* Filter: MERCI: Sub type -- resource/bucket */
+  /* Filter criterion: MERCI: Sub type -- resource/bucket */
   $handler->display->display_options['filters']['sub_type']['id'] = 'sub_type';
   $handler->display->display_options['filters']['sub_type']['table'] = 'merci_reservation_item_node';
   $handler->display->display_options['filters']['sub_type']['field'] = 'sub_type';
@@ -240,7 +247,7 @@ function merci_views_default_views() {
   $handler->display->display_options['defaults']['row_options'] = FALSE;
   $handler->display->display_options['defaults']['relationships'] = FALSE;
   $handler->display->display_options['defaults']['fields'] = FALSE;
-  /* Field: Node: Nid */
+  /* Field: Content: Nid */
   $handler->display->display_options['fields']['nid']['id'] = 'nid';
   $handler->display->display_options['fields']['nid']['table'] = 'node';
   $handler->display->display_options['fields']['nid']['field'] = 'nid';
@@ -255,7 +262,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['nid']['hide_empty'] = 0;
   $handler->display->display_options['fields']['nid']['empty_zero'] = 0;
   $handler->display->display_options['fields']['nid']['link_to_node'] = 0;
-  /* Field: Node: Type */
+  /* Field: Content: Type */
   $handler->display->display_options['fields']['type']['id'] = 'type';
   $handler->display->display_options['fields']['type']['table'] = 'node';
   $handler->display->display_options['fields']['type']['field'] = 'type';
@@ -271,7 +278,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['type']['empty_zero'] = 0;
   $handler->display->display_options['fields']['type']['link_to_node'] = 0;
   $handler->display->display_options['fields']['type']['machine_name'] = 1;
-  /* Field: Node: Title */
+  /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
@@ -287,7 +294,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
   $handler->display->display_options['fields']['title']['link_to_node'] = 0;
   $handler->display->display_options['defaults']['filters'] = FALSE;
-  /* Filter: MERCI: MERCI type */
+  /* Filter criterion: MERCI: MERCI type */
   $handler->display->display_options['filters']['type_setting']['id'] = 'type_setting';
   $handler->display->display_options['filters']['type_setting']['table'] = 'merci_node_type';
   $handler->display->display_options['filters']['type_setting']['field'] = 'type_setting';
@@ -296,7 +303,7 @@ function merci_views_default_views() {
     'resource' => 'resource',
   );
   $handler->display->display_options['filters']['type_setting']['expose']['operator'] = FALSE;
-  /* Filter: MERCI: Sub type -- resource/bucket */
+  /* Filter criterion: MERCI: Sub type -- resource/bucket */
   $handler->display->display_options['filters']['sub_type']['id'] = 'sub_type';
   $handler->display->display_options['filters']['sub_type']['table'] = 'merci_reservation_item_node';
   $handler->display->display_options['filters']['sub_type']['field'] = 'sub_type';
@@ -304,7 +311,7 @@ function merci_views_default_views() {
     1 => '1',
   );
   $handler->display->display_options['filters']['sub_type']['expose']['operator'] = FALSE;
-  /* Filter: MERCI: Default booking availability -- resource/bucket */
+  /* Filter criterion: MERCI: Default booking availability -- resource/bucket */
   $handler->display->display_options['filters']['default_availability']['id'] = 'default_availability';
   $handler->display->display_options['filters']['default_availability']['table'] = 'merci_reservation_item_node';
   $handler->display->display_options['filters']['default_availability']['field'] = 'default_availability';
@@ -312,7 +319,7 @@ function merci_views_default_views() {
     1 => '1',
   );
   $handler->display->display_options['filters']['default_availability']['expose']['operator'] = FALSE;
-  /* Filter: MERCI: Reservation Status of Item */
+  /* Filter criterion: MERCI: Reservation Status of Item */
   $handler->display->display_options['filters']['item_status']['id'] = 'item_status';
   $handler->display->display_options['filters']['item_status']['table'] = 'merci_reservation_item_node';
   $handler->display->display_options['filters']['item_status']['field'] = 'item_status';
@@ -336,7 +343,7 @@ function merci_views_default_views() {
   $handler->display->display_options['relationships']['vid']['label'] = 'Reservation for placeholder item node id';
   $handler->display->display_options['relationships']['vid']['required'] = 1;
   $handler->display->display_options['defaults']['fields'] = FALSE;
-  /* Field: Node: Nid */
+  /* Field: Content: Nid */
   $handler->display->display_options['fields']['nid']['id'] = 'nid';
   $handler->display->display_options['fields']['nid']['table'] = 'node';
   $handler->display->display_options['fields']['nid']['field'] = 'nid';
@@ -351,7 +358,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['nid']['hide_empty'] = 0;
   $handler->display->display_options['fields']['nid']['empty_zero'] = 0;
   $handler->display->display_options['fields']['nid']['link_to_node'] = 0;
-  /* Field: Node: Type */
+  /* Field: Content: Type */
   $handler->display->display_options['fields']['type']['id'] = 'type';
   $handler->display->display_options['fields']['type']['table'] = 'node';
   $handler->display->display_options['fields']['type']['field'] = 'type';
@@ -367,7 +374,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['type']['empty_zero'] = 0;
   $handler->display->display_options['fields']['type']['link_to_node'] = 0;
   $handler->display->display_options['fields']['type']['machine_name'] = 1;
-  /* Field: Node: Title */
+  /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
@@ -381,7 +388,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['title']['hide_empty'] = 0;
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
   $handler->display->display_options['fields']['title']['link_to_node'] = 1;
-  /* Field: Node: Title */
+  /* Field: Content: Title */
   $handler->display->display_options['fields']['title_1']['id'] = 'title_1';
   $handler->display->display_options['fields']['title_1']['table'] = 'node';
   $handler->display->display_options['fields']['title_1']['field'] = 'title';
@@ -397,10 +404,10 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['title_1']['hide_empty'] = 0;
   $handler->display->display_options['fields']['title_1']['empty_zero'] = 0;
   $handler->display->display_options['fields']['title_1']['link_to_node'] = 1;
-  /* Field: Fields: field_merci_date */
+  /* Field: Content: Reservation */
   $handler->display->display_options['fields']['entity_id']['id'] = 'entity_id';
   $handler->display->display_options['fields']['entity_id']['table'] = 'field_data_field_merci_date';
-  $handler->display->display_options['fields']['entity_id']['field'] = 'entity_id';
+  $handler->display->display_options['fields']['entity_id']['field'] = 'field_merci_date';
   $handler->display->display_options['fields']['entity_id']['relationship'] = 'vid';
   $handler->display->display_options['fields']['entity_id']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['entity_id']['alter']['make_link'] = 0;
@@ -414,7 +421,6 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['entity_id']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['entity_id']['hide_empty'] = 0;
   $handler->display->display_options['fields']['entity_id']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['entity_id']['click_sort_column'] = 'value';
   $handler->display->display_options['fields']['entity_id']['settings'] = array(
     'format_type' => 'long',
     'fromto' => 'both',
@@ -424,7 +430,7 @@ function merci_views_default_views() {
     'show_repeat_rule' => 'show',
   );
   $handler->display->display_options['defaults']['filters'] = FALSE;
-  /* Filter: MERCI: MERCI type */
+  /* Filter criterion: MERCI: MERCI type */
   $handler->display->display_options['filters']['type_setting']['id'] = 'type_setting';
   $handler->display->display_options['filters']['type_setting']['table'] = 'merci_node_type';
   $handler->display->display_options['filters']['type_setting']['field'] = 'type_setting';
@@ -433,7 +439,7 @@ function merci_views_default_views() {
     'resource' => 'resource',
   );
   $handler->display->display_options['filters']['type_setting']['expose']['operator'] = FALSE;
-  /* Filter: MERCI: Sub type -- resource/bucket */
+  /* Filter criterion: MERCI: Sub type -- resource/bucket */
   $handler->display->display_options['filters']['sub_type']['id'] = 'sub_type';
   $handler->display->display_options['filters']['sub_type']['table'] = 'merci_reservation_item_node';
   $handler->display->display_options['filters']['sub_type']['field'] = 'sub_type';
@@ -441,7 +447,7 @@ function merci_views_default_views() {
     1 => '1',
   );
   $handler->display->display_options['filters']['sub_type']['expose']['operator'] = FALSE;
-  /* Filter: MERCI: Reservation Status of Item */
+  /* Filter criterion: MERCI: Reservation Status of Item */
   $handler->display->display_options['filters']['item_status']['id'] = 'item_status';
   $handler->display->display_options['filters']['item_status']['table'] = 'merci_reservation_item_node';
   $handler->display->display_options['filters']['item_status']['field'] = 'item_status';
@@ -449,7 +455,7 @@ function merci_views_default_views() {
     2 => '2',
   );
   $handler->display->display_options['filters']['item_status']['expose']['operator'] = FALSE;
-  /* Filter: MERCI: Reservation status */
+  /* Filter criterion: MERCI: Reservation status */
   $handler->display->display_options['filters']['status']['id'] = 'status';
   $handler->display->display_options['filters']['status']['table'] = 'merci_reservation';
   $handler->display->display_options['filters']['status']['field'] = 'status';
@@ -467,7 +473,7 @@ function merci_views_default_views() {
   $handler = $view->new_display('page', 'Unavailable items', 'page_3');
   $handler->display->display_options['defaults']['relationships'] = FALSE;
   $handler->display->display_options['defaults']['fields'] = FALSE;
-  /* Field: Node: Nid */
+  /* Field: Content: Nid */
   $handler->display->display_options['fields']['nid']['id'] = 'nid';
   $handler->display->display_options['fields']['nid']['table'] = 'node';
   $handler->display->display_options['fields']['nid']['field'] = 'nid';
@@ -482,7 +488,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['nid']['hide_empty'] = 0;
   $handler->display->display_options['fields']['nid']['empty_zero'] = 0;
   $handler->display->display_options['fields']['nid']['link_to_node'] = 0;
-  /* Field: Node: Type */
+  /* Field: Content: Type */
   $handler->display->display_options['fields']['type']['id'] = 'type';
   $handler->display->display_options['fields']['type']['table'] = 'node';
   $handler->display->display_options['fields']['type']['field'] = 'type';
@@ -498,7 +504,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['type']['empty_zero'] = 0;
   $handler->display->display_options['fields']['type']['link_to_node'] = 0;
   $handler->display->display_options['fields']['type']['machine_name'] = 1;
-  /* Field: Node: Title */
+  /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
@@ -514,7 +520,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
   $handler->display->display_options['fields']['title']['link_to_node'] = 0;
   $handler->display->display_options['defaults']['filters'] = FALSE;
-  /* Filter: MERCI: MERCI type */
+  /* Filter criterion: MERCI: MERCI type */
   $handler->display->display_options['filters']['type_setting']['id'] = 'type_setting';
   $handler->display->display_options['filters']['type_setting']['table'] = 'merci_node_type';
   $handler->display->display_options['filters']['type_setting']['field'] = 'type_setting';
@@ -523,7 +529,7 @@ function merci_views_default_views() {
     'resource' => 'resource',
   );
   $handler->display->display_options['filters']['type_setting']['expose']['operator'] = FALSE;
-  /* Filter: MERCI: Sub type -- resource/bucket */
+  /* Filter criterion: MERCI: Sub type -- resource/bucket */
   $handler->display->display_options['filters']['sub_type']['id'] = 'sub_type';
   $handler->display->display_options['filters']['sub_type']['table'] = 'merci_reservation_item_node';
   $handler->display->display_options['filters']['sub_type']['field'] = 'sub_type';
@@ -531,7 +537,7 @@ function merci_views_default_views() {
     1 => '1',
   );
   $handler->display->display_options['filters']['sub_type']['expose']['operator'] = FALSE;
-  /* Filter: MERCI: Default booking availability -- resource/bucket */
+  /* Filter criterion: MERCI: Default booking availability -- resource/bucket */
   $handler->display->display_options['filters']['default_availability']['id'] = 'default_availability';
   $handler->display->display_options['filters']['default_availability']['table'] = 'merci_reservation_item_node';
   $handler->display->display_options['filters']['default_availability']['field'] = 'default_availability';
@@ -548,7 +554,7 @@ function merci_views_default_views() {
   $handler = $view->new_display('page', 'All Items', 'page_4');
   $handler->display->display_options['defaults']['relationships'] = FALSE;
   $handler->display->display_options['defaults']['fields'] = FALSE;
-  /* Field: Node: Nid */
+  /* Field: Content: Nid */
   $handler->display->display_options['fields']['nid_1']['id'] = 'nid_1';
   $handler->display->display_options['fields']['nid_1']['table'] = 'node';
   $handler->display->display_options['fields']['nid_1']['field'] = 'nid';
@@ -563,7 +569,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['nid_1']['hide_empty'] = 0;
   $handler->display->display_options['fields']['nid_1']['empty_zero'] = 0;
   $handler->display->display_options['fields']['nid_1']['link_to_node'] = 0;
-  /* Field: Node: Type */
+  /* Field: Content: Type */
   $handler->display->display_options['fields']['type']['id'] = 'type';
   $handler->display->display_options['fields']['type']['table'] = 'node';
   $handler->display->display_options['fields']['type']['field'] = 'type';
@@ -579,7 +585,7 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['type']['empty_zero'] = 0;
   $handler->display->display_options['fields']['type']['link_to_node'] = 0;
   $handler->display->display_options['fields']['type']['machine_name'] = 1;
-  /* Field: Node: Title */
+  /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
@@ -622,15 +628,18 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['item_status']['hide_empty'] = 0;
   $handler->display->display_options['fields']['item_status']['empty_zero'] = 0;
   $handler->display->display_options['path'] = 'admin/merci/manage/current_inventory/%/all';
-  $handler->display->display_options['menu']['type'] = 'tab';
+  $handler->display->display_options['menu']['type'] = 'default tab';
   $handler->display->display_options['menu']['title'] = 'All';
   $handler->display->display_options['menu']['weight'] = '0';
+  $handler->display->display_options['tab_options']['type'] = 'normal';
+  $handler->display->display_options['tab_options']['title'] = 'admin/merci/manage/current_inventory/all';
+  $handler->display->display_options['tab_options']['weight'] = '0';
   $translatables['merci_reservable_items'] = array(
     t('Defaults'),
     t('more'),
     t('Apply'),
     t('Reset'),
-    t('Sort By'),
+    t('Sort by'),
     t('Asc'),
     t('Desc'),
     t('Items per page'),
@@ -651,7 +660,7 @@ function merci_views_default_views() {
     t('Available Items'),
     t('Checked Out Items'),
     t('Checked out by'),
-    t('field_merci_date'),
+    t('Reservation'),
     t('Unavailable items'),
     t('node/[nid]/edit?destination=admin/merci/manage/current_inventory/[type]/Unavailable'),
     t('All Items'),
@@ -659,6 +668,7 @@ function merci_views_default_views() {
     t('Availability'),
     t('Reservation Status of Item'),
   );
+
 
 
   $views[$view->name] = $view;
