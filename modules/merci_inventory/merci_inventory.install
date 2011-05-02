@@ -35,8 +35,20 @@ function merci_inventory_uninstall() {
     node_delete($node->nid);
   }
 
+  // Need to load the CCK include file where content_field_instance_create() is defined.
+  module_load_include('inc', 'content', 'includes/content.crud');
+  $results = db_query("SELECT field_name,type_name FROM {" . content_instance_tablename() . "} WHERE type_name = 'merci_inventory_master'");
+  while ($field = db_fetch_array($results)) {
+    content_field_instance_delete($field['field_name'], $field['type_name'], FALSE);
+  }
+  // Force the caches and static arrays to update to the new info.
+  content_clear_type_cache(TRUE);
   // delete CCK content_types
   $return = node_type_delete('merci_inventory_master');
+  // You'd think the uninstall submit function would take care of this
+  // but it doesn't look like it.
+  node_types_rebuild();
+  menu_rebuild();
 
   drupal_set_message(t('MERCI Inventory module successfully uninstalled.  merci_inventory_master content type and nodes deleted.'));
 }

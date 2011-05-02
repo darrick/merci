@@ -92,6 +92,12 @@ function merci_enable() {
   while ($new_type = db_fetch_object($new_types)) {
     db_query("INSERT INTO {merci_node_type} (type) VALUES ('%s')", $new_type->type);
   }
+  $results = db_query("SELECT type,merci_type_setting,merci_grouping FROM {merci_node_type}");
+
+  while ($result = db_fetch_array($results)) {
+    variable_set('merci_type_setting_' . $result['type'], $result['merci_type_setting']);
+    variable_set('merci_grouping_' . $result['type'], $result['merci_grouping']);
+  }
   //merci_check_default_timezone();
 }
 
