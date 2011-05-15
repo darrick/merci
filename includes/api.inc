@@ -52,7 +52,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
 
       $content_settings = merci_load_item_settings($type);
 
-      $title = $title ? $title : $content_settings['type_name'];
+      $title = $title ? $title : $content_settings->type_name;
 
       // Is this content type active?
       if ($content_settings->merci_active_status != MERCI_STATUS_ACTIVE) {
@@ -82,12 +82,12 @@ function merci_validate_merci_selected_items($form, &$form_state) {
         }
       }
       if (!$choice_counts[$type][$value] and $total_counts[$type][$value]) {
-        $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount available at the times you've selected.", array('%name' => $title, '%amount' => $total_counts[$type][$value])) . '</div>';
+        $messages[$did] .= '<div> ' . t("You've selected too many %name's.  We only have %amount in the current inventory.", array('%name' => $title, '%amount' => $total_counts[$type][$value])) . '</div>';
       }
       elseif (!$choice_counts[$type][$value]) {
         $overdue_items_array = merci_overdue_items($type, $start, $reservation_nid = NULL);
         if (!empty($overdue_items_array)) {
-          $messages[$did] = '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
+          $messages[$did] .= '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
           foreach ($overdue_items_array as $reservations) {
             foreach (array_keys($reservations) as $nid) {
               $overdue = node_load($nid);
