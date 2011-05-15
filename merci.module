@@ -538,7 +538,8 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       );
     
       // If any nodes have already been created, lock the type setting.
-      if (isset($nodes)) {
+      dpm($nodes);
+      if ($nodes) {
         $form['merci']['merci_type_setting'] = array(
           '#type' => 'value',
           '#value' => $settings->merci_type_setting,
@@ -549,8 +550,8 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#value' => $options[$settings->merci_type_setting],
           '#description' => t('The setting can not be changed because content already exists for this type.'),
         );
-  } 
-  else {
+      } 
+      else {
         $description_items = array(
           t('Resource:  Use this content type to create unique items that can be reserved.'),
           t('Bucket:  Use this content type to create interchangable items that can be reserved (ex. Camera). Buckets reference interchangable items. The actual item does not have to be chosen until the reservation is checked out.'),
@@ -563,7 +564,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#description_items' => $description_items,
           '#theme' => 'merci_type_setting',
         );
-  }
+      }
 
       $status = array(
         MERCI_STATUS_ACTIVE => t('Active'),
