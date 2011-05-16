@@ -237,7 +237,6 @@ function merci_reservation_node_validate($form, &$form_state) {
     return;
   }
 
-  dpm("h3");
   merci_validate_status($form, $form_state);
   merci_validate_merci_reservation_date($form, $form_state);
 
@@ -560,7 +559,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#type' => 'radios',
           '#title' => t('Reservable item type'),
           '#options' => $options,
-          '#default_value' => (isset($settings)) ? $settings->merci_type_setting : 'disabled',
+          '#default_value' => (isset($settings->merci_type_setting)) ? $settings->merci_type_setting : 'disabled',
           '#description_items' => $description_items,
           '#theme' => 'merci_type_setting',
         );
