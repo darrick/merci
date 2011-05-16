@@ -216,6 +216,12 @@ function merci_admin_validate_closed_days($element, &$form_state) {
     $date = trim($date);
     $hours_of_operation['closed_days'][] = $date;
     list($month, $day) = explode('-', $date);
+    if(strlen($month) != 2) {
+      form_error($element, t('Month must be two digits.'));
+    }
+    if(strlen($day) != 2) {
+      form_error($element, t('Day must be two digits.'));
+    }
     if (!checkdate($month, $day, date('Y'))) {
       form_error($element, t('Date %date is invalid', array('%date' => $date)));
     }
