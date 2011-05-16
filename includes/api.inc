@@ -126,6 +126,8 @@ function merci_validate_merci_selected_items($form, &$form_state) {
 }
 
 function merci_validate_merci_reservation_date($form, &$form_state) {
+  dpm($form);
+  print_r($form);
   $node = (object) $form_state['values'];
 
   $langcode = $form_state['node']->language;
@@ -185,6 +187,8 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
     // has no hours of operation, or outside hours of operation.
     merci_verbose_logging('CHECKING Hours of Operation');
     $start_name = date_format($start_object, 'l');
+    dpm($hours_of_operation);
+    dpm("Hlleo");
     if (!$hours_of_operation[$start_day_of_week]) {
       form_set_error('field_merci_date][0][value][date', t('Reservations cannot start on a %day.', array('%day' => $start_name)));
     }
@@ -825,47 +829,8 @@ function merci_get_suggested_bucket_item($content_type, $start, $end, $items = a
  */
 function merci_load_hours_of_operation($content_type = '') {
 
-  $days_of_the_week = array(
-    'sun',
-    'mon',
-    'tue',
-    'wed',
-    'thu',
-    'fri',
-    'sat',
-  );
 
-  $hours_of_operation = array();
-  foreach ($days_of_the_week as $num => $day) {
-    $hours = variable_get("merci_hours_$day", '');
-    if (drupal_strlen($hours) == 11) {
-      $parts = explode('-', $hours);
-      if (count($parts == 2)) {
-        $hours_of_operation[$num] = array(
-          'open' => $parts[0],
-          'close' => $parts[1],
-        );
-      }
-      else {
-        $hours_of_operation[$num] = FALSE;
-      }
-    }
-    else {
-      $hours_of_operation[$num] = FALSE;
-    }
-  }
-
-  $closed_days_raw = variable_get('merci_closed_dates', '');
-  $hours_of_operation['closed_days'] = array();
-  $parts = explode("\n", $closed_days_raw);
-  foreach ($parts as $date) {
-    $date = trim($date);
-    if (drupal_strlen($date) == 5) {
-      $hours_of_operation['closed_days'][] = $date;
-    }
-  }
-
-  return $hours_of_operation;
+  return variable_get('merci_hours_operation', '');
 }
 
 function merci_hours_str_to_array($str) {
