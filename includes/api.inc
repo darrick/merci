@@ -68,11 +68,22 @@ function merci_validate_merci_selected_items($form, &$form_state) {
       }
 
       // Do we have the item available at this time?
+      // total_counts is the total number of items available for each type.
+      // choice_counts is first set to total_counts.  We then start using up the items in choice_counts.
+      // When choice_counts gets to 0 there is no more items available for this reservation.
+      // We then need to figure out if it's not available because of a conflict or if we
+      // just don't have items in the current inventory.
+
+      // Set the total_counts array for the item.  Total counts includes only items reservable at the time
+      // of this reservation.  We initialize choice_counts to total_counts.
       if (!isset($total_counts[$type])) {
+        // Resource or else a bucket item with a item assigned.
         if (is_numeric($value)) {
           $item_options = merci_get_reservable_items($type, $start, $end, $reservation_nid);
+          // Bucket
           if (merci_type_setting($type) == 'bucket') {
             $total_counts[$type][$type] = $choice_counts[$type][$type] = merci_get_available_bucket_count($type, $start, $end, $node->vid) - $content_settings->merci_spare_items;
+            $inventory_count[$type] = merci_get_available_bucket_count($type); 
           }
           foreach ($item_options as $nid => $item_nid) {
             $total_counts[$type][$nid] = $choice_counts[$type][$nid] = 1;
@@ -80,13 +91,18 @@ function merci_validate_merci_selected_items($form, &$form_state) {
         }
         else {
           $total_counts[$type][$value] = $choice_counts[$type][$value] = merci_get_available_bucket_count($type, $start, $end, $node->vid) - $content_settings->merci_spare_items;
+          $inventory_count[$type] = merci_get_available_bucket_count($type); 
         }
       }
-      if (!$choice_counts[$type][$value] and $total_counts[$type][$value]) {
-        $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount in the current inventory.", array('%name' => $title, '%amount' => $total_counts[$type][$value])) . '</div>';
+
+      // Check if the item is available.
+      // Did we run out of inventory?
+      if ($choice_counts[$type][$value] <= 0 and $total_counts[$type][$value] - $choice_counts[$type][$value] >= $inventory_count[$type]) {
+        $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount in the current inventory.", array('%name' => $title, '%amount' => $inventory_count[$type])) . '</div>';
       }
       elseif (!$choice_counts[$type][$value]) {
         $overdue_items_array = merci_overdue_items($type, $start, $reservation_nid = NULL);
+        // Is the item overdue?
         if (!empty($overdue_items_array)) {
           $messages[$did] = '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
           foreach ($overdue_items_array as $reservations) {
@@ -96,6 +112,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
             }
           }
         }
+        // It's a conflict.
         else {
           //TODO: should not be doing theming here.
           $messages[$did] .= merci_theme_conflict_grid($type, $title, $start, $end, $value, $node->vid);
@@ -126,8 +143,6 @@ function merci_validate_merci_selected_items($form, &$form_state) {
 }
 
 function merci_validate_merci_reservation_date($form, &$form_state) {
-  dpm($form);
-  print_r($form);
   $node = (object) $form_state['values'];
 
   $langcode = $form_state['node']->language;
@@ -187,8 +202,6 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
     // has no hours of operation, or outside hours of operation.
     merci_verbose_logging('CHECKING Hours of Operation');
     $start_name = date_format($start_object, 'l');
-    dpm($hours_of_operation);
-    dpm("Hlleo");
     if (!$hours_of_operation[$start_day_of_week]) {
       form_set_error('field_merci_date][0][value][date', t('Reservations cannot start on a %day.', array('%day' => $start_name)));
     }
