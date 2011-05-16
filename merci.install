@@ -755,6 +755,42 @@ function merci_update_6211() {
   return array(array('success' => TRUE, 'query' => 'Permissions have been changed.  Please edit your user permissions to make sure they are what you want.  I have done nothing for you.  Please refer to ' . l("MERCI Permissions", "http://drupal.org/node/1013528") . ' documentation for more information'));
 }
 
+function merci_update_6212() {
+  $days_of_the_week = array(
+    'sun',
+    'mon',
+    'tue',
+    'wed',
+    'thu',
+    'fri',
+    'sat',
+  );
+
+  $hours_of_operation = array();
+  foreach ($days_of_the_week as $num => $day) {
+    $hours = variable_get('merci_hours_' . $day, '');
+    if (empty($hours)) {
+      $hours_of_operation[$num] = FALSE;
+    } else {
+      list ($open, $close) = explode('-', $hours);
+      $hours_of_operation[$num]['open'] = trim($open);
+      $hours_of_operation[$num]['close'] = trim($close);
+    }
+  }
+
+  $closed_days_raw = variable_get('merci_closed_dates','');
+  $hours_of_operation['closed_days'] = array();
+  $parts = explode("\n", $closed_days_raw);
+  foreach ($parts as $date) {
+    $date = trim($date);
+    if (drupal_strlen($date) == 5) {
+      $hours_of_operation['closed_days'][] = $date;
+    }
+  }
+  variable_set('merci_hours_operation', $hours_of_operation);
+  return array(array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.'));
+}
+
 function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
   $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');

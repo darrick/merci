@@ -804,47 +804,8 @@ function merci_get_suggested_bucket_item($content_type, $start, $end, $items = a
  */
 function merci_load_hours_of_operation($content_type = '') {
 
-  $days_of_the_week = array(
-    'sun',
-    'mon',
-    'tue',
-    'wed',
-    'thu',
-    'fri',
-    'sat',
-  );
 
-  $hours_of_operation = array();
-  foreach ($days_of_the_week as $num => $day) {
-    $hours = variable_get("merci_hours_$day", '');
-    if (drupal_strlen($hours) == 11) {
-      $parts = explode('-', $hours);
-      if (count($parts == 2)) {
-        $hours_of_operation[$num] = array(
-          'open' => $parts[0],
-          'close' => $parts[1],
-        );
-      }
-      else {
-        $hours_of_operation[$num] = FALSE;
-      }
-    }
-    else {
-      $hours_of_operation[$num] = FALSE;
-    }
-  }
-
-  $closed_days_raw = variable_get('merci_closed_dates', '');
-  $hours_of_operation['closed_days'] = array();
-  $parts = explode("\n", $closed_days_raw);
-  foreach ($parts as $date) {
-    $date = trim($date);
-    if (drupal_strlen($date) == 5) {
-      $hours_of_operation['closed_days'][] = $date;
-    }
-  }
-
-  return $hours_of_operation;
+  return variable_get('merci_hours_operation', '');
 }
 
 function merci_hours_str_to_array($str) {
@@ -1055,7 +1016,7 @@ function merci_add_reservation_items($node) {
 
           $item['type']        = $item['merci_item_nid'];
           $settings = merci_load_item_settings($item['type']);
-          $item['name']  = $settings['type_name'];
+          $item['name']  = $settings->type_name;
           if ($settings->merci_auto_assign_bucket_item) {
             $date_info = $node->field_merci_date[0];
             $start     = $date_info['value'];
