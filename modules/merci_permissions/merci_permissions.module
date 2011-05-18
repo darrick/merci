@@ -185,7 +185,7 @@ function merci_permissions_form($form, &$form_state) {
  * @see http://drupal.org/node/1354
  */
 function merci_permissions_load_merci_type_settings() {
-  $result = db_query("SELECT nt.type,nt.name FROM {node_type} nt INNER JOIN {merci_node_type} m ON nt.type = m.type WHERE m.type_setting <> :typesetting", array(':typesetting' => 'disabled'));
+  $result = db_query("SELECT nt.type,nt.name FROM {node_type} nt INNER JOIN {merci_node_type} m ON nt.type = m.type WHERE m.merci_type_setting <> :typesetting", array(':typesetting' => 'disabled'));
   $merci_types = array();
   foreach($result as $merci_type) {
     $merci_types[$merci_type->type] = $merci_type->name;
