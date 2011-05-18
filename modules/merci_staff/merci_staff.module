@@ -22,13 +22,6 @@ function merci_staff_menu() {
     );
   }
 
-  // Callback for AJAX adding of item selectors.
-  $items['mercistaff/updatename'] = array(
-    'page callback' => 'merci_staff_update_name',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-  );
-
   return $items;
 }
 
@@ -50,8 +43,23 @@ function merci_staff_user_load($post = NULL) {
   }
 }
 
-function merci_staff_after_build($form, &$form_state) {
+//function merci_staff_after_build($form, &$form_state) {
+function merci_staff_form_alter(&$form, $form_state, $form_id) {
 
+  if($form_id != 'merci_reservation_node_form') {
+    return;
+  }
+
+  if (!user_access('manage reservations')) {
+    return;
+  }
+
+  if (isset($form_state['node'])) {
+    $node = (array)$form_state['node'] + (array)$form['#node'];
+  } else {
+    $node = $form['#node'];
+  }
+  $node = (object) $node;
   // Override the validation function so we can validate as the submitted user.
   $form['#merci_staff_validated'][] = 'merci_reservation_node_validate';
   $form['#validate'][] = 'merci_staff_reservation_node_validate';
@@ -66,9 +74,9 @@ function merci_staff_after_build($form, &$form_state) {
   // Recreate the groups and choices based on the submitted name.
   merci_staff_user_load((array) $node);
 
-  //if (module_exists('og')) {
-  //  og_form_add_og_audience($form, $form_state);
-  //}
+  if (module_exists('og')) {
+    og_form_add_og_audience($form, $form_state);
+  }
 
   // Add the current choices to the form.
   $reset = true;
@@ -95,10 +103,9 @@ function merci_staff_after_build($form, &$form_state) {
  */
 function merci_staff_form_merci_reservation_node_form_alter(&$form, &$form_state) {
   if (user_access('manage reservations')) {
-    $form['#after_build'][] = 'merci_staff_after_build';
 
     if (isset($form_state['node'])) {
-      $node = array_merge($form_state['node'], $form['#node']);
+      $node = (array) $form_state['node'] + (array) $form['#node'];
     }
     else {
       $node = $form['#node'];
@@ -106,17 +113,16 @@ function merci_staff_form_merci_reservation_node_form_alter(&$form, &$form_state
     $node = (object) $node;
     // Move the author field and set autocomplete and ahah handlers.
     // We do this here and not in after_build because the ahah hash is handled before after_build is called.
-    global $user;
     $form['name'] = $form['author']['name'];
     $form['name']['#title'] = 'Reserve for';
     $form['name']['#weight'] = -99;
-    $form['name']['#default_value'] = $node->name ? $node->name : $user->name;
-    //if (module_exists('civicrm')) {
-      //$form['name']['#autocomplete_path'] = 'user/autocompletecivi';
-    //}
-    $form['name']['#ahah'] = array(
-      'path' => 'mercistaff/updatename',
+    if (module_exists('civicrm')) {
+      $form['name']['#autocomplete_path'] = 'user/autocompletecivi';
+    }
+    $form['name']['#ajax'] = array(
+      //'path' => 'mercistaff/updatename',
       //'wrapper' => 'edit-og-groups-wrapper',
+      'callback' => 'merci_staff_update_name',
       'wrapper' => 'merci-staff-edit-form-wrapper',
       'method' => 'replace',
       'effect' => 'fade',
@@ -175,13 +181,8 @@ function merci_staff_autocomplete($string = '') {
 /**
  * Menu callback for AHAH additions.
  */
-function merci_staff_update_name() {
-
-  list($form, $form_state) = merci_ahah_get_form();
-
-  $selected_portion = $form;
-
-  merci_ahah_output($selected_portion);
+function merci_staff_update_name($form, $form_state) {
+  return $form;
 }
 
 function _merci_staff_potential_references($field, $string = '', $exact_string = FALSE) {
@@ -200,8 +201,6 @@ function _merci_staff_potential_references($field, $string = '', $exact_string =
  * referenceable nodes defined by content types.
  */
 function _merci_staff_potential_references_standard( $field, $string = '', $exact_string = FALSE, $limit = '10' ) {
-  //CiviCRM works, but field 'blanks'  
-  return;
   
   $args = $whereClause = $contactTypes = $contactSubTypes = array();
 

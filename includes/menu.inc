@@ -3,8 +3,9 @@
 /**
  * Menu callback for AHAH additions.
  */
-function merci_choice_js() {
+function merci_choice_js($form, $form_state) {
 
+  return $form['choice_wrapper'];
   list($form, $form_state) = merci_ahah_get_form();
 
   $selected_portion = $form['choice_wrapper'];

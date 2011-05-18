@@ -381,12 +381,15 @@ function merci_form($node, &$form_state) {
     '#weight' => 1,
     '#submit' => array('merci_more_choices_submit'),
     // If no javascript action.
-    '#ahah' => array(
-      'path' => 'merci/js',
+    /* TODO: fix for D7
+    '#ajax' => array(
+      //'path' => 'merci/js',
+      'callback' => 'merci_choice_js',
       'wrapper' => 'merci-choice-wrapper',
       'method' => 'replace',
       'effect' => 'fade',
     ),
+     */
   );
     
   if (user_access('manage reservations')) {
@@ -1276,7 +1279,7 @@ function merci_build_accessory_form($form_state, $node, $did) {
     $taxonomy_form   = taxonomy_form($vocabulary->vid, $value);
     $taxonomy_form['#title'] = '';
     unset($taxonomy_form['#theme']);
-    $taxonomy_form['#ahah'] = array(
+    $taxonomy_form['#ajax'] = array(
       'path' => 'merci/taxonomy/' . $node->nid . '/' . $vocabulary->vid . '/' . $did,
       'wrapper' => 'merci-accessories-' . $node->nid,
       'method' => 'prepend',
@@ -1539,12 +1542,15 @@ function _merci_after_build($form, &$form_state) {
     '#value' => t('Limit Lists to Available Items'),
     '#weight' => $weight,
     '#submit' => array('merci_date_filter'),
-    '#ahah' => array(
-      'path' => 'merci/js',
+    /* TODO Fix for D7
+    '#ajax' => array(
+      //'path' => 'merci/js',
+      'callback' => 'merci_choice_js',
       'wrapper' => 'merci-choice-wrapper',
       'method' => 'replace',
       'effect' => 'fade',
     ),
+     */
   );
   return $form;
 }
