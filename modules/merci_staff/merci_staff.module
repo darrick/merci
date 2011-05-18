@@ -75,7 +75,8 @@ function merci_staff_form_alter(&$form, $form_state, $form_id) {
   merci_staff_user_load((array) $node);
 
   if (module_exists('og')) {
-    og_form_add_og_audience($form, $form_state);
+    // TODO: Need to update for D7.
+    //og_form_add_og_audience($form, $form_state);
   }
 
   // Add the current choices to the form.
