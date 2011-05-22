@@ -983,8 +983,9 @@ function merci_load_item_settings($object) {
     // Settings common to all merci item nodes.
     // resource or bucket.
     $merci_type = $content_settings['merci_type_setting'];
-
-    $item_settings = merci_reservation_item_node_settings($vid);
+    
+    
+    //$item_settings = merci_reservation_item_node_settings($vid);
     switch ($merci_type) {
       case 'bucket':
         // TODO: move to seperate module.
