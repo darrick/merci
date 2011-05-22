@@ -542,27 +542,28 @@ function merci_form_alter(&$form, $form_state, $form_id) {
     
       // If any nodes have already been created, lock the type setting.
       if ($nodes) {
+        
         $form['merci']['merci_type_setting'] = array(
           '#type' => 'value',
-          '#value' => $settings->merci_type_setting,
+          '#value' => isset($settings->merci_type_setting) ? $settings->merci_type_setting : 'disabled',
         );
         $form['merci']['merci_type_setting_display'] = array(
           '#type' => 'item',
           '#title' => t('Reservable item type'),
-          '#value' => $options[$settings->merci_type_setting],
+          '#value' => isset($settings->merci_type_setting) ? $options[$settings->merci_type_setting] : '',
           '#description' => t('The setting can not be changed because content already exists for this type.'),
         );
       } 
       else {
         $description_items = array(
           t('Resource:  Use this content type to create unique items that can be reserved.'),
-          t('Bucket:  Use this content type to create interchangable items that can be reserved (ex. Camera). Buckets reference interchangable items. The actual item does not have to be chosen until the reservation is checked out.'),
+          t('Bucket:  Use this content type to create interchangeable items that can be reserved (ex. Camera). Buckets reference interchangeable items. The actual item does not have to be chosen until the reservation is checked out.'),
         );
         $form['merci']['merci_type_setting'] = array(
           '#type' => 'radios',
           '#title' => t('Reservable item type'),
           '#options' => $options,
-          '#default_value' => (isset($settings->merci_type_setting)) ? $settings->merci_type_setting : 'disabled',
+          '#default_value' => isset($settings->merci_type_setting) ? $settings->merci_type_setting : 'disabled',
           '#description_items' => $description_items,
           '#theme' => 'merci_type_setting',
         );
@@ -586,14 +587,14 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#type' => 'textfield',
           '#title' => t('Spare items'),
           '#size' => 10,
-          '#default_value' => isset($settings) ? $settings->merci_spare_items : 0,
+          '#default_value' => isset($settings->merci_spare_items) ? $settings->merci_spare_items : 0,
           '#element_validate' => array('merci_is_numeric_validate'),
           '#description' => filter_xss(t("Set this to the number of items of this type that should always be unavailable and thus unreservable.  This way you'll still have enough items for future reservations in case something breaks.") . $warning),
         );
         $form['merci']['merci_auto_assign_bucket_item'] = array(
           '#type' => 'checkbox',
           '#title' => t('Automatically assign a bucket item'),
-          '#default_value' => isset($settings) ? $settings->merci_auto_assign_bucket_item : 0,
+          '#default_value' => isset($settings->merci_auto_assign_bucket_item) ? $settings->merci_auto_assign_bucket_item : 0,
           '#description' => t('Automatically assign the best fit bucket item when reserving a new bucket item.'),
         );
   }
@@ -614,20 +615,20 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'textfield',
         '#title' => t('Maximum hours per reservation'),
         '#size' => 10,
-        '#default_value' => isset($settings) ? $settings->merci_max_hours_per_reservation : 0,
+        '#default_value' => isset($settings->merci_max_hours_per_reservation) ? $settings->merci_max_hours_per_reservation : 0,
         '#element_validate' => array('merci_is_numeric_validate'),
         '#description' => filter_xss(t('The maximum hours the item can be reserved for in one reservation. Set to zero for no limit.') . $warning),
       );
       $form['merci']['merci_allow_overnight'] = array(
         '#type' => 'checkbox',
         '#title' => t('Allow overnight reservation'),
-        '#default_value' => isset($settings) ? $settings->merci_allow_overnight : 0,
+        '#default_value' => isset($settings->merci_allow_overnight) ? $settings->merci_allow_overnight : 0,
         '#description' => filter_xss(t('Allow a reservation to continue over multiple days.  If this is not checked, items in this content type must be returned before the checkout closes.') . $warning),
       );
       $form['merci']['merci_allow_weekends'] = array(
         '#type' => 'checkbox',
         '#title' => t('Allow weekend reservation'),
-        '#default_value' => isset($settings) ? $settings->merci_allow_weekends : 0,
+        '#default_value' => isset($settings->merci_allow_weekends) ? $settings->merci_allow_weekends : 0,
         '#description' => filter_xss(t('Allow a reservation to be made over days defined as weekend.') . $warning),
       );
       merci_add_settings_form($form, $form_state);
