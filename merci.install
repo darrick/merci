@@ -69,7 +69,6 @@ function merci_uninstall() {
     $nids[] = $node->nid;
   }
 
-  dpm($nids);
   // Delete all the nodes at once
   // http://api.drupal.org/api/function/node_delete_multiple/7
   node_delete_multiple($nids);
