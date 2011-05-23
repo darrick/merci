@@ -517,7 +517,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         $settings = merci_load_item_settings($type);
       }
 
-      if (empty($settings) and $nodes) {
+      if (empty($settings) and isset($nodes)) {
         return;
       }
 
@@ -541,7 +541,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       );
     
       // If any nodes have already been created, lock the type setting.
-      if ($nodes) {
+      if (isset($nodes)) {
         
         $form['merci']['merci_type_setting'] = array(
           '#type' => 'value',
