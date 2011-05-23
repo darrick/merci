@@ -982,7 +982,7 @@ function merci_load_item_settings($object) {
   if (isset($node['nid'])) {
     // Settings common to all merci item nodes.
     // resource or bucket.
-    $merci_type = $content_settings['merci_type_setting'];
+    $merci_type = isset($content_settings['merci_type_setting']) ? $content_settings['merci_type_setting'] : '';
     
     
     //$item_settings = merci_reservation_item_node_settings($vid);
