@@ -164,9 +164,6 @@ function merci_get_reservation_count($content_type) {
  */
 function merci_delete_record($table, &$object, $update) {
 
-  if (!$key) {
-    return;
-  }
   $condition = array($key => $object->{$key});
   return db_delete($table)
     ->condition($condition)
