@@ -117,7 +117,7 @@ function merci_printable_contract($node) {
 }
 // merci_printable_contract
 
-function merci_preprocess_merci_printable_contract($variables) {
+function merci_preprocess_merci_printable_contract(&$variables) {
 
   $node = $variables['node'];
   setlocale(LC_MONETARY, 'en_US');
