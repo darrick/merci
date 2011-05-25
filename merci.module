@@ -515,7 +515,6 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       if ($type) {
         $nodes = merci_nodes_for_type_count($type);
         $settings = merci_load_item_settings($type);
-        dsm($settings);
       }
 
       if (empty($settings) and isset($nodes)) {
