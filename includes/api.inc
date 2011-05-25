@@ -659,14 +659,14 @@ function merci_type_setting($type) {
 
 function merci_content_types($type_name = NULL) {
   // handle type name with either an underscore or a dash
-  $merci_content_types = _merci_content_type_info();
+   $type_name = !empty($type_name) ? str_replace('-', '_', $type_name) : NULL;
+
+  $info = _merci_content_type_info();
   if (!isset($type_name)) {
-    return $merci_content_types;
+    return $info;
   }
   else {
-    $type_name = !empty($type_name) ? str_replace('-', '_', $type_name) : NULL;
-    $info = array($type_name => $type_name);
-    return $merci_content_types[$type_name];
+    return $info[$type_name];
   }
 }
 
