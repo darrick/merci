@@ -658,14 +658,14 @@ function merci_type_setting($type) {
 
 function merci_content_types($type_name = NULL) {
   // handle type name with either an underscore or a dash
-  $type_name = !empty($type_name) ? str_replace('-', '_', $type_name) : NULL;
-
+  $merci_content_types = _merci_content_type_info();
   if (!isset($type_name)) {
-    return _merci_content_type_info();;
+    return $merci_content_types;
   }
   else {
+    $type_name = !empty($type_name) ? str_replace('-', '_', $type_name) : NULL;
     $info = array($type_name => $type_name);
-    return $info;
+    return $merci_content_types[$type_name];
   }
 }
 
@@ -1002,7 +1002,6 @@ function merci_load_item_settings($object) {
         break;
     }
   }
-
   if ($item_settings) {
     return (object) ($item_settings + $content_settings);
   }
