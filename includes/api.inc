@@ -975,6 +975,7 @@ function merci_load_item_settings($object) {
 
   $item_settings = array();
   // Settings from the content type edit page.
+  //@TODO merci_content_types should return emtpy array
   $content_settings = merci_content_types($type);
   if (empty($content_settings)) {
     $content_settings = array();
@@ -985,30 +986,13 @@ function merci_load_item_settings($object) {
     // resource or bucket.
     $merci_type = isset($content_settings['merci_type_setting']) ? $content_settings['merci_type_setting'] : '';
     
-    
     //$item_settings = merci_reservation_item_node_settings($vid);
-    switch ($merci_type) {
-      case 'bucket':
+    if ($merci_type == 'resource') {
         // TODO: move to seperate module.
-        if ($item_settings['merci_sub_type'] == MERCI_SUB_TYPE_RESERVATION) {
-          unset($item_settings['merci_default_availability']);
-          unset($item_settings['merci_item_status']);
-          $item_settings += merci_bucket_node_settings($vid);
-        }
-        break;
-
-      case 'resource':
-        // TODO: move to seperate module.
-        $item_settings += merci_resource_node_settings($vid);
-        break;
+        $item_settings = merci_resource_node_settings($node['vid']);
     }
   }
-  if ($item_settings) {
-    return (object) ($item_settings + $content_settings);
-  }
-  else {
-    return (object) ($content_settings);
-  }
+  return (object) ($item_settings + $content_settings);
 }
 
 /**
