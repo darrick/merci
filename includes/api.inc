@@ -98,7 +98,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
 
       // Check if the item is available.
       // Did we run out of inventory?
-      if ($choice_counts[$type][$value] <= 0 and $total_counts[$type][$value] - $choice_counts[$type][$value] >= $inventory_count[$type]) {
+      if ($total_counts[$type][$value] and $choice_counts[$type][$value] <= 0 and $total_counts[$type][$value] - $choice_counts[$type][$value] >= $inventory_count[$type]) {
         $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount in the current inventory.", array('%name' => $title, '%amount' => $inventory_count[$type])) . '</div>';
       }
       elseif (!$choice_counts[$type][$value]) {
