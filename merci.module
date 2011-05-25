@@ -899,7 +899,7 @@ function merci_load($nodes) {
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
-function merci_node_load(&$nodes, $types) {
+function merci_node_load($nodes, $types) {
   // Process active MERCI node types and reservation nodes.
   foreach ($nodes as $nid => $node) {
     if (merci_is_merci_type($node->type)) {
