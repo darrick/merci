@@ -53,10 +53,11 @@ function merci_validate_merci_selected_items($form, &$form_state) {
 
       $content_settings = merci_load_item_settings($type);
 
-      $title = (isset($title)) ? $title : $content_settings->type_name;
+      $title = isset($title) ? $title : $content_settings->type_name;
 
       // Is this content type active?
-      if ($content_settings->merci_active_status != MERCI_STATUS_ACTIVE) {
+      $active = isset($content_settings->merci_active_status) ? $content_settings->merci_active_status : NULL;
+      if ($active != MERCI_STATUS_ACTIVE) {
         $messages[$did] = '<div> ' . t("%name is not active.", array('%name' => $title)) . '</div>';
         continue;
       }

@@ -386,6 +386,7 @@ function merci_get_reservable_items($content_type, $start = NULL, $end = NULL, $
           OR ($column_start_date <= :start5 AND $column_end_date >= :start6))
           AND NOT md2.merci_item_status <= :merci_item_status
         ) ";
+    
     if ($reservation_nid) {
       $where = ' AND md2.nid <> :reservation_nid';
       $args[':reservation_nid'] = $reservation_nid;

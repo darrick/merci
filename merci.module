@@ -515,6 +515,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       if ($type) {
         $nodes = merci_nodes_for_type_count($type);
         $settings = merci_load_item_settings($type);
+        dsm($settings);
       }
 
       if (empty($settings) and isset($nodes)) {
@@ -1412,7 +1413,7 @@ function merci_build_reservation_table_form($form, &$form_state, $node, $edit_pa
       }
       $operations .= ' &nbsp;&nbsp;' . l(t('edit'), "node/" . $item['merci_placeholder_nid'] . "/edit", array('query' => drupal_get_destination()));
     }
-    $form['ops']['#markup'] = $operations;
+    $form['ops']['#markup'] = isset($operations) ? $operations : NULL;
 
     $type_setting = merci_type_setting($item['type']);
 
