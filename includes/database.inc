@@ -389,7 +389,7 @@ function merci_get_reservable_items($content_type, $start = NULL, $end = NULL, $
 
     $query .= "
       )
-      $where
+      " . (isset($where) ? $where : "") . "
     )
     ";
 
