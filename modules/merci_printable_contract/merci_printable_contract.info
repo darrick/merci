@@ -7,6 +7,7 @@ core = 7.x
 dependencies[] = merci
 
 
+configure = admin/config/system/merci/contract
 
 files[] = merci-printable-contract.tpl.php
 files[] = merci_printable_contract.module

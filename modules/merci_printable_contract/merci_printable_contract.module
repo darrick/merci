@@ -23,7 +23,7 @@ function merci_printable_contract_menu() {
   );
 
   // Standard Administration settings.
-  $items['admin/config/merci/contract'] = array(
+  $items['admin/config/system/merci/contract'] = array(
     'title' => 'Printable Contract',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('merci_printable_contract_admin_settings'),
@@ -133,11 +133,11 @@ function merci_preprocess_merci_printable_contract(&$variables) {
     //include_once($civicrm_root .'/api/UFGroup.php');
     //$userID = crm_uf_get_match_id($user->uid);
 
-    require_once DRUPAL_ROOT . '/' . $civicrm_root . '/CRM/Core/BAO/UFMatch.php';
+    require_once $civicrm_root . '/CRM/Core/BAO/UFMatch.php';
     $userID = CRM_Core_BAO_UFMatch::getContactId( $user->uid );
 
     $cg = array('contact_id' => $userID);
-    include_once DRUPAL_ROOT . '/' . $civicrm_root . '/api/v2/Contact.php';
+    include_once $civicrm_root . '/api/v2/Contact.php';
     $ob = civicrm_contact_get($cg);
     //print '<pre>';
     //print_r($ob);
