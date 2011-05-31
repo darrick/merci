@@ -162,11 +162,9 @@ function merci_get_reservation_count($content_type) {
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
-function merci_delete_record($table, &$object, $update) {
-
-  $condition = array($key => $object->{$key});
+function merci_delete_record($table, &$object, $key) {
   return db_delete($table)
-    ->condition($condition)
+    ->condition($key, $object->{$key})
     ->execute();
 }
 /**
