@@ -15,7 +15,7 @@ $logourl = theme_get_setting('logo_path', '');
         <?php } ?>
         <h2><?php print variable_get('site_name', ''); ?> Equipment Rental Contract</h2>
         <?php if (module_exists('token')) { 
-          print token_replace(variable_get('merci_contract_header', ''), 'node', $node);
+          print token_replace(variable_get('merci_contract_header', ''), array('node' => $node));
         }
         else {
           print variable_get('merci_contract_header','');
@@ -108,9 +108,9 @@ $logourl = theme_get_setting('logo_path', '');
             </tr>
           <tfoot>
         </table>
-        <div id="boilerplate"><?php if (module_exists('token')) { echo token_replace(variable_get('merci_contract_boilerplate', ''), 'node', $node); }
+        <div id="boilerplate"><?php if (module_exists('token')) { echo token_replace(variable_get('merci_contract_boilerplate', ''), array('node' => $node)); }
   else  { echo variable_get('merci_contract_boilerplate',''); } ?></div>
-        <div id="footer"><?php if (module_exists('token')) { echo token_replace(variable_get('merci_contract_footer', ''), 'node', $node); }
+        <div id="footer"><?php if (module_exists('token')) { echo token_replace(variable_get('merci_contract_footer', ''), array('node' => $node)); }
   else  { echo variable_get('merci_contract_footer',''); } ?></div>
       </div>
     </body>
