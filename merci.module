@@ -1015,7 +1015,7 @@ function _merci_content_type_info($reset = FALSE) {
   if ($reset || !isset($info)) {
     if (!$reset && $cached = cache_get('merci_content_type_info')) {
       $info = $cached->data;
-      }
+    }
     else {
       $info = array();
       // Load MERCI node type settings.
@@ -1030,14 +1030,14 @@ function _merci_content_type_info($reset = FALSE) {
           $term = taxonomy_term_load($tid);
           if ($term) {
             $grouping = $term->name;
-    }
-    }
+          }
+        }
         $merci_setting['merci_item_grouping'] = $grouping;
         unset($merci_setting['name']);
         $info[$merci_setting['type']] = $merci_setting;
       }
       cache_set('merci_content_type_info', $info);
-  }
+    }
   }
   return $info;
 }

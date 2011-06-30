@@ -237,7 +237,7 @@ function merci_schema() {
       ),
       'merci_grouping' => array(
         'type' => 'int',
-        'size' => 'tiny',
+        'unsigned' => TRUE,
         'not null' => FALSE,
         'description' => "tid of MERCI Equiment Grouping vocabulary",
       ),
@@ -711,3 +711,13 @@ function merci_update_7001() {
   return array(array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.'));
 }
 
+function merci_update_7002() {
+
+  $spec = array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => FALSE,
+    'description' => 'tid of MERCI Equiment Grouping vocabulary'
+  );
+  db_change_field('merci_node_type', 'merci_grouping', 'merci_grouping', $spec);
+}
