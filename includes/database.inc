@@ -245,7 +245,7 @@ function merci_incomplete_reservations_for_item_nid($nid) {
 
   // Pull any incomplete reservations that use the item in question
   // TODO Please convert this statement to the D7 database API syntax.
-  $reservations = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {" . $table . "} ct ON ct.revision_id = n.vid INNER JOIN {merci_reservation_detail} md ON ct.revision_id = md.vid WHERE md.merci_item_nid = :merci_item_nid AND " . $column_end_date . " >= :end AND NOT (md.merci_item_status <= :merci_item_status)"), array(':merci_item_nid' => $nid, ':end' => $time, ':merci_item_status' => MERCI_ITEM_STATUS_AVAILABLE));
+  $reservations = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {" . $table . "} ct ON ct.revision_id = n.vid INNER JOIN {merci_reservation_detail} md ON ct.revision_id = md.vid WHERE md.merci_item_nid = :merci_item_nid AND " . $column_end_date . " >= :end AND NOT (md.merci_item_status <= :merci_item_status)", array(':merci_item_nid' => $nid, ':end' => $time, ':merci_item_status' => MERCI_ITEM_STATUS_AVAILABLE));
 
   $bad_reservations = array();
   foreach ($reservations as $reservation) {
