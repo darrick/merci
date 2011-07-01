@@ -541,7 +541,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       );
     
       // If any nodes have already been created, lock the type setting.
-      if (isset($nodes)) {
+      if (isset($nodes) and $nodes) {
         
         $form['merci']['merci_type_setting'] = array(
           '#type' => 'value',
@@ -634,7 +634,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       merci_add_settings_form($form, $form_state);
 
       $form['#validate'][] = 'merci_node_type_save_validate';
-      $form['#submit'][]   = 'merci_node_type_save_submit';
+      //$form['#submit'][]   = 'merci_node_type_save_submit';
   
       break;
 
@@ -1593,3 +1593,40 @@ function _merci_choice_form($node, $form_state, $delta, $default = '', $reset = 
 
   return $form;
 }
+/**
+ * @todo Please document this function.
+ * Implement hook_node_type_insert 
+ * called via node_type_save
+ * NOTE:
+  // Saving the content type after saving the variables allows modules to act
+   // on those variables via hook_node_type_insert().
+ via http://api.drupal.org/api/drupal/modules--node--content_types.inc/function/node_type_form_submit/7
+ * 
+ * @see http://drupal.org/node/1354
+ */
+function merci_node_type_insert($info) {
+  merci_node_type_update_variables($info, FALSE);
+  cache_clear_all('merci_' . $info->type . '_data', 'cache');
+  cache_clear_all('merci_content_type_info', 'cache');
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function merci_node_type_update($info) {
+  if (isset($info->old_type) && $info->type != $info->old_type) {
+    // TODO Please review the conversion of this statement to the D7 database API syntax.
+    /* db_query("UPDATE {merci_node_type} SET type = '%s' WHERE type = '%s'", $info->type, $info->old_type) */
+    db_update('merci_node_type')
+  ->fields(array(
+      'type' => $info->type,
+    ))
+  ->condition('type', $info->old_type)
+  ->execute();
+  }
+  merci_node_type_update_variables($info, TRUE);
+  cache_clear_all('merci_' . $info->type . '_data', 'cache');
+  cache_clear_all('merci_content_type_info', 'cache');
+}
+

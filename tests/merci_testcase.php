@@ -96,6 +96,7 @@ class MerciTestCase extends DrupalWebTestCase {
       return $settings['type'];
     }
     $content_type = $this->drupalCreateContentType($settings);
+    $this->verbose('settings ' . var_export($content_type, TRUE));
     $type = $content_type->type;
     $settings = array(
         'merci_type_setting' => $merci_type,

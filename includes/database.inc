@@ -80,25 +80,45 @@ function merci_nodes_for_type_count($type) {
   return db_query("SELECT COUNT(nid) FROM {node} WHERE type = :type", array(':type' => $type))->fetchField();
 }
 
-/**
- * @todo Please document this function.
- * @see http://drupal.org/node/1354
- */
-function merci_node_type_update($info) {
-  if (isset($info->old_type) && $info->type != $info->old_type) {
-    // TODO Please review the conversion of this statement to the D7 database API syntax.
-    /* db_query("UPDATE {merci_node_type} SET type = '%s' WHERE type = '%s'", $info->type, $info->old_type) */
-    db_update('merci_node_type')
-  ->fields(array(
-      'type' => $info->type,
-    ))
-  ->condition('type', $info->old_type)
-  ->execute();
-    cache_clear_all('merci_' . $info->type . '_data', 'cache');
-    cache_clear_all('merci_content_type_info', 'cache');
+function merci_node_type_update_variables($info, $existing) {
+  // This hack is necessary because the node type form submit
+  // automatically saves all remaining form items to {variable}
+  // We're doing custom storage, so remove these.
+  // Don't delete merci_type_setting_
+
+  $variables = array(
+    'merci_max_hours_per_reservation',
+    'merci_allow_overnight',
+    'merci_allow_weekends',
+    'merci_late_fee_per_hour',
+    'merci_rate_per_hour',
+    'merci_fee_free_hours',
+    'merci_status',
+    'merci_spare_items',
+    'merci_min_cancel_hours',
+    'merci_autocheckout',
+    'merci_autocheckin',
+    'merci_selfcheckout',
+    'merci_grouping',
+    'merci_active_status',
+    'merci_auto_assign_bucket_item',
+  );
+  $settings = array(
+    'merci_type_setting' => merci_type_setting($info->type),
+    'type' => $info->type,
+  );
+  foreach ($variables as $variable) {
+    $settings[$variable] = variable_get($variable . '_' . $info->type, 0);
+    variable_del($variable . '_' . $info->type);
+  }
+
+  if (!$existing) {
+    $return = drupal_write_record('merci_node_type', $settings);
+  }
+  else {
+    $return = drupal_write_record('merci_node_type', $settings, 'type');
   }
 }
-
 /**
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
