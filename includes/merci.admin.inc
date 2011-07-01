@@ -19,6 +19,7 @@ function merci_admin_settings($form, &$form_state) {
   $statuses[MERCI_STATUS_CHECKED_OUT] = t('Checked Out');
 
   $hours_of_operation = merci_load_hours_of_operation();
+  dpm($hours_of_operation);
 
   $form['merci_default_reservation_status'] = array(
     '#type' => 'select',
@@ -66,61 +67,42 @@ function merci_admin_settings($form, &$form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
-  $form['merci_hours']['merci_hours_mon'] = array(
-    '#title' => t('Monday hours'),
-    '#default_value' => $hours_of_operation[1] ? implode('-', $hours_of_operation[1]) : '',
-  ) + $hours_element;
-  $form['merci_hours']['merci_monday_is_weekend'] = array(
-    '#default_value' => variable_get('merci_monday_is_weekend', 0),
-  ) + $weekend_element;
-  $form['merci_hours']['merci_hours_tue'] = array(
-    '#title' => t('Tuesday hours'),
-    '#default_value' => $hours_of_operation[2] ? implode('-', $hours_of_operation[2]) : '',
-  ) + $hours_element;
-  $form['merci_hours']['merci_tuesday_is_weekend'] = array(
-    '#default_value' => variable_get('merci_tuesday_is_weekend', 0),
-  ) + $weekend_element;
-  $form['merci_hours']['merci_hours_wed'] = array(
-    '#title' => t('Wednesday hours'),
-    '#default_value' => $hours_of_operation[3] ? implode('-', $hours_of_operation[3]) : '',
-  ) + $hours_element;
-  $form['merci_hours']['merci_wednesday_is_weekend'] = array(
-    '#default_value' => variable_get('merci_wednesday_is_weekend', 0),
-  ) + $weekend_element;
-  $form['merci_hours']['merci_hours_thu'] = array(
-    '#title' => t('Thursday hours'),
-    '#default_value' => $hours_of_operation[4] ? implode('-', $hours_of_operation[4]) : '',
-  ) + $hours_element;
-  $form['merci_hours']['merci_thursday_is_weekend'] = array(
-    '#default_value' => variable_get('merci_thursday_is_weekend', 0),
-  ) + $weekend_element;
-  $form['merci_hours']['merci_hours_fri'] = array(
-    '#title' => t('Friday hours'),
-    '#default_value' => $hours_of_operation[5] ? implode('-', $hours_of_operation[5]) : '',
-  ) + $hours_element;
-  $form['merci_hours']['merci_friday_is_weekend'] = array(
-    '#default_value' => variable_get('merci_friday_is_weekend', 0),
-  ) + $weekend_element;
-  $form['merci_hours']['merci_hours_sat'] = array(
-    '#title' => t('Saturday hours'),
-    '#default_value' => $hours_of_operation[6] ? implode('-', $hours_of_operation[6]) : '',
-  ) + $hours_element;
-  $form['merci_hours']['merci_saturday_is_weekend'] = array(
-    '#default_value' => variable_get('merci_saturday_is_weekend', 1),
-  ) + $weekend_element;
-  $form['merci_hours']['merci_hours_sun'] = array(
-    '#title' => t('Sunday hours'),
-    '#default_value' => $hours_of_operation[0] ? implode('-', $hours_of_operation[0]) : '',
-  ) + $hours_element;
-  $form['merci_hours']['merci_sunday_is_weekend'] = array(
-    '#default_value' => variable_get('merci_sunday_is_weekend', 1),
-  ) + $weekend_element;
+
+  $days_of_the_week = array(
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+  );
+
+  foreach ($days_of_the_week as $num => $day) {
+    $form['merci_hours']['merci_hours_' . $day] = array(
+      '#title' => t('@day hours', array('@day' => ucfirst($day))),
+      '#default_value' => isset($hours_of_operation[$num]) ? implode('-', $hours_of_operation[$num]) : '',
+      '#type' => 'textfield',
+      '#size' => 11,
+      '#maxlength' => 11,
+      '#element_validate' => array('merci_admin_validate_hours_of_operation'),
+    );
+    $form['merci_hours']['merci_' . $day . '_is_weekend'] = array(
+      '#default_value' => variable_get('merci_' . $day . '_is_weekend', 0),
+      '#type' => 'checkbox',
+      '#title' => t('is considered a weekend'),
+    );
+  }
 
   $form['merci_hours']['merci_hours_admin'] = array(
     '#title' => t('Admin hours'),
     '#default_value' => variable_get('merci_hours_admin', '07:00-22:00'),
     '#description' => t('This setting controls the hours shown on the conflict grid for users with Adminster MERCI permessions.  The conflict grid is normally limited to the days and hours the set above.  Because users with Admister MERCI rights can create Resevervations outside the normal hours of operation, they need to see conflicts during those times as well.'),
-  ) + $hours_element;
+    '#type' => 'textfield',
+    '#size' => 11,
+    '#maxlength' => 11,
+    '#element_validate' => array('merci_admin_validate_hours_of_operation'),
+  );
 
   $form['merci_hours']['merci_closed_dates'] = array(
     '#type' => 'textarea',
@@ -173,13 +155,13 @@ function merci_admin_settings_submit($form, &$form_state) {
     field_update_field($field);
   }
   $days_of_the_week = array(
-    'sun',
-    'mon',
-    'tue',
-    'wed',
-    'thu',
-    'fri',
-    'sat',
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
   );
 
   $hours_of_operation = array();

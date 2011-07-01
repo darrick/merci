@@ -842,8 +842,6 @@ function merci_get_suggested_bucket_item($content_type, $start, $end, $items = a
  *     'closed_days' => An array of closed dates in mm-dd format.
  */
 function merci_load_hours_of_operation($content_type = '') {
-
-
   return variable_get('merci_hours_operation', '');
 }
 
@@ -965,6 +963,7 @@ function merci_confirm_reservation($nid) {
 
 function merci_load_item_settings($object) {
 
+  // Allow either a node object or type name to be passed in.
   if (is_string($object)) {
     $type = $object;
   }
@@ -973,13 +972,11 @@ function merci_load_item_settings($object) {
     $type = $node['type'];
   }
 
+  // Initialize here in case there is no nid.
   $item_settings = array();
+
   // Settings from the content type edit page.
-  //@TODO merci_content_types should return emtpy array
   $content_settings = merci_content_types($type);
-  if (empty($content_settings)) {
-    $content_settings = array();
-  }
 
   if (isset($node['nid'])) {
     // Settings common to all merci item nodes.
@@ -1005,12 +1002,7 @@ function merci_load_item_settings($object) {
         break;
     }
   }
-  if ($item_settings) {
-    return (object) ($item_settings + $content_settings);
-  }
-  else {
-    return (object) ($content_settings);
-  }
+  return (object) ($item_settings + $content_settings);
 }
 
 /**
