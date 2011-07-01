@@ -19,7 +19,6 @@ function merci_admin_settings($form, &$form_state) {
   $statuses[MERCI_STATUS_CHECKED_OUT] = t('Checked Out');
 
   $hours_of_operation = merci_load_hours_of_operation();
-  dpm($hours_of_operation);
 
   $form['merci_default_reservation_status'] = array(
     '#type' => 'select',
