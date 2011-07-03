@@ -50,7 +50,10 @@ class MerciIssueTestCase extends MerciTestCase {
       'edit own resource content',
       'delete own resource content',
       'create reservations',
-      'access devel information'
+      'access devel information',
+      'create merci_reservation content',
+      'edit own merci_reservation content',
+      'delete own merci_reservation content',
     ));
 
     $edit = array('roles' => ($this->merci_user->roles + array($this->merci_role => $this->merci_role)));

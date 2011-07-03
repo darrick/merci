@@ -452,7 +452,7 @@ function merci_verbose_logging($string) {
  */
 function merci_build_reservable_items($node, $form_state, $reservation_nid = NULL) {
 
-  $langcode = $form_state['node']->language;
+  $langcode = $node->language;
   // Newly set dates take precedence.
   if (isset($form_state['values']['field_merci_date'])) {
     $start = $form_state['values']['field_merci_date'][$langcode][0]['value'];
@@ -807,7 +807,7 @@ function merci_record_status($code = NULL) {
  */
 function merci_get_available_bucket_items($node, $bucket_type) {
 
-  $langcode = $form_state['node']->language;
+  $langcode = $node->language;
   $date_info = $node->field_merci_date[$langcode][0];
   $start     = $date_info['value'];
   $end       = $date_info['value2'];
@@ -1016,7 +1016,7 @@ function merci_add_reservation_items($node) {
   $member_total = 0;
   $commercial_total = 0;
 
-  $langcode = $form_state['node']->language;
+  $langcode = $node->language;
   $hours = round(strtotime($node->field_merci_date[$langcode][0]['value2']) - strtotime($node->field_merci_date[$langcode][0]['value'])) / 3600;
 
   $exempt_items = array();
@@ -1024,21 +1024,24 @@ function merci_add_reservation_items($node) {
   if (isset($node->merci_reservation_items)) {
     foreach ($node->merci_reservation_items as $did => $item) {
 
-      if (empty($item['merci_item_nid']) and !$item['type']) {
+      if (empty($item['merci_item_nid']) and ! isset($item['type'])) {
         continue;
       }
 
       // If we are copying a reservation.  I.e. via node_repeat
-      if ($item['merci_placeholder_nid'] and $node->is_new) {
+      // Also copy over the placeholder nodes.
+      if (isset($item['merci_placeholder_nid']) and $node->is_new) {
         $placeholder_node = node_load($item['merci_placeholder_nid']);
-        $placeholder_node->nid = NULL;
-        $placeholder_node->vid = NULL;
-        $placeholder_node = node_submit($placeholder_node);
-        node_save($placeholder_node);
-        $item['merci_placeholder_nid'] = $placeholder_node->nid;
+        if ($placeholder_node) {
+          $placeholder_node->nid = NULL;
+          $placeholder_node->vid = NULL;
+          $placeholder_node = node_submit($placeholder_node);
+          node_save($placeholder_node);
+          $item['merci_placeholder_nid'] = $placeholder_node->nid;
+        }
       }
       // Create a placeholder node if we don't have one yet.
-      if (!$item['merci_placeholder_nid']) {
+      if (! isset($item['merci_placeholder_nid']) or empty($item['merci_placeholder_nid'])) {
         // Resource.
         if (is_numeric($item['merci_item_nid'])) {
           $item_node        = node_load($item['merci_item_nid']);
@@ -1067,7 +1070,7 @@ function merci_add_reservation_items($node) {
         else {
           break;
         }
-        $title = $item['item_title'] ? $item['item_title']    : $item['name'];
+        $title = isset($item['item_title']) ? $item['item_title']    : $item['name'];
 
         // Build the item's placeholder node.
         $reservation = new stdClass();
