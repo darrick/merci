@@ -556,8 +556,9 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       } 
       else {
         $description_items = array(
-          t('Resource:  Use this content type to create unique items that can be reserved.'),
-          t('Bucket:  Use this content type to create interchangeable items that can be reserved (ex. Camera). Buckets reference interchangeable items. The actual item does not have to be chosen until the reservation is checked out.'),
+          'disabled' => t('This content type cannot be reserved'),
+          'resource' => t('Use this content type to create unique items that can be reserved.'),
+          'bucket' => t('Use this content type to create interchangeable items that can be reserved (ex. Camera). Buckets reference interchangeable items. The actual item does not have to be chosen until the reservation is checked out.'),
         );
         $form['merci']['merci_type_setting'] = array(
           '#type' => 'radios',
@@ -565,7 +566,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#options' => $options,
           '#default_value' => isset($settings->merci_type_setting) ? $settings->merci_type_setting : 'disabled',
           '#description_items' => $description_items,
-          '#theme' => 'merci_type_setting',
+          '#after_build' => array('merci_type_setting_after_build'),
         );
       }
 
@@ -657,6 +658,13 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       $form['#validate'][] = 'merci_node_admin_delete_validate';
       break;
   }
+}
+
+function merci_type_setting_after_build($element) {
+  foreach ($element['#description_items'] as $key => $value) {
+    $element[$key]['#description'] = $value;
+  }
+  return $element;
 }
 /**
  * Implementation of hook_content_extra_fields.
@@ -990,11 +998,6 @@ function merci_theme() {
     ),
     'merci_current_inventory' => array(
       'path' => drupal_get_path('module', 'merci') . '/theme',
-      'file' => 'theme.inc',
-    ),
-    'merci_type_setting' => array(
-      'path' => drupal_get_path('module', 'merci') . '/theme',
-      'render element' => array('form' => NULL),
       'file' => 'theme.inc',
     ),
   );
