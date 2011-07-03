@@ -167,7 +167,7 @@ function merci_admin_settings_submit($form, &$form_state) {
   foreach ($days_of_the_week as $num => $day) {
     $hours = $form_state['values']['merci_hours_' . $day];
     if (empty($hours)) {
-      $hours_of_operation[$num] = FALSE;
+      $hours_of_operation[$num] = NULL;
     } else {
       list ($open, $close) = explode('-', $hours);
       $hours_of_operation[$num]['open'] = trim($open);
