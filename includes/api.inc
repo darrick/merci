@@ -9,124 +9,113 @@
 function merci_validate_merci_selected_items($form, &$form_state) {
   $node = (object) $form_state['values'];
 
-  $choices = $node->merci_reservation_items;
-
-  $reservation_nid = $node->nid;
-
-  $langcode = $form_state['node']->language;
+  $langcode = $node->language;
   // ****
   // Build date objects we'll need for our different validations.
   // ****
   $start              = $node->field_merci_date[$langcode][0]['value'];
   $end                = $node->field_merci_date[$langcode][0]['value2'];
 
-  // Do this even for reservations with merci status of canceled and checked in.
-  $choice_counts = array();
-  $total_counts = array();
   $messages = array();
-  $conflicts = array();
-  foreach ($choices as $did => $item) {
+  foreach ($node->merci_reservation_items as $did => $item) {
 
-    if (is_array($item)) {
-      $value = $item['merci_item_nid'];
+    if (empty($item['merci_item_nid'])) {
+      continue;
     }
-    else {
-      $value = $item;
-    }
-
-    if (is_numeric($did) and !$value) {
-      $value = $item['type'];
+    // Bucket choice?
+    if (! is_numeric($item['merci_item_nid'])) {
+      $item['type']           = $item['merci_item_nid'];
+      $item['merci_item_nid'] = 0;
     }
 
-    if ($value) {
-      // Only include active buckets, and content types the user
-      // can reserve.
-      $messages[$did] = '';
-      if (is_numeric($value)) {
-        $new_item = node_load($value);
-        $title    = $new_item->title;
-        $type     = $new_item->type;
+    // Get the title of the item. 
+    // Also get the content type for new resource items.
+    if (!isset($item['item_title']) or ! isset($item['type'])) {
+      $new_item = node_load($item['merci_item_nid']);
+      if ($new_item) {
+        $item['item_title'] = $new_item->title;
+        $item['type']       = $new_item->type;
+      } else {
+        //TODO: should not be doing theming here.
+        $content_settings   = merci_load_item_settings($item['type']);
+        $item['item_title'] = $content_settings->type_name;
       }
-      else {
-        $type = $value;
-      }
+    }
 
-      $content_settings = merci_load_item_settings($type);
+    $messages[$did] = '';
 
-      $title = isset($title) ? $title : $content_settings->type_name;
+    if (isset($item['type'])) {
+      $type     = $item['type'];
+      $item_nid = $item['merci_item_nid'];
+      $title    = $item['item_title'];
+
 
       // Is this content type active?
+      $content_settings   = merci_load_item_settings($type);
       if ($content_settings->merci_active_status != MERCI_STATUS_ACTIVE) {
         $messages[$did] = '<div> ' . t("%name is not active.", array('%name' => $title)) . '</div>';
+        form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
         continue;
       }
 
       // Does the user have access to manage reservations or this content type?
       if (!user_access('manage reservations') && !merci_check_content_type_user_permissions($type)) {
         $messages[$did] = '<div> ' . t("You do not have permission to reserve %name.", array('%name' => $title)) . '</div>';
+        form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
         continue;
       }
 
-      // Do we have the item available at this time?
-      // total_counts is the total number of items available for each type.
-      // choice_counts is first set to total_counts.  We then start using up the items in choice_counts.
-      // When choice_counts gets to 0 there is no more items available for this reservation.
-      // We then need to figure out if it's not available because of a conflict or if we
-      // just don't have items in the current inventory.
-
-      // Set the total_counts array for the item.  Total counts includes only items reservable at the time
-      // of this reservation.  We initialize choice_counts to total_counts.
-      if (!isset($total_counts[$type])) {
-        // Resource or else a bucket item with a item assigned.
-        if (is_numeric($value)) {
-          $item_options = merci_get_reservable_items($type, $start, $end, $reservation_nid);
-          // Bucket
-          if (merci_type_setting($type) == 'bucket') {
-            $total_counts[$type][$type] = $choice_counts[$type][$type] = merci_get_available_bucket_count($type, $start, $end, $node->vid) - $content_settings->merci_spare_items;
-            $inventory_count[$type] = merci_get_available_bucket_count($type); 
-          }
-          foreach ($item_options as $nid => $item_nid) {
-            $total_counts[$type][$nid] = $choice_counts[$type][$nid] = $inventory_count[$type] = 1;
-          }
+      // Did the user select too many of the same bucket item?
+      if (merci_type_setting($type) == 'bucket') {
+        $selected_count[$type] = isset($selected_count[$type]) ? $selected_count[$type] + 1 : 1;
+        if ( ! isset($inventory_count[$type])) { 
+          $inventory_count[$type]       = merci_get_available_bucket_count($type); 
         }
-        else {
-          $total_counts[$type][$value] = $choice_counts[$type][$value] = merci_get_available_bucket_count($type, $start, $end, $node->vid) - $content_settings->merci_spare_items;
-          $inventory_count[$type] = merci_get_available_bucket_count($type); 
-        }
-      }
-      if (!isset($total_counts[$type][$value])) {
-        if (merci_type_setting($type) == 'resource') {
-          $total_counts[$type][$value] = $choice_counts[$type][$value] = 0;
+        if ($selected_count[$type] > $inventory_count[$type]) {
+          $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount in the current inventory.", array('%name' => $title, '%amount' => $inventory_count[$type])) . '</div>';
+          form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
+          continue;
         }
       }
 
-      // Check if the item is available.
-      // Did we run out of inventory?
-      if ($total_counts[$type][$value] and $choice_counts[$type][$value] <= 0 and $total_counts[$type][$value] - $choice_counts[$type][$value] >= $inventory_count[$type]) {
-        $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount in the current inventory.", array('%name' => $title, '%amount' => $inventory_count[$type])) . '</div>';
+      // Did the user select too many of the same item?
+      if ($item_nid) {
+        if (isset($selected_count[$item_nid])) {
+          $inventory_count = 1;
+          $messages[$did] = '<div> ' . t("You've selected too many %name's.  We only have %amount in the current inventory.", array('%name' => $title, '%amount' => $inventory_count)) . '</div>';
+          form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
+          continue;
+
+        } else {
+          $selected_count[$item_nid] = 1;
+        }
       }
-      elseif (!$choice_counts[$type][$value]) {
-        $overdue_items_array = merci_overdue_items($type, $start, $reservation_nid = NULL);
-        // Is the item overdue?
-        if (!empty($overdue_items_array)) {
-          $messages[$did] = '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
-          foreach ($overdue_items_array as $reservations) {
-            foreach (array_keys($reservations) as $nid) {
-              $overdue = node_load($nid);
-              $messages[$did] .= '<div> ' . l($overdue->title, 'node/' . $overdue->nid) . '</div>';
-            }
+
+      // Is it available?
+
+      // Are we checking an existing item?
+      $vid = isset($item['did']) ? $node->vid : NULL; 
+
+      $count = merci_is_item_reservable($item_nid, $type, $start, $end, $vid);
+      if (!$count) {
+        $messages[$did] = merci_theme_conflict_grid($type, $title, $start, $end, $item_nid, $node->vid);
+        form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
+        continue;
+      }
+
+      // Is it overdue?
+      $overdue_items_array = merci_overdue_items($type, $start, $node->nid);
+      if (!empty($overdue_items_array)) {
+        $messages[$did] = '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
+        foreach ($overdue_items_array as $reservations) {
+          foreach (array_keys($reservations) as $nid) {
+            $overdue = node_load($nid);
+            $messages[$did] .= '<div> ' . l($overdue->title, 'node/' . $overdue->nid) . '</div>';
           }
         }
-        // It's a conflict.
-        else {
-          //TODO: should not be doing theming here.
-          $messages[$did] .= merci_theme_conflict_grid($type, $title, $start, $end, $value, $node->vid);
-        }
+        form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
+        continue;
       }
-      else {
-        //drupal_set_message(t('There are no time conflicts with this Reservation.'));
-      }
-      $choice_counts[$type][$value]--;
 
       // Check item restrictions.  max hours, etc.
       $restrictions = merci_check_content_type_restrictions($type, $start, $end);
@@ -135,10 +124,10 @@ function merci_validate_merci_selected_items($form, &$form_state) {
         foreach ($restrictions as $restriction) {
           $messages[$did] .= '<div>' . t($restriction, array('%name' => $title)) . '</div>';
         }
-      }
-      if (!empty($messages[$did])) {
         form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
+        continue;
       }
+
     }
   }
   return $messages;

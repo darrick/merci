@@ -705,6 +705,27 @@ function merci_get_count($type, $default_availability = MERCI_AVA_F) {
     )->fetchField();
 }
 
+function merci_is_item_reservable($item_nid, $type, $start, $end, $exclude_vid = NULL) {
+  $items = merci_load_reservations_for_node_in_timespan($item_nid, $type, $start, $end, $exclude_vid);
+
+  // If we are checking an item?
+  if ($item_nid) {
+   if (isset($items[$item_nid]) and count($items[$item_nid])) {
+    return FALSE;
+   }
+   return TRUE;
+  }
+
+  // If we are checking a bucket
+  $count = 0;
+  foreach ($items as $item_nid => $reservations) {
+    if (empty($reservations)) {
+      $count++;
+    }
+  }
+  $content_settings = merci_load_item_settings($type);
+  return $count - $content_settings->merci_spare_items > 0 ? TRUE : FALSE;
+}
 /**
  * Builds an array representing reservations for a Resource within a given timespan
  *
@@ -722,7 +743,7 @@ function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_d
    */
 
   $type_settings = merci_type_setting($type);
-  if ($type_settings == 'bucket') {
+  if ($type_settings == 'bucket' and empty($item_nid)) {
     return merci_reserved_bucket_items($type, $start_date, $end_date, $reservation_vid);
   }
   else {
@@ -762,6 +783,6 @@ function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_d
     $return[$item_nid][$reservation->nid] = $reservation;
   }
 
-  return $return;
+  return isset($return) ? $return : array();
 }
 
