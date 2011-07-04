@@ -56,8 +56,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
       $title = isset($title) ? $title : $content_settings->type_name;
 
       // Is this content type active?
-      $active = isset($content_settings->merci_active_status) ? $content_settings->merci_active_status : NULL;
-      if ($active != MERCI_STATUS_ACTIVE) {
+      if ($content_settings->merci_active_status != MERCI_STATUS_ACTIVE) {
         $messages[$did] = '<div> ' . t("%name is not active.", array('%name' => $title)) . '</div>';
         continue;
       }
@@ -87,12 +86,17 @@ function merci_validate_merci_selected_items($form, &$form_state) {
             $inventory_count[$type] = merci_get_available_bucket_count($type); 
           }
           foreach ($item_options as $nid => $item_nid) {
-            $total_counts[$type][$nid] = $choice_counts[$type][$nid] = 1;
+            $total_counts[$type][$nid] = $choice_counts[$type][$nid] = $inventory_count[$type] = 1;
           }
         }
         else {
           $total_counts[$type][$value] = $choice_counts[$type][$value] = merci_get_available_bucket_count($type, $start, $end, $node->vid) - $content_settings->merci_spare_items;
           $inventory_count[$type] = merci_get_available_bucket_count($type); 
+        }
+      }
+      if (!isset($total_counts[$type][$value])) {
+        if (merci_type_setting($type) == 'resource') {
+          $total_counts[$type][$value] = $choice_counts[$type][$value] = 0;
         }
       }
 
@@ -123,9 +127,6 @@ function merci_validate_merci_selected_items($form, &$form_state) {
         //drupal_set_message(t('There are no time conflicts with this Reservation.'));
       }
       $choice_counts[$type][$value]--;
-      if (is_numeric($value) ) {
-        $choice_counts[$type][$type]--;
-      }
 
       // Check item restrictions.  max hours, etc.
       $restrictions = merci_check_content_type_restrictions($type, $start, $end);
