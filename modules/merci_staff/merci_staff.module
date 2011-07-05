@@ -29,7 +29,7 @@ function merci_staff_menu() {
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
-function merci_staff_user_load($post = NULL) {
+function merci_staff_load_user($post = NULL) {
   static $admin_user;
   global $user;
   if (empty($admin_user)) {
@@ -54,8 +54,8 @@ function merci_staff_form_alter(&$form, $form_state, $form_id) {
     return;
   }
 
-  if (isset($form_state['node'])) {
-    $node = (array)$form_state['node'] + (array)$form['#node'];
+  if (isset($form_state['values'])) {
+    $node = (array)$form_state['values'] + (array)$form['#node'];
   } else {
     $node = $form['#node'];
   }
@@ -72,13 +72,14 @@ function merci_staff_form_alter(&$form, $form_state, $form_id) {
   }
 
   // Recreate the groups and choices based on the submitted name.
-  merci_staff_user_load((array) $node);
+  merci_staff_load_user((array) $node);
 
   if (module_exists('og')) {
     // TODO: Need to update for D7.
     //og_form_add_og_audience($form, $form_state);
   }
 
+  global $user;
   // Add the current choices to the form.
   $reset = true;
   foreach (element_children($form['choice_wrapper']['merci_reservation_items']) as $delta) {
@@ -91,7 +92,7 @@ function merci_staff_form_alter(&$form, $form_state, $form_id) {
       _merci_choice_form($node, $form_state, $delta, $default, $reset);
     unset($reset);
   }
-  merci_staff_user_load();
+  merci_staff_load_user();
   return $form;
 }
 /**
@@ -150,11 +151,11 @@ function merci_staff_form_merci_reservation_node_form_alter(&$form, &$form_state
  * @see http://drupal.org/node/1354
  */
 function merci_staff_reservation_node_validate($form, &$form_state) {
-  merci_staff_user_load($form_state['values']);
+  merci_staff_load_user($form_state['values']);
   foreach ($form['#merci_staff_validated'] as $function) {
     $function($form, $form_state);
   }
-  merci_staff_user_load();
+  merci_staff_load_user();
 }
 /**
  ** Menu callback; Retrieve a JSON object containing autocomplete suggestions for existing users.
