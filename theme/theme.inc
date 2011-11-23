@@ -128,7 +128,7 @@ function template_preprocess_merci_conflict_grid(&$variables) {
   $variables['pretty_hours'] = $pretty_hours;
 }
 
-function theme_merci_type_setting(&$element) {
+function theme_merci_type_setting($element) {
   $element['#description'] = filter_xss(theme('item_list', $element['#description_items']));
   $element['#type'] = 'radios';
   unset($element['#title']);
