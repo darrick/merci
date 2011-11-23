@@ -761,7 +761,7 @@ function merci_record_status($code = NULL) {
     MERCI_STATUS_CHECKED_IN => t('Checked in'),
     MERCI_STATUS_CANCELLED => t('Cancelled'),
     MERCI_STATUS_DENIED => t('Denied'),
-    MERCI_STATUS_DENIED => t('No Show'),
+    MERCI_STATUS_NO_SHOW => t('No Show'),
   );
   if (isset($code)) {
     return $types[$code];
@@ -1101,6 +1101,7 @@ function merci_add_reservation_items($node) {
           $item_status = MERCI_ITEM_STATUS_CANCELED;
           break;
         case MERCI_STATUS_DENIED:
+        case MERCI_STATUS_NO_SHOW:
           $item_status = MERCI_ITEM_STATUS_AVAILABLE;
           break;
       }
