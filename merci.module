@@ -497,7 +497,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#type' => 'radios',
           '#title' => t('Reservable item type'),
           '#options' => $options,
-          '#default_value' => $settings ? $settings->merci_type_setting : 'disabled',
+          '#default_value' => isset($settings->merci_type_setting) ? $settings->merci_type_setting : 'disabled',
           '#description_items' => $description_items,
           '#theme' => 'merci_type_setting',
         );
