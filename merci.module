@@ -403,7 +403,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
 
   // Node add/edit forms.
 
-  $type = $form['type']['#value'];
+  $type = isset($form['type']['#value']) ? $form['type']['#value'] : NULL;
 
   switch ($form_id) {
     // Node settings form.
@@ -453,11 +453,24 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       // If any nodes have already been created, lock the type setting.
       if ($type) {
         $nodes = merci_nodes_for_type_count($type);
-        $settings = merci_load_item_settings($type);
-      }
+        if ( merci_is_merci_type($type) ) {
+          $settings = merci_load_item_settings($type);
+        } else {
+          $settings = new stdClass();
+          $settings->merci_type_setting = 'disabled';
+          $settings->merci_active_status = MERCI_STATUS_ACTIVE;
+          $settings->merci_max_hours_per_reservation = 0;
+          $settings->merci_allow_overnight = 0;
+          $settings->merci_allow_weekends = 0;
+          $settings->merci_rate_per_hour = 0;
+          $settings->merci_late_fee_per_hour = 0;
+          $settings->merci_fee_free_hours = 0;
+          $settings->merci_min_cancel_hours = 0;
+          $settings->merci_autocheckout = 0;
+          $settings->merci_autocheckin = 0;
+          $settings->merci_selfcheckout = 0;
 
-      if (empty($settings) and $nodes) {
-        return;
+        }
       }
 
       $warning  = '<div>' . t('<strong> WARNING:</strong> changing this setting has no effect on existing reserved items.') . '</div>';
@@ -497,7 +510,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
           '#type' => 'radios',
           '#title' => t('Reservable item type'),
           '#options' => $options,
-          '#default_value' => isset($settings->merci_type_setting) ? $settings->merci_type_setting : 'disabled',
+          '#default_value' => $settings->merci_type_setting,
           '#description_items' => $description_items,
           '#theme' => 'merci_type_setting',
         );
@@ -511,7 +524,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'radios',
         '#title' => t('Status'),
         '#options' => $status,
-        '#default_value' => isset($settings->merci_active_status) ? intval($settings->merci_active_status) : MERCI_STATUS_ACTIVE,
+        '#default_value' => intval($settings->merci_active_status),
         '#description' => t('Set to active to allow this type to be reserved.'),
       );
 
@@ -1379,15 +1392,32 @@ function merci_add_settings_form(&$form, $form_state) {
   //$merci_settings = mnerci_content_types($type);
   //if(!$merci_settings) return;
   if ($form['#id'] == 'node-type-form') {
-    $node = merci_load_item_settings($type);
-    $node = (object) $node;
+    if ( merci_is_merci_type($type) ) {
+      $settings = merci_load_item_settings($type);
+    } else {
+      $settings = new stdClass();
+      $settings->merci_type_setting = 'disabled';
+      $settings->merci_active_status = MERCI_STATUS_ACTIVE;
+      $settings->merci_max_hours_per_reservation = 0;
+      $settings->merci_allow_overnight = 0;
+      $settings->merci_allow_weekends = 0;
+      $settings->merci_rate_per_hour = 0;
+      $settings->merci_late_fee_per_hour = 0;
+      $settings->merci_fee_free_hours = 0;
+      $settings->merci_min_cancel_hours = 0;
+      $settings->merci_autocheckout = 0;
+      $settings->merci_autocheckin = 0;
+      $settings->merci_selfcheckout = 0;
+
+    }
+    $node = $settings;
   }
   else {
     $node = (object) $form['#node'];
   }
   //merci_load_item_settings($node);
   // New nodes are always sub type item.
-  $sub_type = $node->merci_sub_type ? $node->merci_sub_type : MERCI_SUB_TYPE_ITEM;
+  $sub_type = isset($node->merci_sub_type) ? $node->merci_sub_type : MERCI_SUB_TYPE_ITEM;
 
   if (empty($form['merci'])) {
     $form['merci'] = array(
