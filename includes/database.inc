@@ -226,7 +226,7 @@ function merci_incomplete_reservations_for_item_nid($nid) {
 
 }
 
-function merci_db_reservations_by_status_in_timespan($statuses = array(), $start = NULL, $end = NULL) {
+function merci_db_reservations_by_status_in_timespan($statuses = array(), $start = NULL, $end = NULL, $older = FALSE) {
 
   // Determine CCK table and columns the date data is stored in.
   $field             = content_fields('field_merci_date');
@@ -253,7 +253,12 @@ function merci_db_reservations_by_status_in_timespan($statuses = array(), $start
   }
   if ($end) {
     $args[] = $end;
-    $where[] = "$column_end_date > '%s'";
+    // See if we are looking for reservations which have ended.
+    if ($older and !$start) {
+      $where[] = "$column_end_date < '%s'";
+    } else {
+      $where[] = "$column_end_date > '%s'";
+    }
   }
 
   $where = count($where) ? 'WHERE ' . implode(' AND ', $where) : '';

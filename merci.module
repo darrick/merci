@@ -774,7 +774,7 @@ function merci_cron() {
     node_save($reservation);
   }
 
-  $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_CHECKED_OUT), NULL, $time);
+  $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_CHECKED_OUT), NULL, $time, TRUE);
 
   foreach (array_keys($nodes) as $reservation_nid) {
 
