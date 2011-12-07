@@ -1059,7 +1059,7 @@ function _merci_content_type_info($reset = FALSE) {
  */
 function merci_delete_item_validate($node) {
   // Only validate bucket/resource items.
-  if ($node->type != 'merci_reservation' && $node->merci_type_setting != 'disabled' && isset($node->merci_sub_type) && $node->merci_sub_type == MERCI_SUB_TYPE_ITEM) {
+  if ($node->type != 'merci_reservation' && isset($node->merci_type_setting) && $node->merci_type_setting != 'disabled' && isset($node->merci_sub_type) && $node->merci_sub_type == MERCI_SUB_TYPE_ITEM) {
     // Determine CCK table and columns the date data is stored in.
     $field = field_info_field('field_merci_date');
     $table           = key($field['storage']['details']['sql']['FIELD_LOAD_CURRENT']);
