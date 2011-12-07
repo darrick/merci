@@ -188,5 +188,50 @@ class MerciIssueTestCase extends MerciTestCase {
     $fourth = $this->merciUpdateNode($first->nid,$edit);
     $this->assertText(t("You've selected too many @name", array('@name' => $node->title)));
   }
+  // Reservation status is set to "checked in" after being checked out for a few hours
+  function testIssue1295962() {
+    $today = date('Y-m-d');
+    $start = date('H:i', time() - 3600);
+    $start2 = date('H:i', time() - 1800);
+    $end = date('H:i', time() + 3600);
+    // Create our first reservation
+    $node = $this->resource;
+    $edit = array(
+      'title' => $this->randomName(),
+      'field_merci_date[und][0][value][date]' => $today,
+      'field_merci_date[und][0][value][time]' => $start,
+      'field_merci_date[und][0][value2][date]' => $today,
+      'field_merci_date[und][0][value2][time]' => $end,
+      'merci_reservation_items[choice_1][merci_item_nid]' => $node->nid,
+    );
+
+    $title = $edit['title'];
+    $first = $this->merciCreateNode('merci-reservation',$edit);
+    $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
+
+    $this->drupalLogin($this->admin_user);
+    // Update reservation with merci user as author.  Should Fail.
+    $edit = array(
+      'merci_reservation_status' => MERCI_STATUS_CHECKED_OUT
+    );
+
+    $second = $this->merciUpdateNode($first->nid,$edit);
+    $this->assertText(t("@title has been updated.", array('@title' => $title)));
+    merci_cron();
+    $this->drupalGet('node/' . $second->nid);
+    $this->assertText(t('Checked out'));
+
+    $edit = array(
+      'field_merci_date[und][0][value][date]' => $today,
+      'field_merci_date[und][0][value][time]' => $start,
+      'field_merci_date[und][0][value2][date]' => $today,
+      'field_merci_date[und][0][value2][time]' => $start2,
+    );
+    $second = $this->merciUpdateNode($first->nid,$edit);
+    $this->assertText(t("@title has been updated.", array('@title' => $title)));
+    merci_cron();
+    $this->drupalGet('node/' . $second->nid);
+    $this->assertText(t('Checked in'));
+  }
 
 }

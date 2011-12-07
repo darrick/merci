@@ -851,14 +851,14 @@ function merci_cron() {
     node_save($reservation);
   }
 
-  $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_CHECKED_OUT), NULL, $time);
+  $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_CHECKED_OUT), NULL, $time, TRUE);
 
   foreach (array_keys($nodes) as $reservation_nid) {
 
     //check child items of that reservations for autocheckin
     $reservation = node_load($reservation_nid);
 
-    foreach ($reservaton->merci_reservation_items as $item) {
+    foreach ($reservation->merci_reservation_items as $item) {
       $node = node_load($item['merci_item_nid']);
       if (!$node or !$node->merci_autocheckin) {
         // skip out to the next reservation.

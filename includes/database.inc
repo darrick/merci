@@ -280,7 +280,7 @@ function merci_incomplete_reservations_for_item_nid($nid) {
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
-function merci_db_reservations_by_status_in_timespan($statuses = array(), $start = NULL, $end = NULL) {
+function merci_db_reservations_by_status_in_timespan($statuses = array(), $start = NULL, $end = NULL, $older = TRUE) {
 
   // Determine CCK table and columns the date data is stored in.
   $field = field_info_field('field_merci_date');
@@ -307,7 +307,12 @@ function merci_db_reservations_by_status_in_timespan($statuses = array(), $start
   }
   if ($end) {
     $args[':end'] = $end;
-    $where[] = "$column_end_date > :end";
+    // See if we are looking for reservations which have ended.
+    if ($older and !$start) {
+      $where[] = "$column_end_date < :end";
+    } else {
+      $where[] = "$column_end_date > :end";
+    }
   }
 
   $where = count($where) ? 'WHERE ' . implode(' AND ', $where) : '';
