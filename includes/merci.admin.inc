@@ -192,7 +192,7 @@ function merci_admin_validate_closed_days($element, &$form_state) {
     return;
   }
 
-  $parts = explode("\n", $element['#value']);
+  $parts = explode("\n", trim($element['#value']));
   foreach ($parts as $date) {
     $date = trim($date);
     $hours_of_operation['closed_days'][] = $date;

@@ -91,7 +91,7 @@ function merci_enable() {
   $existing_types = db_query("SELECT type FROM {merci_node_type}");
   $types = array();
   foreach ($existing_types as $existing_type) {
-    $types = $existing_type->type;
+    $types[] = $existing_type->type;
   }
   if (empty($types)) {
     $new_types = db_query("SELECT type FROM {node_type}");

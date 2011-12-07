@@ -773,7 +773,7 @@ function merci_record_status($code = NULL) {
     MERCI_STATUS_CHECKED_IN => t('Checked in'),
     MERCI_STATUS_CANCELLED => t('Cancelled'),
     MERCI_STATUS_DENIED => t('Denied'),
-    MERCI_STATUS_DENIED => t('No Show'),
+    MERCI_STATUS_NO_SHOW => t('No Show'),
   );
   if (isset($code)) {
     return $types[$code];
@@ -1086,8 +1086,10 @@ function merci_add_reservation_items($node) {
         $rate = (isset($settings->merci_rate_per_hour)) ? $settings->merci_rate_per_hour : 0;
         $commercial_total = $commercial_total + ($hours * $rate);
         $reservation->merci_late_fee_per_hour = (isset($settings->merci_late_fee_per_hour)) ? $settings->merci_late_fee_per_hour : 0;
-        $reservation->merci_rate_per_hour = (isset($settings->rate_per_hour)) ? $settings->rate_per_hour : 0;;
-        $reservation->merci_fee_free_hours = (isset($settings->fee_free_hours)) ? $settings->fee_free_hours : 0;;
+        $reservation->merci_rate_per_hour = (isset($settings->merci_rate_per_hour)) ? $settings->merci_rate_per_hour : 0;
+        $reservation->merci_fee_free_hours = (isset($settings->merci_fee_free_hours)) ? $settings->merci_fee_free_hours : 0;
+        $reservation->merci_autocheckin  = (isset($settings->merci_autocheckin))  ? $settings->merci_autocheckin  : 0;
+        $reservation->merci_autocheckout = (isset($settings->merci_autocheckout)) ? $settings->merci_autocheckout : 0;
         $reservation = node_submit($reservation);
         node_save($reservation);
 

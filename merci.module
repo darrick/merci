@@ -837,7 +837,7 @@ function merci_cron() {
     $reservation = node_load($reservation_nid);
 
     //check child items of that reservations for autocheckout
-    foreach ($reservaton->merci_reservation_items as $item) {
+    foreach ($reservation->merci_reservation_items as $item) {
       $node = node_load($item['merci_item_nid']);
       if (!$node or !$node->merci_autocheckout) {
         // skip out to the next reservation.
