@@ -469,6 +469,11 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
 
   // Group the buckets.
   $vid = variable_get('merci_equipment_grouping_vid', 0);
+  // With the correct weight.
+  $terms = taxonomy_get_tree($vid);
+  foreach ($terms as $term) {
+    $options['options'][$term->name] = array();
+  }
   // This array holds all reservable items the user may reserve.
   // Loop through each bucket type.
 
@@ -503,6 +508,13 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
           $options['options'][$value['merci_item_grouping']][$key] = $item;
         }
       }
+    }
+  }
+
+  // Remove grouping keys with no items.
+  foreach ($terms as $term) {
+    if (empty($options['options'][$term->name])) {
+      unset ($options['options'][$term->name]);
     }
   }
 
