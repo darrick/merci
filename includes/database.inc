@@ -99,7 +99,6 @@ function merci_node_type_update_variables($info, $existing) {
     'merci_autocheckout',
     'merci_autocheckin',
     'merci_selfcheckout',
-    'merci_grouping',
     'merci_active_status',
     'merci_auto_assign_bucket_item',
   );
