@@ -93,6 +93,8 @@ function merci_staff_form_alter(&$form, $form_state, $form_id) {
     $reset = false;
   }
   merci_staff_load_user();
+  array_push($form['field_merci_date']['field_merci_date_button']['#limit_validation_errors'], array('name'), array('override'));
+  array_push($form['choice_wrapper']['merci_more']['#limit_validation_errors'], array('name'), array('override'));
   return $form;
 }
 /**
