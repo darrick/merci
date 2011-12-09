@@ -84,14 +84,6 @@ function merci_permission() {
  */
 function merci_menu() {
 
-  // Callback for AJAX adding of item selectors.
-  $items['merci/js'] = array(
-    'title' => 'Javascript Choice Form',
-    'page callback' => 'merci_choice_js',
-    'access arguments' => array('access content'),
-    'file' => 'includes/menu.inc',
-    'type' => MENU_CALLBACK,
-  );
 
   $items['merci/taxonomy/%node/%/%'] = array(
     'title' => 'JSON interface for node taxonomy',
@@ -347,9 +339,9 @@ function merci_form($node, &$form_state) {
   //}
   
   // Choice adding code mostly stolen from poll module.
-  $choice_count = (isset($node->choice_count)) ? $node->choice_count : 3;
+  $choice_count = (isset($form_state['values']['choice_count'])) ? $form_state['values']['choice_count'] : 3;
    
-  if (isset($form_state['post']['op']) && $form_state['post']['op'] == "Add more items") {
+  if (isset($form_state['triggering_element']['#value']) && $form_state['triggering_element']['#value'] == "Add more items") {
     $choice_count += 3;
   }
 
@@ -365,14 +357,14 @@ function merci_form($node, &$form_state) {
 
     $form['choice_wrapper']['merci_reservation_items']["choice_" . $delta]['merci_item_nid'] =
       _merci_choice_form($node, $form_state, $delta, $default);
-      }
+  }
 
   $options = array();
   for ($i = 1; $i < 20; $i++) {
     $options[$i] = $i;
   }
-  
-  // We name our button 'merci_more' to avoid conflicts with other modules using
+ 
+  // We name our button 'merci_more' to avoid conflicts with other modules usinm
   // AHAH-enabled buttons with the id 'more'.
   $form['choice_wrapper']['merci_more'] = array(
     '#type' => 'submit',
@@ -380,16 +372,15 @@ function merci_form($node, &$form_state) {
     '#description' => t("If the number of items above isn't enough, click here to add more items."),
     '#weight' => 1,
     '#submit' => array('merci_more_choices_submit'),
-    // If no javascript action.
-    /* TODO: fix for D7
+    '#limit_validation_errors' => array(array('choice_count'), array('merci_reservation_items')),  // No need to validate when submitting this.
+    '#validate' => array(),
     '#ajax' => array(
-      //'path' => 'merci/js',
       'callback' => 'merci_choice_js',
       'wrapper' => 'merci-choice-wrapper',
       'method' => 'replace',
       'effect' => 'fade',
+
     ),
-     */
   );
     
   if (user_access('manage reservations')) {
@@ -416,7 +407,6 @@ function merci_form($node, &$form_state) {
   // custom validation here.
   // TODO check if this fixed.
   $form['#validate'][] = 'merci_reservation_node_validate';
-  $form['#after_build'][] = '_merci_after_build';
 
   $form['#cache'] = TRUE; // Make sure the form is cached.
   
@@ -426,6 +416,10 @@ function merci_form($node, &$form_state) {
   }
 
   return $form;
+}
+
+function merci_choice_js($form, $form_state) {
+  return $form['choice_wrapper'];
 }
 
 function merci_taxonomy_term_select($title, $name, $value, $vocabulary_id, $description, $multiple, $blank, $exclude = array()) {
@@ -468,7 +462,24 @@ function merci_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     // Node settings form.
 
-    case $type . '_node_form':
+  case 'merci_reservation_node_form':
+    $form['field_merci_date']['field_merci_date_button'] = array(
+      '#type' => 'submit',
+      '#value' => t('Limit Lists to Available Items'),
+      //'#weight' => $weight,
+      '#submit' => array('merci_date_filter'),
+      '#limit_validation_errors' => array(array('merci_reservation_items'), array('choice_count'), array('field_merci_date')),  // No need to validate when submitting this.
+      '#validate' => array(),
+      '#ajax' => array(
+        //'path' => 'merci/js',
+        'callback' => 'merci_choice_js',
+        'wrapper' => 'merci-choice-wrapper',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+    );
+    return;
+  case $type . '_node_form':
       if (merci_is_merci_type($type)) {
 
         $node = (object) $form['#node'];
@@ -1164,84 +1175,6 @@ function merci_delete_node_type_validate(&$form) {
   }
 }
 
-/**
- * Does the very standard things that must be done in any normal callback.
- * Used by each callback in this example module.
- */
-function merci_ahah_get_form() {
-  // The form is generated in an include file which we need to include manually.
-  include_once DRUPAL_ROOT . '/' . 'modules/node/node.pages.inc';
-  $form_state = array(
-    'storage' => NULL,
-    'submitted' => FALSE,
-  );
-  //$form_state = array('storage' => TRUE, 'submitted' => TRUE);
-  $form_build_id = $_POST['form_build_id'];
-  $form = form_get_cache($form_build_id, $form_state);
-  $args = $form['#parameters'];
-  $form_id = array_shift($args);
-  $form_state['post'] = $form['#post'] = $_POST;
-  // Enable the submit/validate handlers to determine whether AHAH-submittted.
-  $form_state['ahah_submission'] = TRUE;
-  $form['#programmed'] = $form_state['#redirect'] = FALSE;
-  // Stash original form action to avoid overwriting with drupal_rebuild_form().
-  $form_state['action'] = $form['#action'];
-
-  // Ripped off from drupal_process_form.
-  // We do the same except call validation.
-  $form = form_builder($form_id, $form, $form_state);
-
-  // We have to do this in order for the date_combo to be rebuilt properly.
-  $element = $form['field_merci_date'][0];
-  date_combo_validate($element, $form_state);
-
-  // Continue ripping off drupal_proecss_form
-  drupal_clean_css_identifier(NULL, TRUE);
-  $form_state['redirect'] = NULL;
-  form_execute_handlers('submit', $form, $form_state);
-
-  // We'll clear out the cached copies of the form and its stored data
-  // here, as we've finished with them. The in-memory copies are still
-  // here, though.
-  if (variable_get('cache', CACHE_DISABLED) == CACHE_DISABLED && !empty($form_state['values']['form_build_id'])) {
-    cache_clear_all('form_' . $form_state['values']['form_build_id'], 'cache_form');
-    cache_clear_all('storage_' . $form_state['values']['form_build_id'], 'cache_form');
-  }
-
-  // END ripping drupal_process_form.
-  $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
-  // Clear any validation errors.  Only the date field is validated so this will clear the error so it won't
-  // be outlined in red.
-  form_set_error(NULL, '', TRUE);
-  return array($form, $form_state);
-}
-
-/**
- * @todo Please document this function.
- * @see http://drupal.org/node/1354
- */
-function merci_ahah_output($selected_portion, $show_status = FALSE) {
-  if ($show_status) {
-    // TODO Please change this theme call to use an associative array for the $variables parameter.
-    $output .= theme('status_messages');
-  }
-  // To avoid doubling-up the wrapper, we have to remove it here.
-  if (is_array($selected_portion)) {
-    unset($selected_portion['#prefix'], $selected_portion['#suffix']);
-
-    //$output = theme('status_messages') . drupal_render($selected_portion);
-    // BAD HACK to not show validation error messages for the date combo.  Not sure how to turn validation off for that.
-    $output .= drupal_render($selected_portion);
-  }
-  else if (is_string($selected_portion)) {
-    $output .= $selected_portion;
-  }
-
-  // Final rendering callback.
-  drupal_json_output(array('status' => TRUE, 'data' => $output));
-
-}
-
 // TODO: should not do theming in validation funcitons.
 /**
  * @todo Please document this function.
@@ -1538,26 +1471,6 @@ function merci_add_settings_form(&$form, $form_state) {
   }
 }
 
-function _merci_after_build($form, &$form_state) {
-
-  $weight = ($form['field_merci_date']['#weight'] + 1);
-  $form['field_merci_date'][0]['field_merci_date_button'] = array(
-    '#type' => 'submit',
-    '#value' => t('Limit Lists to Available Items'),
-    '#weight' => $weight,
-    '#submit' => array('merci_date_filter'),
-    /* TODO Fix for D7
-    '#ajax' => array(
-      //'path' => 'merci/js',
-      'callback' => 'merci_choice_js',
-      'wrapper' => 'merci-choice-wrapper',
-      'method' => 'replace',
-      'effect' => 'fade',
-    ),
-     */
-  );
-  return $form;
-}
 /**
  * Builds an individual item selector.
  *

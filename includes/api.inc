@@ -399,9 +399,7 @@ function merci_node_type_save_submit($form, &$form_state) {
  * entire form is rebuilt during the page reload.
  */
 function merci_more_choices_submit($form, &$form_state) {
-  // Set the form to rebuild and run submit handlers.
-  node_form_submit_build_node($form, $form_state);
-
+      $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -410,8 +408,7 @@ function merci_more_choices_submit($form, &$form_state) {
  * rebuilt during the page reload.
  */
 function merci_date_filter($form, &$form_state) {
-  // Set the form to rebuild and run submit handlers.
-  node_form_submit_build_node($form, $form_state);
+      $form_state['rebuild'] = TRUE;
 }
 
 /**

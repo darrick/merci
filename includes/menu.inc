@@ -1,19 +1,6 @@
 <?php
 
 /**
- * Menu callback for AHAH additions.
- */
-function merci_choice_js($form, $form_state) {
-
-  return $form['choice_wrapper'];
-  list($form, $form_state) = merci_ahah_get_form();
-
-  $selected_portion = $form['choice_wrapper'];
-
-  merci_ahah_output($selected_portion);
-}
-
-/**
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
