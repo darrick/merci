@@ -171,7 +171,6 @@ function merci_staff_autocomplete($string = '') {
     }
     $fields = field_info_fields();
     $field = $fields[$field_name];
-    $matches = array();
 
     $references = _merci_staff_potential_references($field, $string);
     foreach ($references as $id => $row) {

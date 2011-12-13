@@ -117,6 +117,8 @@ function merci_node_type_update_variables($info, $existing) {
   else {
     $return = drupal_write_record('merci_node_type', $settings, 'type');
   }
+  cache_clear_all('merci_' . $settings['type'] . '_data', 'cache');
+  cache_clear_all('merci_content_type_info', 'cache');
 }
 /**
  * @todo Please document this function.

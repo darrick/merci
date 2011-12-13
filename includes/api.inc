@@ -351,47 +351,6 @@ function merci_validate_empty_reservation_items($form, &$form_state) {
     form_set_error("merci_reservation_items][$first][merci_item_nid", t("You cannot create a reservation without any items selected."));
   }
 }
-/**
- * Submit handler for saving MERCI node type data.
- */
-function merci_node_type_save_submit($form, &$form_state) {
-  if ($form_state['clicked_button']['#value'] == t('Save content type')) {
-    $settings = $form_state['values'];
-    //$existing = db_result(db_query("SELECT type FROM {merci_node_type} WHERE type = '%s'",$settings['type']));
-    $existing = merci_node_type_existing($settings['type']);
-    if (!$existing) {
-      $return = drupal_write_record('merci_node_type', $settings);
-    }
-    else {
-      $return = drupal_write_record('merci_node_type', $settings, 'type');
-    }
-    cache_clear_all('merci_' . $settings['type'] . '_data', 'cache');
-    cache_clear_all('merci_content_type_info', 'cache');
-    // This hack is necessary because the node type form submit
-    // automatically saves all remaining form items to {variable}
-    // We're doing custom storage, so remove these.
-    // Don't delete merci_type_setting_
-
-    $variables = array(
-      'merci_max_hours_per_reservation_',
-      'merci_allow_overnight_',
-      'merci_allow_weekends_',
-      'merci_late_fee_per_hour_',
-      'merci_rate_per_hour_',
-      'merci_fee_free_hours_',
-      'merci_status_',
-      'merci_spare_items_',
-      'merci_min_cancel_hours_',
-      'merci_autocheckout_',
-      'merci_autocheckin_',
-      'merci_selfcheckout_',
-    );
-    foreach ($variables as $variable) {
-      variable_del($variable . $settings['type']);
-    }
-  }
-
-}
 
 /**
  * Submit handler to add more choices to a reservation form. This handler is used when

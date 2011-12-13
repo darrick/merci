@@ -220,7 +220,7 @@ function merci_reservation_node_validate($form, &$form_state) {
   }
 
   // No validation necessary on deletion.
-  if ($form_state['clicked_button']['#id'] == 'edit-delete') {
+  if ($form_state['triggering_element']['#id'] == 'edit-delete') {
     return;
   }
 
