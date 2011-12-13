@@ -35,7 +35,7 @@ function merci_staff_load_user($post = NULL) {
   if (empty($admin_user)) {
     $admin_user = $user;
   }
-  if ($post and isset($post['override']) and !$post['override'] and ($newuser = array_shift(user_load_multiple(array(), array('name' => $post['name']))))) {
+  if ($post and empty($post['override']) and ($newuser = array_shift(user_load_multiple(array(), array('name' => $post['name']))))) {
     $user = $newuser;
   }
   else {
@@ -74,12 +74,6 @@ function merci_staff_form_alter(&$form, $form_state, $form_id) {
   // Recreate the groups and choices based on the submitted name.
   merci_staff_load_user((array) $node);
 
-  if (module_exists('og')) {
-    // TODO: Need to update for D7.
-    //og_form_add_og_audience($form, $form_state);
-  }
-
-  global $user;
   // Add the current choices to the form.
   $reset = true;
   foreach (element_children($form['choice_wrapper']['merci_reservation_items']) as $delta) {
@@ -284,3 +278,49 @@ function _merci_staff_potential_references_standard( $field, $string = '', $exac
   return $references;
 }
 
+function merci_staff_field_widget_form_alter(&$element, &$form_state, $context) {
+  if ($context['instance']['bundle'] == 'merci_reservation' and $context['instance']['field_name'] == 'group_audience') {
+    $form = $context['form'];
+    $field = $context['field'];
+    $instance = $context['instance'];
+    $langcode = $context['langcode'];
+    $items = $context['items'];
+    $delta = $context['delta'];
+    if (!user_access('manage reservations')) {
+      return;
+    }
+
+    if (isset($form_state['values'])) {
+      $node = (array)$form_state['values'] + (array)$form['#node'];
+    } else {
+      $node = $form['#node'];
+    }
+    $node = (object) $node;
+    drupal_static_reset('og_field_audience_options');
+    unset($element['#input']);
+    unset($element['#type']); 
+    unset($element['#options']); 
+    unset($element['#default_value']);
+    unset($element['#attributes']);
+    unset($element['#disabled']);
+    // Re-use options widget element validation, to correctly transform
+    // submitted values from field => delta to delta => field.
+    // @see options_field_widget().
+    unset($element['#value_key']);
+    unset($element['#element_validate']);
+    unset($element['#properties']);
+    // Add OG specific context.
+    unset($element['#opt_group']);
+    unset($element['#audience']);
+    unset($element['#hidden_selected_gids']);
+
+    $base = $element;
+    // Recreate the groups and choices based on the submitted name.
+    merci_staff_load_user((array) $node);
+    global $user;
+
+    $return = og_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $base);
+    merci_staff_load_user();
+    $element = $return;
+  }
+}
