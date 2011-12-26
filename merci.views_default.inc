@@ -347,6 +347,12 @@ function merci_views_default_views() {
   $handler->display->display_options['relationships']['vid']['field'] = 'vid';
   $handler->display->display_options['relationships']['vid']['label'] = 'Reservation for placeholder item node id';
   $handler->display->display_options['relationships']['vid']['required'] = 1;
+  /* Relationship: Content: Author */
+  $handler->display->display_options['relationships']['uid']['id'] = 'uid';
+  $handler->display->display_options['relationships']['uid']['table'] = 'node';
+  $handler->display->display_options['relationships']['uid']['field'] = 'uid';
+  $handler->display->display_options['relationships']['uid']['relationship'] = 'vid';
+  $handler->display->display_options['relationships']['uid']['required'] = 0;
   $handler->display->display_options['defaults']['fields'] = FALSE;
   /* Field: Content: Nid */
   $handler->display->display_options['fields']['nid']['id'] = 'nid';
@@ -383,32 +389,128 @@ function merci_views_default_views() {
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
+  $handler->display->display_options['fields']['title']['label'] = 'Item';
   $handler->display->display_options['fields']['title']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['title']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['title']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['title']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['title']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['title']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['title']['alter']['nl2br'] = 0;
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['title']['alter']['strip_tags'] = 0;
   $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['title']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['title']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['title']['hide_empty'] = 0;
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['title']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['title']['link_to_node'] = 1;
+  /* Field: User: Name */
+  $handler->display->display_options['fields']['name']['id'] = 'name';
+  $handler->display->display_options['fields']['name']['table'] = 'users';
+  $handler->display->display_options['fields']['name']['field'] = 'name';
+  $handler->display->display_options['fields']['name']['relationship'] = 'uid';
+  $handler->display->display_options['fields']['name']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['name']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['name']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['name']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['name']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['name']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['name']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['name']['hide_alter_empty'] = 1;
+  $handler->display->display_options['fields']['name']['link_to_user'] = 1;
+  $handler->display->display_options['fields']['name']['overwrite_anonymous'] = 0;
+  $handler->display->display_options['fields']['name']['format_username'] = 1;
+  /* Field: Content: Reservation */
+  $handler->display->display_options['fields']['field_merci_date']['id'] = 'field_merci_date';
+  $handler->display->display_options['fields']['field_merci_date']['table'] = 'field_data_field_merci_date';
+  $handler->display->display_options['fields']['field_merci_date']['field'] = 'field_merci_date';
+  $handler->display->display_options['fields']['field_merci_date']['relationship'] = 'vid';
+  $handler->display->display_options['fields']['field_merci_date']['label'] = 'Time';
+  $handler->display->display_options['fields']['field_merci_date']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['field_merci_date']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['field_merci_date']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['field_merci_date']['hide_alter_empty'] = 1;
+  $handler->display->display_options['fields']['field_merci_date']['settings'] = array(
+    'format_type' => 'medium',
+    'fromto' => 'both',
+    'multiple_number' => '',
+    'multiple_from' => '',
+    'multiple_to' => '',
+    'show_repeat_rule' => 'show',
+  );
+  $handler->display->display_options['fields']['field_merci_date']['field_api_classes'] = 0;
   /* Field: Content: Title */
   $handler->display->display_options['fields']['title_1']['id'] = 'title_1';
   $handler->display->display_options['fields']['title_1']['table'] = 'node';
   $handler->display->display_options['fields']['title_1']['field'] = 'title';
   $handler->display->display_options['fields']['title_1']['relationship'] = 'vid';
-  $handler->display->display_options['fields']['title_1']['label'] = 'Checked out by';
+  $handler->display->display_options['fields']['title_1']['label'] = 'Reservation title';
   $handler->display->display_options['fields']['title_1']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['title_1']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['title_1']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['title_1']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['title_1']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['title_1']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['title_1']['alter']['nl2br'] = 0;
   $handler->display->display_options['fields']['title_1']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['title_1']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['title_1']['alter']['strip_tags'] = 0;
   $handler->display->display_options['fields']['title_1']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title_1']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['title_1']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['title_1']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['title_1']['hide_empty'] = 0;
   $handler->display->display_options['fields']['title_1']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['title_1']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['title_1']['link_to_node'] = 1;
+  /* Field: Content: Edit link */
+  $handler->display->display_options['fields']['edit_node']['id'] = 'edit_node';
+  $handler->display->display_options['fields']['edit_node']['table'] = 'views_entity_node';
+  $handler->display->display_options['fields']['edit_node']['field'] = 'edit_node';
+  $handler->display->display_options['fields']['edit_node']['relationship'] = 'vid';
+  $handler->display->display_options['fields']['edit_node']['label'] = 'Edit reservation';
+  $handler->display->display_options['fields']['edit_node']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['edit_node']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['edit_node']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['edit_node']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['edit_node']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['edit_node']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['edit_node']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['edit_node']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['edit_node']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['edit_node']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['edit_node']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['edit_node']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['edit_node']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['edit_node']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['edit_node']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['edit_node']['hide_alter_empty'] = 1;
   $handler->display->display_options['defaults']['filters'] = FALSE;
   /* Filter criterion: MERCI: MERCI type */
   $handler->display->display_options['filters']['type_setting']['id'] = 'type_setting';
@@ -418,23 +520,8 @@ function merci_views_default_views() {
     'bucket' => 'bucket',
     'resource' => 'resource',
   );
+  $handler->display->display_options['filters']['type_setting']['group'] = 0;
   $handler->display->display_options['filters']['type_setting']['expose']['operator'] = FALSE;
-  /* Filter criterion: MERCI: Sub type -- resource/bucket */
-  $handler->display->display_options['filters']['sub_type']['id'] = 'sub_type';
-  $handler->display->display_options['filters']['sub_type']['table'] = 'merci_reservation_item_node';
-  $handler->display->display_options['filters']['sub_type']['field'] = 'sub_type';
-  $handler->display->display_options['filters']['sub_type']['value'] = array(
-    1 => '1',
-  );
-  $handler->display->display_options['filters']['sub_type']['expose']['operator'] = FALSE;
-  /* Filter criterion: MERCI: Reservation Status of Item */
-  $handler->display->display_options['filters']['item_status']['id'] = 'item_status';
-  $handler->display->display_options['filters']['item_status']['table'] = 'merci_reservation_item_node';
-  $handler->display->display_options['filters']['item_status']['field'] = 'item_status';
-  $handler->display->display_options['filters']['item_status']['value'] = array(
-    2 => '2',
-  );
-  $handler->display->display_options['filters']['item_status']['expose']['operator'] = FALSE;
   /* Filter criterion: MERCI: Reservation status */
   $handler->display->display_options['filters']['status']['id'] = 'status';
   $handler->display->display_options['filters']['status']['table'] = 'merci_reservation';
@@ -443,7 +530,15 @@ function merci_views_default_views() {
   $handler->display->display_options['filters']['status']['value'] = array(
     3 => '3',
   );
+  $handler->display->display_options['filters']['status']['group'] = 0;
   $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+  /* Filter criterion: MERCI: Sub type -- resource/bucket */
+  $handler->display->display_options['filters']['sub_type']['id'] = 'sub_type';
+  $handler->display->display_options['filters']['sub_type']['table'] = 'merci_reservation_item_node';
+  $handler->display->display_options['filters']['sub_type']['field'] = 'sub_type';
+  $handler->display->display_options['filters']['sub_type']['value'] = array(
+    1 => '1',
+  );
   $handler->display->display_options['path'] = 'admin/merci/manage/current_inventory/%/checked-out';
   $handler->display->display_options['menu']['type'] = 'tab';
   $handler->display->display_options['menu']['title'] = 'Checked Out';
