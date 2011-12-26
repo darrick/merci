@@ -9,7 +9,7 @@ class merci_handler_filter_merci_node_type extends views_handler_filter_in_opera
     if (!isset($this->value_options)) {
       $this->value_title = t('Reservable Content types');
       $merci_types = merci_content_types();
-      $bucket_options = array();
+      $options = array();
 
       // Group the buckets.
       $vid = variable_get('merci_equipment_grouping_vid', 0);
