@@ -92,6 +92,12 @@ function merci_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
+  $items['admin/merci/manage/current_inventory/%'] = array(
+    'title' => 'Current Inventory',
+    'description' => 'Displays list',
+    'type' => MENU_CALLBACK,
+  );
+
   // Standard Administration settings.
   $items['admin/settings/merci'] = array(
     'title' => 'MERCI Configuration',

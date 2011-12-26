@@ -15,10 +15,9 @@ function merci_views_default_views() {
   $view->name = 'merci_reservable_items';
   $view->description = 'Merci Reservable Items';
   $view->tag = '';
-  $view->view_php = '';
   $view->base_table = 'node';
-  $view->is_cacheable = FALSE;
-  $view->api_version = 2;
+  $view->core = 0;
+  $view->api_version = '2';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->override_option('relationships', array(
@@ -287,7 +286,7 @@ function merci_views_default_views() {
   ));
   $handler->override_option('arguments', array(
     'type' => array(
-      'default_action' => 'ignore',
+      'default_action' => 'not found',
       'style_plugin' => 'default_summary',
       'style_options' => array(),
       'wildcard' => 'all',
@@ -303,28 +302,23 @@ function merci_views_default_views() {
       'field' => 'type',
       'validate_user_argument_type' => 'uid',
       'validate_user_roles' => array(
-        '2' => 0,
+        2 => 0,
       ),
       'relationship' => 'none',
       'default_options_div_prefix' => '',
-      'default_argument_fixed' => '',
+      'default_argument_fixed' => 'all',
       'default_argument_user' => 0,
       'default_argument_php' => '',
       'validate_argument_node_type' => array(
         'merci_reservation' => 0,
-        'om_show' => 0,
-        'bucket' => 0,
-        'buckettest' => 0,
-        'om_timeslot_theme' => 0,
         'page' => 0,
         'resource' => 0,
         'story' => 0,
-        'test_item' => 0,
       ),
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
       'validate_argument_vocabulary' => array(
-        '2' => 0,
+        1 => 0,
       ),
       'validate_argument_type' => 'tid',
       'validate_argument_transform' => 0,
@@ -332,6 +326,21 @@ function merci_views_default_views() {
       'validate_argument_php' => '',
       'override' => array(
         'button' => 'Override',
+      ),
+      'default_taxonomy_tid_term_page' => 0,
+      'default_taxonomy_tid_node' => 0,
+      'default_taxonomy_tid_limit' => 0,
+      'default_taxonomy_tid_vids' => array(
+        1 => 0,
+      ),
+      'validate_argument_merci_type' => array(
+        'disabled' => 0,
+        'bucket' => 0,
+        'resource' => 0,
+      ),
+      'validate_argument_merci_sub_type' => array(
+        1 => 0,
+        2 => 0,
       ),
     ),
   ));
@@ -356,7 +365,7 @@ function merci_views_default_views() {
     'sub_type' => array(
       'operator' => 'in',
       'value' => array(
-        '1' => '1',
+        1 => '1',
       ),
       'group' => '0',
       'exposed' => FALSE,
@@ -520,7 +529,7 @@ function merci_views_default_views() {
     'sub_type' => array(
       'operator' => 'in',
       'value' => array(
-        '1' => '1',
+        1 => '1',
       ),
       'group' => '0',
       'exposed' => FALSE,
@@ -536,7 +545,7 @@ function merci_views_default_views() {
     'default_availability' => array(
       'operator' => 'in',
       'value' => array(
-        '1' => '1',
+        1 => '1',
       ),
       'group' => '0',
       'exposed' => FALSE,
@@ -555,7 +564,7 @@ function merci_views_default_views() {
     'item_status' => array(
       'operator' => 'in',
       'value' => array(
-        '0' => '0',
+        0 => '0',
       ),
       'group' => '0',
       'exposed' => FALSE,
@@ -852,7 +861,7 @@ function merci_views_default_views() {
     'sub_type' => array(
       'operator' => 'in',
       'value' => array(
-        '1' => '1',
+        1 => '1',
       ),
       'group' => '0',
       'exposed' => FALSE,
@@ -868,7 +877,7 @@ function merci_views_default_views() {
     'item_status' => array(
       'operator' => 'in',
       'value' => array(
-        '2' => '2',
+        2 => '2',
       ),
       'group' => '0',
       'exposed' => FALSE,
@@ -887,7 +896,7 @@ function merci_views_default_views() {
     'status' => array(
       'operator' => 'in',
       'value' => array(
-        '3' => '3',
+        3 => '3',
       ),
       'group' => '0',
       'exposed' => FALSE,
@@ -1044,7 +1053,7 @@ function merci_views_default_views() {
     'sub_type' => array(
       'operator' => 'in',
       'value' => array(
-        '1' => '1',
+        1 => '1',
       ),
       'group' => '0',
       'exposed' => FALSE,
@@ -1060,7 +1069,7 @@ function merci_views_default_views() {
     'default_availability' => array(
       'operator' => 'in',
       'value' => array(
-        '2' => '2',
+        2 => '2',
       ),
       'group' => '0',
       'exposed' => FALSE,
@@ -1083,189 +1092,6 @@ function merci_views_default_views() {
     'title' => 'Unavailable',
     'description' => '',
     'weight' => '1',
-    'name' => 'navigation',
-  ));
-  $handler->override_option('tab_options', array(
-    'type' => 'none',
-    'title' => '',
-    'description' => '',
-    'weight' => 0,
-    'name' => 'navigation',
-  ));
-  $handler = $view->new_display('page', 'All Items', 'page_4');
-  $handler->override_option('relationships', array());
-  $handler->override_option('fields', array(
-    'nid_1' => array(
-      'label' => 'Nid',
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
-      'empty' => '',
-      'hide_empty' => 0,
-      'empty_zero' => 0,
-      'link_to_node' => 0,
-      'exclude' => 1,
-      'id' => 'nid_1',
-      'table' => 'node',
-      'field' => 'nid',
-      'override' => array(
-        'button' => 'Use default',
-      ),
-      'relationship' => 'none',
-    ),
-    'type' => array(
-      'label' => 'Type',
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
-      'empty' => '',
-      'hide_empty' => 0,
-      'empty_zero' => 0,
-      'link_to_node' => 0,
-      'machine_name' => 1,
-      'exclude' => 1,
-      'id' => 'type',
-      'table' => 'node',
-      'field' => 'type',
-      'relationship' => 'none',
-      'override' => array(
-        'button' => 'Use default',
-      ),
-    ),
-    'title' => array(
-      'label' => 'Title',
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 1,
-        'path' => 'node/[nid_1]/edit?destination=admin/merci/manage/current_inventory/[type]/all',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
-      'empty' => '',
-      'hide_empty' => 0,
-      'empty_zero' => 0,
-      'link_to_node' => 0,
-      'exclude' => 0,
-      'id' => 'title',
-      'table' => 'node',
-      'field' => 'title',
-      'relationship' => 'none',
-      'override' => array(
-        'button' => 'Use default',
-      ),
-    ),
-    'default_availability' => array(
-      'label' => 'Availability',
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
-      'empty' => '',
-      'hide_empty' => 0,
-      'empty_zero' => 0,
-      'exclude' => 0,
-      'id' => 'default_availability',
-      'table' => 'merci_reservation_item_node',
-      'field' => 'default_availability',
-      'override' => array(
-        'button' => 'Use default',
-      ),
-      'relationship' => 'none',
-    ),
-    'item_status' => array(
-      'label' => 'Reservation Status of Item',
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
-      'empty' => '',
-      'hide_empty' => 0,
-      'empty_zero' => 0,
-      'exclude' => 0,
-      'id' => 'item_status',
-      'table' => 'merci_reservation_item_node',
-      'field' => 'item_status',
-      'override' => array(
-        'button' => 'Use default',
-      ),
-      'relationship' => 'none',
-    ),
-  ));
-  $handler->override_option('path', 'admin/merci/manage/current_inventory/%/all');
-  $handler->override_option('menu', array(
-    'type' => 'tab',
-    'title' => 'All',
-    'description' => '',
-    'weight' => '0',
     'name' => 'navigation',
   ));
   $handler->override_option('tab_options', array(
