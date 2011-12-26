@@ -493,6 +493,15 @@ function merci_views_data() {
       'handler' => 'views_handler_sort',
     ),
   );
+  $data['node']['merci_content_type'] = array(
+    'title' => t('Reservable content types'),
+    'group' => t('MERCI'),
+    'help' => t('Filter by reservable content types'),
+    'real field' => 'type',
+    'filter' => array(
+      'handler' => 'merci_handler_filter_merci_node_type',
+    ),
+  );
   return $data;
 }
 
@@ -512,3 +521,74 @@ function merci_views_plugins() {
     ),
   );
 }
+
+function merci_views_handlers() {
+  return array(
+    'info' => array(
+      'path' => drupal_get_path('module', 'merci') . '/handlers',
+    ),
+    'handlers' => array(
+      'views_handler_field_item_node_nid' => array(
+        'parent' => 'views_handler_field_prerender_list',
+        'file' => 'views_handler_field_item_node_nid.inc',
+      ),
+      'merci_handler_field_merci_node_type_type_setting' => array(
+        'parent' => 'views_handler_field',
+        'file' => 'merci_handler_field.inc',
+      ),
+      'merci_handler_filter_merci_node_type_type_setting' => array(
+        'parent' => 'views_handler_filter_in_operator',
+        'file' => 'merci_handler_filter_in_operator.inc',
+      ),
+      'merci_handler_filter_merci_node_type' => array(
+        'parent' => 'views_handler_filter_in_operator',
+        'file' => 'merci_handler_filter_merci_node_type.inc',
+      ),
+      'merci_handler_field_merci_node_type_status' => array(
+        'parent' => 'views_handler_field',
+        'file' => 'merci_handler_field.inc',
+      ),
+      'merci_handler_filter_merci_node_type_status' => array(
+        'parent' => 'views_handler_filter_in_operator',
+        'file' => 'merci_handler_filter_in_operator.inc',
+      ),
+      'merci_handler_field_merci_reservation_status' => array(
+        'parent' => 'views_handler_field',
+        'file' => 'merci_handler_field.inc',
+      ),
+      'merci_handler_filter_merci_reservation_status' => array(
+        'parent' => 'views_handler_filter_in_operator',
+        'file' => 'merci_handler_filter_in_operator.inc',
+      ),
+      'merci_handler_field_merci_bucket_resource_node_default_availability' => array(
+        'parent' => 'views_handler_field',
+        'file' => 'merci_handler_field.inc',
+      ),
+      'merci_handler_filter_merci_bucket_resource_node_default_availability' => array(
+        'parent' => 'views_handler_filter_in_operator',
+        'file' => 'merci_handler_filter_in_operator.inc',
+      ),
+      'merci_handler_field_merci_bucket_resource_node_sub_type' => array(
+        'parent' => 'views_handler_field',
+        'file' => 'merci_handler_field.inc',
+      ),
+      'merci_handler_filter_merci_bucket_resource_node_sub_type' => array(
+        'parent' => 'views_handler_filter_in_operator',
+        'file' => 'merci_handler_filter_in_operator.inc',
+      ),
+      // filter
+      'merci_views_handler_filter_reserved_item_nid' => array(
+        'parent' => 'views_handler_filter_many_to_one',
+      ),
+      'merci_handler_field_merci_reservation_item_node_item_status' => array(
+        'parent' => 'views_handler_field',
+        'file' => 'merci_handler_field.inc',
+      ),
+      'merci_handler_filter_merci_reservation_item_node_item_status' => array(
+        'parent' => 'views_handler_filter_in_operator',
+        'file' => 'merci_handler_filter_in_operator.inc',
+      ),
+    ),
+  );
+}
+

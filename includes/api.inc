@@ -548,16 +548,16 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
 
         // Only extend if the following day is closed/weekend.
         // TODO check that the end time is not the same day and within the hours of being open.
-        if (!$closed_days[date('w', $start_timestamp + 86400)]) {
+        if (!array_key_exists(date('w', $start_timestamp + 86400), $closed_days)) {
           $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->merci_max_hours_per_reservation));
         }
 
         // Only extend the max time if the default max time falls on a weekend.
-        if ($closed_days[date('w', $start_timestamp + $type_settings->merci_max_hours_per_reservation * 60 * 60)]) {
+        if (array_key_exists(date('w', $start_timestamp + $type_settings->merci_max_hours_per_reservation * 60 * 60), $closed_days)) {
 
           //Find the next day we are open.
           for ($i = 1; $i <= 6; $i++) {
-            if (!$closed_days[date('w', $start_timestamp + $i * 86400)]) {
+            if (array_key_exists(date('w', $start_timestamp + $i * 86400), $closed_days)) {
 
               // Does the end_day fall here?
               // TODO force time to be exactly when open.

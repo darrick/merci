@@ -27,6 +27,7 @@ files[] = views_plugin_argument_validate_merci_node.inc
 files[] = handlers/merci_handler_field.inc
 files[] = handlers/merci_handler_filter_in_operator.inc
 files[] = handlers/merci_views_handler_filter_reserved_item_nid.inc
+files[] = handlers/merci_handler_filter_merci_node_type.inc
 files[] = handlers/views_handler_field_date.inc
 files[] = handlers/views_handler_field_item_node_nid.inc
 files[] = handlers/views_handler_filter_boolean_operator.inc

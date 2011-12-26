@@ -319,7 +319,7 @@ function merci_staff_field_widget_form_alter(&$element, &$form_state, $context) 
     merci_staff_load_user((array) $node);
     global $user;
 
-    $return = og_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $base);
+    $return = og_field_widget_form($form, $form_state, $field, $instance, $langcode, $items, $delta, $base);
     merci_staff_load_user();
     $element = $return;
   }
