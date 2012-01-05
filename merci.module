@@ -176,10 +176,10 @@ function merci_node_access($node, $op, $account) {
   if ($type == 'merci_reservation') {
 
     if (user_access('manage reservations')) {
-      return TRUE;
+      return NODE_ACCESS_ALLOW;
     }
     elseif (user_access('view all reservations') && $op == 'view') {
-      return TRUE;
+      return NODE_ACCESS_ALLOW;
     }
     elseif (user_access('create reservations') and !user_access('suspend MERCI access')) {
       //users working with their own reservations access reservation
@@ -188,14 +188,14 @@ function merci_node_access($node, $op, $account) {
       if (($op == 'delete' or $op == 'update') && isset($node->merci_reservation_status)
         && $node->merci_reservation_status != MERCI_STATUS_UNCONFIRMED
         && !user_access('create confirmed reservations')) {
-          return FALSE;
+          return NODE_ACCESS_DENY;
         }
 
       if ($uid === FALSE || $uid == $account->uid) {
-        return TRUE;
+        return NODE_ACCESS_ALLOW;
       }
     }
-    return FALSE;
+    return NODE_ACCESS_DENY;
   }
 }
 
@@ -538,7 +538,10 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         return;
       }
 
-      $warning  = '<div>' . t('<strong> WARNING:</strong> changing this setting has no effect on existing reserved items.') . '</div>';
+      $warning = '';
+      if ($settings->merci_type_setting == 'resource') {
+        $warning  = '<div>' . t('<strong> WARNING:</strong> changing this setting has no effect on existing reserved items.') . '</div>';
+      }
   
       $options  = array(
         'disabled' => t('Disabled'),
@@ -649,6 +652,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         '#default_value' => isset($settings->merci_allow_weekends) ? $settings->merci_allow_weekends : 0,
         '#description' => filter_xss(t('Allow a reservation to be made over days defined as weekend.') . $warning),
       );
+
       merci_add_settings_form($form, $form_state);
 
       $form['#validate'][] = 'merci_node_type_save_validate';
@@ -783,10 +787,13 @@ function merci_cron() {
 
   $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING), $time, $time);
 
+  dpm($nodes);
+
   foreach (array_keys($nodes) as $reservation_nid) {
 
     $reservation = node_load($reservation_nid);
 
+    watchdog('merci', "testing node " . $reservation_nid . " to checked out");
     //check child items of that reservations for autocheckout
     foreach ($reservation->merci_reservation_items as $item) {
       $node = node_load($item['merci_item_nid']);
@@ -794,7 +801,7 @@ function merci_cron() {
         // skip out to the next reservation.
         continue 2;
       }
-  }
+    }
 
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
     watchdog('merci', "Setting node " . $reservation_nid . " to checked out");
@@ -829,6 +836,7 @@ function merci_cron() {
   $time = gmdate('Y-m-j H:i:s', time() + 3600);
   //find all pending reservations that have started and set their stauts to no show
   $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_PENDING), NULL, $time);
+  dpm($nodes);
 
   foreach (array_keys($nodes) as $reservation_nid) {
     watchdog('merci', "Setting node " . $reservation_nid . " to no show");
@@ -1351,6 +1359,11 @@ function merci_add_settings_form(&$form, $form_state) {
     );
   }
   
+  $warning = '';
+  if ($type_setting == 'resource' and $form['#id'] == 'node-type-form') {
+    $warning  = '<div>' . t('<strong> WARNING:</strong> changing this setting has no effect on existing reserved items.') . '</div>';
+  }
+
   // Bucket item nodes have no individual pricing, so just zero these values out.
   // Althought you can override them on the reserervation nodes.
   if ($type_setting == 'resource' or $form['#id'] == 'node-type-form' or $sub_type == MERCI_SUB_TYPE_RESERVATION ) {
@@ -1360,7 +1373,7 @@ function merci_add_settings_form(&$form, $form_state) {
       '#size' => 10,
       '#default_value' => isset($node->merci_rate_per_hour) ? $node->merci_rate_per_hour : NULL,
       '#element_validate' => array('merci_is_numeric_validate'),
-      '#description' => t('The per hour rental fee for the item.'),
+      '#description' => t('The per hour rental fee for the item.') . $warning,
     );
     $form['merci']['merci_late_fee_per_hour'] = array(
       '#type' => 'textfield',
@@ -1368,7 +1381,7 @@ function merci_add_settings_form(&$form, $form_state) {
       '#size' => 10,
       '#default_value' => isset($node->merci_late_fee_per_hour) ? $node->merci_late_fee_per_hour : NULL,
       '#element_validate' => array('merci_is_numeric_validate'),
-      '#description' => t('The per hour fee for returning the item late.'),
+      '#description' => t('The per hour fee for returning the item late.') . $warning,
     );
     $form['merci']['merci_fee_free_hours'] = array(
       '#type' => 'textfield',
@@ -1376,7 +1389,7 @@ function merci_add_settings_form(&$form, $form_state) {
       '#size' => 10,
       '#default_value' => isset($node->merci_fee_free_hours) ? $node->merci_fee_free_hours : NULL,
       '#element_validate' => array('merci_is_numeric_validate'),
-      '#description' => t('The number of hours the item can be used before fees are charged.'),
+      '#description' => t('The number of hours the item can be used before fees are charged.') . $warning,
     );
   }
 
@@ -1388,25 +1401,25 @@ function merci_add_settings_form(&$form, $form_state) {
       '#size' => 10,
       '#default_value' => isset($node->merci_min_cancel_hours) ? $node->merci_min_cancel_hours : NULL,
       '#element_validate' => array('merci_is_numeric_validate'),
-      '#description' => t('Minimum number of hours before the start time a user may cancel a reservation for the item.'),
+      '#description' => t('Minimum number of hours before the start time a user may cancel a reservation for the item.') . $warning,
   );
     $form['merci']['merci_autocheckout'] = array(
       '#type' => 'checkbox',
       '#title' => t('Auto checkout'),
       '#default_value' => isset($node->merci_autocheckout) ? $node->merci_autocheckout : NULL,
-      '#description' => t('Automatically check this item out when the Reservation starts.'),
+      '#description' => t('Automatically check this item out when the Reservation starts.') . $warning,
   );
     $form['merci']['merci_autocheckin'] = array(
       '#type' => 'checkbox',
       '#title' => t('Auto checkin'),
       '#default_value' => isset($node->merci_autocheckin) ? $node->merci_autocheckin : NULL,
-      '#description' => t('Automatically check this item in when the Reservation ends.'),
+      '#description' => t('Automatically check this item in when the Reservation ends.') . $warning,
     );
     $form['merci']['merci_selfcheckout'] = array(
       '#type' => 'checkbox',
       '#title' => t('Self checkout'),
       '#default_value' => isset($node->merci_selfcheckout) ? $node->merci_selfcheckout : NULL,
-      '#description' => t('Manage checkout with additional code.'),
+      '#description' => t('Manage checkout with additional code.') . $warning,
     );
   }
 }
