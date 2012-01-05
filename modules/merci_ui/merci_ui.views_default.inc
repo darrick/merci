@@ -88,7 +88,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['empty']['text']['field'] = 'area';
   $handler->display->display_options['empty']['text']['empty'] = FALSE;
   $handler->display->display_options['empty']['text']['content'] = '<div class="messages status">There are no Reservations matching your criteria.</div>';
-  $handler->display->display_options['empty']['text']['format'] = '2';
   $handler->display->display_options['empty']['text']['tokenize'] = 0;
   /* Relationship: Content: Author */
   $handler->display->display_options['relationships']['uid']['id'] = 'uid';
@@ -235,7 +234,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['header']['area']['field'] = 'area';
   $handler->display->display_options['header']['area']['empty'] = TRUE;
   $handler->display->display_options['header']['area']['content'] = 'Upcoming confirmed reservations.';
-  $handler->display->display_options['header']['area']['format'] = '1';
   $handler->display->display_options['header']['area']['tokenize'] = 0;
   $handler->display->display_options['defaults']['filters'] = FALSE;
   /* Filter criterion: Content: Type */
@@ -287,7 +285,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['header']['area']['field'] = 'area';
   $handler->display->display_options['header']['area']['empty'] = TRUE;
   $handler->display->display_options['header']['area']['content'] = 'Incoming reservations currently checked out.';
-  $handler->display->display_options['header']['area']['format'] = '1';
   $handler->display->display_options['header']['area']['tokenize'] = 0;
   $handler->display->display_options['defaults']['empty'] = FALSE;
   /* No results behavior: Global: Text area */
@@ -296,7 +293,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['empty']['text']['field'] = 'area';
   $handler->display->display_options['empty']['text']['empty'] = FALSE;
   $handler->display->display_options['empty']['text']['content'] = '<div class="messages status">Anticipating no returns.</div>';
-  $handler->display->display_options['empty']['text']['format'] = '2';
   $handler->display->display_options['empty']['text']['tokenize'] = 0;
   $handler->display->display_options['path'] = 'admin/merci/manage/reservations/incoming';
   $handler->display->display_options['menu']['type'] = 'tab';
@@ -314,7 +310,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['header']['area']['field'] = 'area';
   $handler->display->display_options['header']['area']['empty'] = TRUE;
   $handler->display->display_options['header']['area']['content'] = 'Reservatations currently pending.';
-  $handler->display->display_options['header']['area']['format'] = '1';
   $handler->display->display_options['header']['area']['tokenize'] = 0;
   $handler->display->display_options['defaults']['empty'] = FALSE;
   /* No results behavior: Global: Text area */
@@ -323,7 +318,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['empty']['text']['field'] = 'area';
   $handler->display->display_options['empty']['text']['empty'] = FALSE;
   $handler->display->display_options['empty']['text']['content'] = '<div class="messages status">There are currently no unconfirmed reservations.</div>';
-  $handler->display->display_options['empty']['text']['format'] = '2';
   $handler->display->display_options['empty']['text']['tokenize'] = 0;
   $handler->display->display_options['defaults']['filters'] = FALSE;
   /* Filter criterion: Content: Type */
@@ -359,7 +353,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['header']['area']['field'] = 'area';
   $handler->display->display_options['header']['area']['empty'] = TRUE;
   $handler->display->display_options['header']['area']['content'] = 'Reservations in the checked out state which are past due.';
-  $handler->display->display_options['header']['area']['format'] = '1';
   $handler->display->display_options['header']['area']['tokenize'] = 0;
   $handler->display->display_options['defaults']['empty'] = FALSE;
   /* No results behavior: Global: Text area */
@@ -368,7 +361,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['empty']['text']['field'] = 'area';
   $handler->display->display_options['empty']['text']['empty'] = FALSE;
   $handler->display->display_options['empty']['text']['content'] = '<div class="messages status">There are currently no overdue reservations.</div>';
-  $handler->display->display_options['empty']['text']['format'] = '2';
   $handler->display->display_options['empty']['text']['tokenize'] = 0;
   $handler->display->display_options['defaults']['sorts'] = FALSE;
   /* Sort criterion: Content: Reservation - end date (field_merci_date:value2) */
@@ -644,7 +636,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['empty']['text']['field'] = 'area';
   $handler->display->display_options['empty']['text']['empty'] = FALSE;
   $handler->display->display_options['empty']['text']['content'] = 'You have no upcoming reservations.';
-  $handler->display->display_options['empty']['text']['format'] = '1';
   /* Relationship: Content: Author */
   $handler->display->display_options['relationships']['uid']['id'] = 'uid';
   $handler->display->display_options['relationships']['uid']['table'] = 'node';
@@ -835,7 +826,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['empty']['text']['field'] = 'area';
   $handler->display->display_options['empty']['text']['empty'] = FALSE;
   $handler->display->display_options['empty']['text']['content'] = 'There are no reservations for this item.';
-  $handler->display->display_options['empty']['text']['format'] = '1';
   /* Relationship: MERCI: Reserved item nid */
   $handler->display->display_options['relationships']['item_nid']['id'] = 'item_nid';
   $handler->display->display_options['relationships']['item_nid']['table'] = 'merci_reservation_detail';
