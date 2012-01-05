@@ -787,13 +787,10 @@ function merci_cron() {
 
   $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_UNCONFIRMED, MERCI_STATUS_PENDING), $time, $time);
 
-  dpm($nodes);
-
   foreach (array_keys($nodes) as $reservation_nid) {
 
     $reservation = node_load($reservation_nid);
 
-    watchdog('merci', "testing node " . $reservation_nid . " to checked out");
     //check child items of that reservations for autocheckout
     foreach ($reservation->merci_reservation_items as $item) {
       $node = node_load($item['merci_item_nid']);
@@ -836,7 +833,6 @@ function merci_cron() {
   $time = gmdate('Y-m-j H:i:s', time() + 3600);
   //find all pending reservations that have started and set their stauts to no show
   $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_PENDING), NULL, $time);
-  dpm($nodes);
 
   foreach (array_keys($nodes) as $reservation_nid) {
     watchdog('merci', "Setting node " . $reservation_nid . " to no show");
