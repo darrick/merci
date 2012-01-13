@@ -556,8 +556,10 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
         if (array_key_exists(date('w', $start_timestamp + $type_settings->merci_max_hours_per_reservation * 60 * 60), $closed_days)) {
 
           //Find the next day we are open.
+          //  Keep adding 24 hours to start_time until we find our next opened day.
           for ($i = 1; $i <= 6; $i++) {
-            if (array_key_exists(date('w', $start_timestamp + $i * 86400), $closed_days)) {
+            // Are we at a day which is not closed.
+            if (!array_key_exists(date('w', $start_timestamp + $i * 86400), $closed_days)) {
 
               // Does the end_day fall here?
               // TODO force time to be exactly when open.
