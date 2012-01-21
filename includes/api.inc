@@ -96,26 +96,45 @@ function merci_validate_merci_selected_items($form, &$form_state) {
       // Are we checking an existing item?
       $vid = isset($item['did']) ? $node->vid : NULL; 
 
+      // Is the item available at this time?
       $count = merci_is_item_reservable($item_nid, $type, $start, $end, $vid);
-      if (!$count) {
+      if (!$count or (merci_type_setting($type) == 'bucket' and $count - $selected_count[$type] < 0)) {
         $messages[$did] = merci_theme_conflict_grid($type, $title, $start, $end, $item_nid, $node->vid);
         form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
         continue;
       }
 
-      // Is it overdue?
+      // How many items are overdue and thus unavailable at this time?
       $overdue_items_array = merci_overdue_items($type, $start, $node->nid);
+      $overdue_count = 0;
+      $overdue_message = '';
       if (!empty($overdue_items_array)) {
-        $messages[$did] = '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
+        $overdue_message = '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
         foreach ($overdue_items_array as $reservations) {
           foreach (array_keys($reservations) as $nid) {
             $overdue = node_load($nid);
-            $messages[$did] .= '<div> ' . l($overdue->title, 'node/' . $overdue->nid) . '</div>';
+            $overdue_message .= '<div> ' . l($overdue->title, 'node/' . $overdue->nid) . '</div>';
+            // Item is overdue so decriment the number of items available.
+            $overdue_count++;
           }
         }
-        form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
+      }
+
+
+      // Show the error if conflict due to overdue.
+      if ($overdue_count and $count - $overdue_count <= 0) {
+        // But also show conflict grid if bucket items not available due to other reservations at the same time.
+        // Only done for buckets because resources always only have a count of 1 (if available) or 0 (not available).
+        if (merci_type_setting($type) == 'bucket') {
+          if ($inventory_count[$type] - $count > $overdue_count) {
+            $overdue_message .= merci_theme_conflict_grid($type, $title, $start, $end, $item_nid, $node->vid);
+            form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
+          }
+        }
+        form_set_error("merci_reservation_items][$did][merci_item_nid", $overdue_message);
         continue;
       }
+
 
       // Check item restrictions.  max hours, etc.
       $restrictions = merci_check_content_type_restrictions($type, $start, $end);

@@ -484,7 +484,7 @@ function merci_overdue_items($content_type, $start, $reservation_nid = NULL) {
 
   // Use up items for assigned nodes.
   foreach ($reserved_nodes as $node) {
-    $node = (array) $node;
+    //$node = (array) $node;
     $total_items_array[$node->merci_item_nid][$node->nid] = $node;
   }
 
@@ -730,7 +730,7 @@ function merci_is_item_reservable($item_nid, $type, $start, $end, $exclude_vid =
     }
   }
   $content_settings = merci_load_item_settings($type);
-  return $count - $content_settings->merci_spare_items > 0 ? TRUE : FALSE;
+  return $count - $content_settings->merci_spare_items > 0 ? $count - $content_settings->merci_spare_items : FALSE;
 }
 /**
  * Builds an array representing reservations for a Resource within a given timespan
