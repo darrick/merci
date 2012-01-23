@@ -19,8 +19,6 @@ class MerciTestCase extends DrupalWebTestCase {
   function setUp() {
     // Enable the module.
     parent::setUp(
-        'node',
-        'devel',
         //'content',
         //'fieldgroup',
         //'optionwidgets',
@@ -49,7 +47,7 @@ class MerciTestCase extends DrupalWebTestCase {
       'administer site configuration',
       'view revisions',
       'revert revisions',
-      'access devel information',
+      //'access devel information',
       'administer MERCI',
       'manage reservations'
     ));

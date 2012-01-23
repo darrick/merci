@@ -44,7 +44,7 @@ class MerciUserTestCase extends MerciTestCase {
       'edit own resource content',
       'delete own resource content',
       'create reservations',
-      'access devel information'
+      //'access devel information'
     ));
     // Create merci user. 
     $this->merci_user = $this->drupalCreateUser(array(
@@ -59,7 +59,7 @@ class MerciUserTestCase extends MerciTestCase {
       'delete own merci_reservation content',
       'create reservations',
       'create merci_reservation content',
-      'access devel information'
+      //'access devel information'
     ));
 
     $edit = array('roles' => ($this->merci_user->roles + array($this->merci_role => $this->merci_role)));
@@ -89,7 +89,7 @@ class MerciUserTestCase extends MerciTestCase {
       'edit own resource content',
       'delete own resource content',
       'create reservations',
-      'access devel information',
+      //'access devel information',
       'manage reservations',
       'administer nodes'
     ));
@@ -516,7 +516,7 @@ class MerciUserTestCase extends MerciTestCase {
       'edit own resource content',
       'delete own resource content',
       'create reservations',
-      'access devel information',
+      //'access devel information',
       'manage reservations',
       'administer nodes'
     ));

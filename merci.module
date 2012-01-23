@@ -525,7 +525,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       // Reservation content type can't used for other MERCI functionality.
       if (isset($form['#node_type']->type) && $form['#node_type']->type == 'merci_reservation') {
         return;
-    }
+      }
       $type     = $form['old_type']['#value'];
 
       // If any nodes have already been created, lock the type setting.
@@ -539,7 +539,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       }
 
       $warning = '';
-      if ($settings->merci_type_setting == 'resource') {
+      if (!empty($settings->merci_type_setting) and $settings->merci_type_setting == 'resource') {
         $warning  = '<div>' . t('<strong> WARNING:</strong> changing this setting has no effect on existing reserved items.') . '</div>';
       }
   
