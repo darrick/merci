@@ -493,6 +493,15 @@ function merci_views_data() {
       'handler' => 'views_handler_sort',
     ),
   );
+  $data['node']['merci_content_type'] = array(
+    'title' => t('Reservable content types'),
+    'group' => t('MERCI'),
+    'help' => t('Filter by reservable content types'),
+    'real field' => 'type',
+    'filter' => array(
+    'handler' => 'merci_handler_filter_merci_node_type',
+  ),
+);
   return $data;
 }
 

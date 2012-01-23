@@ -730,6 +730,10 @@ function merci_views_handlers() {
         'parent' => 'views_handler_filter_in_operator',
         'file' => 'merci_handler_filter_in_operator.inc',
       ),
+      'merci_handler_filter_merci_node_type' => array(
+        'parent' => 'views_handler_filter_in_operator',
+        'file' => 'merci_handler_filter_merci_node_type.inc',
+      ),
       'merci_handler_field_merci_node_type_status' => array(
         'parent' => 'views_handler_field',
         'file' => 'merci_handler_field.inc',

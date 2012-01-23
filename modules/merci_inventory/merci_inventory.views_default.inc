@@ -10,15 +10,13 @@
  * Implements hook_views_default_views().
  */
 function merci_inventory_views_default_views() {
-
   $view = new view;
   $view->name = 'merci_inventory_view';
   $view->description = '';
   $view->tag = '';
-  $view->view_php = '';
   $view->base_table = 'node';
-  $view->is_cacheable = FALSE;
-  $view->api_version = 2;
+  $view->core = 0;
+  $view->api_version = '2';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->override_option('fields', array(
@@ -102,48 +100,30 @@ function merci_inventory_views_default_views() {
       ),
       'relationship' => 'none',
     ),
-    'type' => array(
+    'merci_content_type' => array(
       'operator' => 'in',
-      'value' => array(
-        'merci_boom_pole' => 'merci_boom_pole',
-        'merci_conference_room' => 'merci_conference_room',
-        'merci_edit_suite' => 'merci_edit_suite',
-        'merci_field_camera' => 'merci_field_camera',
-        'merci_field_light_kit' => 'merci_field_light_kit',
-        'merci_handheld_microphone' => 'merci_handheld_microphone',
-        'merci_monopod' => 'merci_monopod',
-        'merci_shotgun_microphone' => 'merci_shotgun_microphone',
-        'merci_studio' => 'merci_studio',
-        'merci_studio_light_kit' => 'merci_studio_light_kit',
-        'merci_tripod' => 'merci_tripod',
-      ),
+      'value' => array(),
       'group' => '0',
       'exposed' => TRUE,
       'expose' => array(
         'use_operator' => 0,
-        'operator' => 'type_op',
-        'identifier' => 'type',
-        'label' => 'Type',
+        'operator' => 'merci_content_type_op',
+        'identifier' => 'merci_content_type',
+        'label' => 'Reservable item',
         'optional' => 1,
-        'single' => 0,
-        'remember' => 1,
-        'reduce' => 1,
+        'single' => 1,
+        'remember' => 0,
+        'reduce' => 0,
       ),
-      'id' => 'type',
+      'id' => 'merci_content_type',
       'table' => 'node',
-      'field' => 'type',
-      'override' => array(
-        'button' => 'Override',
-      ),
+      'field' => 'merci_content_type',
       'relationship' => 'none',
     ),
   ));
   $handler->override_option('access', array(
-    'type' => 'role',
-    'role' => array(
-      '13' => 13,
-      '3' => 3,
-    ),
+    'type' => 'perm',
+    'perm' => 'administer MERCI',
   ));
   $handler->override_option('cache', array(
     'type' => 'none',
@@ -263,6 +243,150 @@ function merci_inventory_views_default_views() {
       ),
       'relationship' => 'none',
     ),
+    'status_1' => array(
+      'label' => 'Bucket/Resource Status',
+      'alter' => array(
+        'alter_text' => 0,
+        'text' => '',
+        'make_link' => 0,
+        'path' => '',
+        'absolute' => 0,
+        'link_class' => '',
+        'alt' => '',
+        'rel' => '',
+        'prefix' => '',
+        'suffix' => '',
+        'target' => '',
+        'help' => '',
+        'trim' => 0,
+        'max_length' => '',
+        'word_boundary' => 1,
+        'ellipsis' => 1,
+        'html' => 0,
+        'strip_tags' => 0,
+      ),
+      'empty' => '',
+      'hide_empty' => 0,
+      'empty_zero' => 0,
+      'hide_alter_empty' => 1,
+      'exclude' => 0,
+      'id' => 'status_1',
+      'table' => 'merci_node_type',
+      'field' => 'status',
+      'override' => array(
+        'button' => 'Use default',
+      ),
+      'relationship' => 'none',
+    ),
+  ));
+  $handler->override_option('filters', array(
+    'status' => array(
+      'operator' => '=',
+      'value' => '1',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'status',
+      'table' => 'node',
+      'field' => 'status',
+      'override' => array(
+        'button' => 'Override',
+      ),
+      'relationship' => 'none',
+    ),
+    'type_setting' => array(
+      'operator' => 'in',
+      'value' => array(
+        'bucket' => 'bucket',
+        'resource' => 'resource',
+      ),
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'type_setting',
+      'table' => 'merci_node_type',
+      'field' => 'type_setting',
+      'override' => array(
+        'button' => 'Override',
+      ),
+      'relationship' => 'none',
+    ),
+    'merci_content_type' => array(
+      'operator' => 'in',
+      'value' => array(),
+      'group' => '0',
+      'exposed' => TRUE,
+      'expose' => array(
+        'use_operator' => 0,
+        'operator' => 'merci_content_type_op',
+        'identifier' => 'merci_content_type',
+        'label' => 'Reservable item',
+        'optional' => 1,
+        'single' => 1,
+        'remember' => 0,
+        'reduce' => 0,
+      ),
+      'id' => 'merci_content_type',
+      'table' => 'node',
+      'field' => 'merci_content_type',
+      'override' => array(
+        'button' => 'Use default',
+      ),
+      'relationship' => 'none',
+    ),
+  ));
+  $handler->override_option('style_plugin', 'bulk');
+  $handler->override_option('style_options', array(
+    'grouping' => '',
+    'override' => 1,
+    'sticky' => 0,
+    'order' => 'asc',
+    'summary' => '',
+    'columns' => array(
+      'title' => 'title',
+      'type' => 'type',
+      'status' => 'status',
+      'item_status' => 'item_status',
+    ),
+    'info' => array(
+      'title' => array(
+        'sortable' => 0,
+        'separator' => '',
+      ),
+      'type' => array(
+        'sortable' => 0,
+        'separator' => '',
+      ),
+      'status' => array(
+        'sortable' => 0,
+        'separator' => '',
+      ),
+      'item_status' => array(
+        'sortable' => 0,
+        'separator' => '',
+      ),
+    ),
+    'default' => '-1',
+    'execution_type' => '1',
+    'max_performance' => 0,
+    'display_type' => '0',
+    'hide_selector' => 0,
+    'preserve_selection' => 1,
+    'display_result' => 1,
+    'merge_single_action' => 1,
+    'operations' => array(
+      'merci_inventory_operations_update' => array(
+        'selected' => 1,
+        'skip_confirmation' => 0,
+        'label' => '',
+      ),
+    ),
   ));
   $handler->override_option('path', 'admin/merci/manage/inventory/view');
   $handler->override_option('menu', array(
@@ -275,10 +399,11 @@ function merci_inventory_views_default_views() {
   $handler->override_option('tab_options', array(
     'type' => 'normal',
     'title' => 'Inventory',
-    'description' => '',
+    'description' => 'Conduct inventory of reservable items',
     'weight' => '0',
     'name' => 'navigation',
   ));
+
 
 
   $views[$view->name] = $view;

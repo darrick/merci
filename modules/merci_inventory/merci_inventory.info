@@ -6,6 +6,8 @@ core = 6.x
 dependencies[] = merci
 dependencies[] = content_copy
 dependencies[] = text
+dependencies[] = fieldgroup
 dependencies[] = field_sync
-
+dependencies[] = nodereference
+dependencies[] = views_bulk_operations
 

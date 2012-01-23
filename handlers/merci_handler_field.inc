@@ -15,11 +15,6 @@ class merci_handler_field_merci_node_type_type_setting extends views_handler_fie
     $this->additional_fields['merci_type_setting'] = 'merci_type_setting';
   }
 
-  function query() {
-    $this->ensure_my_table();
-    $this->add_additional_fields();
-  }
-
   function render($values) {
     parent::render($values);
     $type_setting = $values->{$this->aliases['merci_type_setting']};
@@ -46,11 +41,6 @@ class merci_handler_field_merci_node_type_status extends views_handler_field {
     $this->additional_fields['merci_active_status'] = 'merci_active_status';
   }
 
-  function query() {
-    $this->ensure_my_table();
-    $this->add_additional_fields();
-  }
-
   function render($values) {
     parent::render($values);
     $statuses = merci_node_type_status();
@@ -67,11 +57,6 @@ class merci_handler_field_merci_reservation_status extends views_handler_field {
     parent::construct();
     // TODO: does this need an alias?
     $this->additional_fields['merci_reservation_status'] = 'merci_reservation_status';
-  }
-
-  function query() {
-    $this->ensure_my_table();
-    $this->add_additional_fields();
   }
 
   function render($values) {
@@ -91,11 +76,6 @@ class merci_handler_field_merci_bucket_resource_node_default_availability extend
     $this->additional_fields['merci_default_availability'] = 'merci_default_availability';
   }
 
-  function query() {
-    $this->ensure_my_table();
-    $this->add_additional_fields();
-  }
-
   function render($values) {
     parent::render($values);
     $availabilities = merci_item_status();
@@ -113,11 +93,6 @@ class merci_handler_field_merci_bucket_resource_node_sub_type extends views_hand
   function construct() {
     parent::construct();
     $this->additional_fields['merci_sub_type'] = 'merci_sub_type';
-  }
-
-  function query() {
-    $this->ensure_my_table();
-    $this->add_additional_fields();
   }
 
   function render($values) {
@@ -143,11 +118,6 @@ class merci_handler_field_merci_reservation_item_node_item_status extends views_
   function construct() {
     parent::construct();
     $this->additional_fields['merci_item_status'] = 'merci_item_status';
-  }
-
-  function query() {
-    $this->ensure_my_table();
-    $this->add_additional_fields();
   }
 
   function render($values) {

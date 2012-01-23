@@ -31,6 +31,8 @@ function merci_inventory_field_sync() {
   drupal_goto('admin/content/node-type/merci-inventory-master/field_sync');
 }
 
+function merci_inventory_form(&$node, $form_state) {
+}
 /**
  * Implementation of hook_node_info().
  */
@@ -41,7 +43,7 @@ function merci_inventory_node_info() {
       'name' => t('Inventory'),
       'module' => 'merci_inventory',
       'has_body' => TRUE,
-      'description' => t("An Inventory node contains is a simple list of other nodes."),
+      'description' => t("An Inventory node contains a simple list of other nodes."),
     ),
     // Inventory Master nodes.
     'merci_inventory_master' => array(
@@ -60,7 +62,7 @@ function merci_inventory_node_info() {
 function merci_inventory_node_operations($return = null) {
   $operations = array(
     'merci_inventory_update' => array(
-      'label' => t('Confirm These Items Are Currently in Inventory'),
+      'label' => t('Confirm Selected Items Are Currently in Inventory'),
       'callback' => 'merci_inventory_operations_update',
     ),
   );

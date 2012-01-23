@@ -238,7 +238,7 @@ function theme_merci_current_inventory() {
     $unavailable = l($unavailable, 'admin/merci/manage/current_inventory/' . $info['type'] . '/Unavailable');
 
     $title = views_get_view('merci_inventory_view')
-        ? l($info['name'], 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'type[0]=' . $merci_type['type']))
+        ? l($info['name'], 'admin/merci/manage/inventory', array('html' => TRUE, 'query' => 'merci_content_type=' . $merci_type['type']))
         : $info['name'];
 
     $rows[] = array(
