@@ -112,9 +112,11 @@ class MerciTestCase extends DrupalWebTestCase {
   function merciCreateNode($type,$settings,$pass=TRUE) {
     $this->verbose('Creating node: ' . var_export($settings, TRUE));
     $this->drupalPost('node/add/' . $type, $settings, t('Save'));
-    $node = entity_load('node',FALSE,array('title' => $settings['title']));
-    $this->verbose('Node created: ' . var_export($node, TRUE));
-    return array_shift($node);
+    if (array_key_exists('title', $settings)) {
+      $node = entity_load('node',FALSE,array('title' => $settings['title']));
+      //$this->verbose('Node created: ' . var_export($node, TRUE));
+      return array_shift($node);
+    }
   }
 
   function merciUpdateNode($nid,$settings,$pass=TRUE) {
