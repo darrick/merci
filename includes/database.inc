@@ -26,6 +26,28 @@ function merci_resource_node_settings($vid) {
   return db_fetch_array(db_query("SELECT merci_late_fee_per_hour, merci_rate_per_hour, merci_fee_free_hours, merci_min_cancel_hours, merci_autocheckout, merci_autocheckin, merci_selfcheckout FROM {merci_resource_node} WHERE vid = %d", $vid));
 }
 
+function merci_is_item_reservable($item_nid, $type, $start, $end, $exclude_vid = NULL) {
+  $items = merci_load_reservations_for_node_in_timespan($item_nid, $type, $start, $end, $exclude_vid);
+
+  // If we are checking an item?
+  if ($item_nid) {
+   if (isset($items[$item_nid]) and count($items[$item_nid])) {
+    return FALSE;
+   }
+   return TRUE;
+  }
+
+  // If we are checking a bucket
+  $count = 0;
+  foreach ($items as $item_nid => $reservations) {
+    if (empty($reservations)) {
+      $count++;
+    }
+  }
+  $content_settings = merci_load_item_settings($type);
+  return $count - $content_settings->merci_spare_items > 0 ? $count - $content_settings->merci_spare_items : FALSE;
+}
+
 function merci_taxonomy_node_delete_vocabulary($node, $vid) {
 
   if (empty($vid) or empty($node->vid)) {
@@ -343,6 +365,8 @@ function merci_get_reservable_items($content_type, $start = NULL, $end = NULL, $
     if ($reservation_nid) {
       $where = ' AND md2.nid <> %d';
       $args[] = $reservation_nid;
+    } else {
+      $where = '';
     }
 
     $query .= "
@@ -393,6 +417,8 @@ function merci_overdue_items($content_type, $start, $reservation_nid = NULL) {
   if (isset($reservation_nid)) {
     $where = ' AND ct.nid <> %d';
     $args[] = $reservation_nid;
+  } else {
+    $where = '';
   }
 
   $reserved_nodes = db_query("
@@ -414,7 +440,7 @@ function merci_overdue_items($content_type, $start, $reservation_nid = NULL) {
     $total_items_array[$node->merci_item_nid][$node->nid] = $node;
   }
 
-  return $total_items_array;
+  return isset($total_items_array) ? $total_items_array : array();
 }
 
 function _merci_sort_array($a, $b) {
@@ -431,7 +457,7 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
   $column_end_date   = $db_info['columns']['value2']['column'];
 
   // Get all assignable nodes for this bucket item.
-  $total_items_nodes = db_query("SELECT n.nid FROM {node} n INNER JOIN {merci_reservation_item_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.merci_sub_type = %d AND m.merci_default_availability IN (%d, %d)", $content_type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F, MERCI_AVA_S);
+  $total_items_nodes = db_query("SELECT n.nid FROM {node} n INNER JOIN {merci_reservation_item_node} m ON n.vid = m.vid WHERE n.type = '%s' AND m.merci_sub_type = %d AND m.merci_default_availability IN (%d, %d)", $content_type, MERCI_SUB_TYPE_ITEM, MERCI_AVA_F);
   $total_items_array = array();
   while ($ctnodes = db_fetch_array($total_items_nodes)) {
     $total_items_array[$ctnodes['nid']] = array();
@@ -581,6 +607,7 @@ function merci_get_available_bucket_count($content_type, $start = NULL, $end = N
 
   $total_items_array = merci_reserved_bucket_items($content_type, $start, $end, $reservation );
 
+  $reserved_items = 0;
   foreach ($total_items_array as $item_nid => $reservations) {
     if (!empty($reservations)) {
       $reserved_items++;
@@ -656,6 +683,6 @@ function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_d
     $return[$item_nid][$reservation->nid] = $reservation;
   }
 
-  return $return;
+  return isset($return) ? $return : NULL;
 }
 

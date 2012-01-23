@@ -151,6 +151,26 @@ class MerciUserTestCase extends MerciTestCase {
   // and the default merci_user logged in.
   function testMerciHoursOfOperation() {
 
+    // Login the admin user.
+    $this->drupalLogin($this->admin_user);
+    $settings = array (
+      'merci_default_reservation_status' => '2',
+      'merci_max_days_advance_reservation' => '0',
+      'merci_saturday_is_weekend' => '1',
+      'merci_sunday_is_weekend' => '1',
+      'merci_hours_mon' => '09:00-17:00',
+      'merci_hours_tue' => '09:00-17:00',
+      'merci_hours_wed' => '09:00-17:00',
+      'merci_hours_thu' => '09:00-17:00',
+      'merci_hours_fri' => '09:00-17:00',
+      'merci_hours_sat' => '09:00-17:00',
+      'merci_hours_sun' => '09:00-17:00',
+      'merci_hours_admin' => '07:00-22:00',
+      'merci_closed_dates' => '12-25',
+      'merci_lock'    => FALSE,
+    );
+
+    $this->merciCreateConfig($settings);
     // Login the merci user.
     $this->drupalLogin($this->merci_user);
     $today = date('Y-m-d');
@@ -187,9 +207,32 @@ class MerciUserTestCase extends MerciTestCase {
     $first = $this->merciCreateNode('merci-reservation',$edit,FALSE);
     $this->assertText(t("Reservations cannot end at a time after 17:00."));
 
-    $hours = variable_get('merci_hours_'.$day,'');
-    variable_set('merci_hours_'.$day,'');
+    // Login the admin user.
+    $this->drupalLogin($this->admin_user);
+    $settings = array (
+      'merci_default_reservation_status' => '2',
+      'merci_max_days_advance_reservation' => '0',
+      'merci_saturday_is_weekend' => '1',
+      'merci_sunday_is_weekend' => '1',
+      'merci_hours_mon' => '09:00-17:00',
+      'merci_hours_tue' => '09:00-17:00',
+      'merci_hours_wed' => '09:00-17:00',
+      'merci_hours_thu' => '09:00-17:00',
+      'merci_hours_fri' => '09:00-17:00',
+      'merci_hours_sat' => '09:00-17:00',
+      'merci_hours_sun' => '09:00-17:00',
+      'merci_hours_admin' => '07:00-22:00',
+      'merci_closed_dates' => '12-25',
+      'merci_lock'    => FALSE,
+    );
+    unset($settings['merci_hours_' . $day]);
+    $form_state['values'] = $settings;
+    module_load_include('inc', 'merci', 'includes/merci.admin');
+    merci_admin_settings_submit($form, &$form_state);
 
+    //$this->merciCreateConfig($settings);
+    // Login the merci user.
+    $this->drupalLogin($this->merci_user);
     // Test start day on closed day 
     // Test end day on closed day
     $node = $this->bucket1;
@@ -205,9 +248,6 @@ class MerciUserTestCase extends MerciTestCase {
     $first = $this->merciCreateNode('merci-reservation',$edit,FALSE);
     $this->assertRaw(t("Reservations cannot start on a %day.",array('%day' => $fancy_day)));
     $this->assertRaw(t("Reservations cannot end on a %day.",array('%day' => $fancy_day)));
-
-    // Return or config back to default.
-    variable_set('merci_hours_'.$day,$hours);
 
   }
 

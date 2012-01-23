@@ -244,7 +244,7 @@ function merci_insert($node) {
  * Implementation of hook_update().
  */
 function merci_update($node) {
-  if ($node->revision) {
+  if (!empty($node->revision)) {
     drupal_write_record("merci_reservation", $node);
   }
   else {
@@ -326,7 +326,7 @@ function merci_form(&$node, $form_state) {
   // Choice adding code mostly stolen from poll module.
   $choice_count = empty($node->choice_count) ? 3 : $node->choice_count;
 
-  if ($form_state['post']['op'] == "Add more items") {
+  if (array_key_exists('op', $form_state['post']) and $form_state['post']['op'] == "Add more items") {
     $choice_count += 3;
   }
 
@@ -383,7 +383,7 @@ function merci_form(&$node, $form_state) {
   }
   $form['merci_original_reservation_status'] = array(
     '#type' => 'value',
-    '#value' => $node->merci_original_reservation_status ? $node->merci_original_reservation_status : $node->merci_reservation_status,
+    '#value' => isset($node->merci_original_reservation_status) ? $node->merci_original_reservation_status : $node->merci_reservation_status,
   );
 
   // Since hook_validate is broken in 6.x, we add our own
@@ -419,8 +419,8 @@ function merci_form_alter(&$form, $form_state, $form_id) {
 
         $node = (object) $form['#node'];
 
-        $sub_type = $node->merci_sub_type ? $node->merci_sub_type : MERCI_SUB_TYPE_ITEM;
-        $default_availability = $node->merci_default_availability ? $node->merci_default_availability : MERCI_AVA_F;
+        $sub_type = isset($node->merci_sub_type) ? $node->merci_sub_type : MERCI_SUB_TYPE_ITEM;
+        $default_availability = isset($node->merci_default_availability) ? $node->merci_default_availability : MERCI_AVA_F;
 
         if ($sub_type == MERCI_SUB_TYPE_ITEM) {
           if (empty($form['merci'])) {
@@ -446,6 +446,18 @@ function merci_form_alter(&$form, $form_state, $form_id) {
         );
 
         merci_add_settings_form($form, $form_state);
+      } else if ($form_id == 'merci_reservation_node_form') {
+        $form['field_merci_date_button'] = array(
+          '#type' => 'submit',
+          '#value' => t('Limit Lists to Available Items'),
+          '#submit' => array('merci_date_filter'),
+          '#ahah' => array(
+            'path' => 'merci/js',
+            'wrapper' => 'merci-choice-wrapper',
+            'method' => 'replace',
+            'effect' => 'fade',
+          ),
+        );
       }
       break;
 
@@ -456,26 +468,28 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       }
       $type     = $form['old_type']['#value'];
 
+      $settings = new stdClass();
+      $settings->merci_type_setting = 'disabled';
+      $settings->merci_active_status = MERCI_STATUS_ACTIVE;
+      $settings->merci_max_hours_per_reservation = 0;
+      $settings->merci_allow_overnight = 0;
+      $settings->merci_allow_weekends = 0;
+      $settings->merci_rate_per_hour = 0;
+      $settings->merci_late_fee_per_hour = 0;
+      $settings->merci_fee_free_hours = 0;
+      $settings->merci_min_cancel_hours = 0;
+      $settings->merci_autocheckout = 0;
+      $settings->merci_autocheckin = 0;
+      $settings->merci_selfcheckout = 0;
+      $settings->merci_spare_items = 0;
+      $settings->merci_auto_assign_bucket_item = 0;
+
+      $nodes = 0;
       // If any nodes have already been created, lock the type setting.
       if ($type) {
         $nodes = merci_nodes_for_type_count($type);
         if ( merci_is_merci_type($type) ) {
           $settings = merci_load_item_settings($type);
-        } else {
-          $settings = new stdClass();
-          $settings->merci_type_setting = 'disabled';
-          $settings->merci_active_status = MERCI_STATUS_ACTIVE;
-          $settings->merci_max_hours_per_reservation = 0;
-          $settings->merci_allow_overnight = 0;
-          $settings->merci_allow_weekends = 0;
-          $settings->merci_rate_per_hour = 0;
-          $settings->merci_late_fee_per_hour = 0;
-          $settings->merci_fee_free_hours = 0;
-          $settings->merci_min_cancel_hours = 0;
-          $settings->merci_autocheckout = 0;
-          $settings->merci_autocheckin = 0;
-          $settings->merci_selfcheckout = 0;
-
         }
       }
 
@@ -535,7 +549,7 @@ function merci_form_alter(&$form, $form_state, $form_id) {
       );
 
       // This setting is only valid for buckets.
-      if (!isset($settings->merci_type_setting) || $settings->merci_type_setting == 'bucket') {
+      if ($settings->merci_type_setting == 'disabled' || $settings->merci_type_setting == 'bucket') {
         $form['merci']['merci_spare_items'] = array(
           '#type' => 'textfield',
           '#title' => t('Spare items'),
@@ -1266,12 +1280,11 @@ function merci_build_reservation_table_form(&$form_state, $node, $edit_page = FA
     t('Item'),
   );
 
-  $reservation_items = array();
-  $items = $node->merci_reservation_items;
-
-  if (!$items) {
+  if (!isset($node->merci_reservation_items)) {
     return $table;
   }
+
+  $items = $node->merci_reservation_items;
 
   $table['#header'][] = t('Type');
   foreach ($items as $did => $item) {
@@ -1397,29 +1410,38 @@ function merci_add_settings_form(&$form, $form_state) {
   $type = array_key_exists('old_type', $form) ? $form['old_type']['#value'] : $form['type']['#value'];
   //$merci_settings = mnerci_content_types($type);
   //if(!$merci_settings) return;
-  if ($form['#id'] == 'node-type-form') {
-    if ( merci_is_merci_type($type) ) {
-      $settings = merci_load_item_settings($type);
-    } else {
-      $settings = new stdClass();
-      $settings->merci_type_setting = 'disabled';
-      $settings->merci_active_status = MERCI_STATUS_ACTIVE;
-      $settings->merci_max_hours_per_reservation = 0;
-      $settings->merci_allow_overnight = 0;
-      $settings->merci_allow_weekends = 0;
-      $settings->merci_rate_per_hour = 0;
-      $settings->merci_late_fee_per_hour = 0;
-      $settings->merci_fee_free_hours = 0;
-      $settings->merci_min_cancel_hours = 0;
-      $settings->merci_autocheckout = 0;
-      $settings->merci_autocheckin = 0;
-      $settings->merci_selfcheckout = 0;
+  if ( merci_is_merci_type($type) ) {
+    $settings = merci_load_item_settings($type);
+  } else {
+    $settings = new stdClass();
+    $settings->merci_type_setting = 'disabled';
+    $settings->merci_active_status = MERCI_STATUS_ACTIVE;
+    $settings->merci_max_hours_per_reservation = 0;
+    $settings->merci_allow_overnight = 0;
+    $settings->merci_allow_weekends = 0;
+    $settings->merci_rate_per_hour = 0;
+    $settings->merci_late_fee_per_hour = 0;
+    $settings->merci_fee_free_hours = 0;
+    $settings->merci_min_cancel_hours = 0;
+    $settings->merci_autocheckout = 0;
+    $settings->merci_autocheckin = 0;
+    $settings->merci_selfcheckout = 0;
 
-    }
+  }
+  if ($form['#id'] == 'node-type-form') {
     $node = $settings;
   }
   else {
     $node = (object) $form['#node'];
+    if (empty($node->merci_type_setting)) {
+      if (merci_is_merci_type($node->type)) {
+        foreach ($settings as $key => $value) {
+          if (!isset($node->{$key})) {
+            $node->{$key} = $value;
+          }
+        }
+      }
+    }
   }
   //merci_load_item_settings($node);
   // New nodes are always sub type item.
@@ -1436,7 +1458,8 @@ function merci_add_settings_form(&$form, $form_state) {
 
   // Bucket item nodes have no individual pricing, so just zero these values out.
   // Althought you can override them on the reserervation nodes.
-  if ($node->merci_type_setting == 'resource' or $form['#id'] == 'node-type-form' or $sub_type == MERCI_SUB_TYPE_RESERVATION ) {
+  if ( $form['#id'] == 'node-type-form' or $sub_type == MERCI_SUB_TYPE_RESERVATION or $node->merci_type_setting == 'resource') {
+
     $form['merci']['merci_rate_per_hour'] = array(
       '#type' => 'textfield',
       '#title' => t('Rate per hour'),
@@ -1463,7 +1486,7 @@ function merci_add_settings_form(&$form, $form_state) {
     );
   }
 
-  if (($node->merci_type_setting == 'resource' and $sub_type == MERCI_SUB_TYPE_ITEM) or $form['#id'] == 'node-type-form') {
+  if ($form['#id'] == 'node-type-form'or ($node->merci_type_setting == 'resource' and $sub_type == MERCI_SUB_TYPE_ITEM)) {
 
     $form['merci']['merci_min_cancel_hours'] = array(
       '#type' => 'textfield',
@@ -1497,18 +1520,7 @@ function merci_add_settings_form(&$form, $form_state) {
 function _merci_after_build($form, &$form_state) {
 
   $weight = ($form['field_merci_date']['#weight'] + 1);
-  $form['field_merci_date'][0]['field_merci_date_button'] = array(
-    '#type' => 'submit',
-    '#value' => t('Limit Lists to Available Items'),
-    '#weight' => $weight,
-    '#submit' => array('merci_date_filter'),
-    '#ahah' => array(
-      'path' => 'merci/js',
-      'wrapper' => 'merci-choice-wrapper',
-      'method' => 'replace',
-      'effect' => 'fade',
-    ),
-  );
+  $form['field_merci_date_button']['#weight'] = $weight;
   return $form;
 }
 /**

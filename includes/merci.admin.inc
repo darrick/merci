@@ -68,49 +68,49 @@ function merci_admin_settings() {
   );
   $form['merci_hours']['merci_hours_mon'] = array(
     '#title' => t('Monday hours'),
-    '#default_value' => $hours_of_operation[1] ? implode('-', $hours_of_operation[1]) : '',
+    '#default_value' => array_key_exists(1, $hours_of_operation) ? implode('-', $hours_of_operation[1]) : '',
   ) + $hours_element;
   $form['merci_hours']['merci_monday_is_weekend'] = array(
     '#default_value' => variable_get('merci_monday_is_weekend', 0),
   ) + $weekend_element;
   $form['merci_hours']['merci_hours_tue'] = array(
     '#title' => t('Tuesday hours'),
-    '#default_value' => $hours_of_operation[2] ? implode('-', $hours_of_operation[2]) : '',
+    '#default_value' => array_key_exists(2, $hours_of_operation) ? implode('-', $hours_of_operation[2]) : '',
   ) + $hours_element;
   $form['merci_hours']['merci_tuesday_is_weekend'] = array(
     '#default_value' => variable_get('merci_tuesday_is_weekend', 0),
   ) + $weekend_element;
   $form['merci_hours']['merci_hours_wed'] = array(
     '#title' => t('Wednesday hours'),
-    '#default_value' => $hours_of_operation[3] ? implode('-', $hours_of_operation[3]) : '',
+    '#default_value' => array_key_exists(3, $hours_of_operation) ? implode('-', $hours_of_operation[3]) : '',
   ) + $hours_element;
   $form['merci_hours']['merci_wednesday_is_weekend'] = array(
     '#default_value' => variable_get('merci_wednesday_is_weekend', 0),
   ) + $weekend_element;
   $form['merci_hours']['merci_hours_thu'] = array(
     '#title' => t('Thursday hours'),
-    '#default_value' => $hours_of_operation[4] ? implode('-', $hours_of_operation[4]) : '',
+    '#default_value' => array_key_exists(4, $hours_of_operation) ? implode('-', $hours_of_operation[4]) : '',
   ) + $hours_element;
   $form['merci_hours']['merci_thursday_is_weekend'] = array(
     '#default_value' => variable_get('merci_thursday_is_weekend', 0),
   ) + $weekend_element;
   $form['merci_hours']['merci_hours_fri'] = array(
     '#title' => t('Friday hours'),
-    '#default_value' => $hours_of_operation[5] ? implode('-', $hours_of_operation[5]) : '',
+    '#default_value' => array_key_exists(5, $hours_of_operation) ? implode('-', $hours_of_operation[5]) : '',
   ) + $hours_element;
   $form['merci_hours']['merci_friday_is_weekend'] = array(
     '#default_value' => variable_get('merci_friday_is_weekend', 0),
   ) + $weekend_element;
   $form['merci_hours']['merci_hours_sat'] = array(
     '#title' => t('Saturday hours'),
-    '#default_value' => $hours_of_operation[6] ? implode('-', $hours_of_operation[6]) : '',
+    '#default_value' => array_key_exists(6, $hours_of_operation) ? implode('-', $hours_of_operation[6]) : '',
   ) + $hours_element;
   $form['merci_hours']['merci_saturday_is_weekend'] = array(
     '#default_value' => variable_get('merci_saturday_is_weekend', 1),
   ) + $weekend_element;
   $form['merci_hours']['merci_hours_sun'] = array(
     '#title' => t('Sunday hours'),
-    '#default_value' => $hours_of_operation[0] ? implode('-', $hours_of_operation[0]) : '',
+    '#default_value' => array_key_exists(0, $hours_of_operation) ? implode('-', $hours_of_operation[0]) : '',
   ) + $hours_element;
   $form['merci_hours']['merci_sunday_is_weekend'] = array(
     '#default_value' => variable_get('merci_sunday_is_weekend', 1),

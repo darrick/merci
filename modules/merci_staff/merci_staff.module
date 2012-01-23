@@ -38,7 +38,7 @@ function merci_staff_user_load($post = NULL) {
   if (empty($admin_user)) {
     $admin_user = $user;
   }
-  if ($post and !$post['override'] and ($newuser = user_load(array('name' => $post['name'])))) {
+  if (isset($post) and array_key_exists('override', $post) and !$post['override'] and ($newuser = user_load(array('name' => $post['name'])))) {
     $user = $newuser;
   }
   else {
@@ -87,7 +87,7 @@ function merci_staff_form_alter(&$form, $form_state, $form_id) {
     $default = isset($node->merci_reservation_items["choice_" . $delta]['merci_item_nid']) ? $node->merci_reservation_items["choice_" . $delta]['merci_item_nid'] : '';
     $form['choice_wrapper']['merci_reservation_items']["choice_" . $delta]['merci_item_nid'] =
       _merci_choice_form($node, $form_state, $delta, $default, $reset);
-    unset($reset);
+    $reset = NULL;
   }
   merci_staff_user_load();
   return $form;
@@ -135,7 +135,7 @@ function merci_staff_form_merci_reservation_node_form_alter(&$form, &$form_state
       //'#type' => 'optionwidgets_onoff',
       '#type' => 'checkbox',
       '#title' => 'Override Validation',
-      '#default_value' => $node->override,
+      '#default_value' => isset($node->override) ? $node->override : 0,
       '#weight' => -97,
       '#columns' => 0,
     );

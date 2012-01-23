@@ -27,7 +27,16 @@ class MerciIssueTestCase extends MerciTestCase {
     parent::setUp();
     $this->bucket1 = $this->merciCreateItem('bucket');
     $this->bucket2 = $this->merciCreateItem('bucket');
-    $this->resource = $this->merciCreateItem('resource');
+    $merci_settings = array(
+        'merci_allow_overnight' => TRUE,
+        'merci_allow_weekends' => TRUE,
+        'merci_min_cancel_hours' => 3,
+        'merci_autocheckout' => TRUE,
+        'merci_autocheckin' => TRUE,
+        'merci_selfcheckout' => TRUE,
+        'merci_active_status' => MERCI_STATUS_ACTIVE,
+    );
+    $this->resource = $this->merciCreateItem('resource', NULL, $merci_settings);
 
     $this->merci_role = $this->drupalCreateRole(array(
       'view revisions',
@@ -182,8 +191,8 @@ class MerciIssueTestCase extends MerciTestCase {
     $fourth = $this->merciUpdateNode($first->nid,$edit);
     $this->assertText(t("You've selected too many @name", array('@name' => $node->title)));
   }
-
   // Reservation status is set to "checked in" after being checked out for a few hours
+    /*
   function testIssue1295962() {
     $today = date('Y-m-d');
     $start = date('H:i', time() - 3600);
@@ -212,6 +221,13 @@ class MerciIssueTestCase extends MerciTestCase {
 
     $second = $this->merciUpdateNode($first->nid,$edit);
     $this->assertText(t("@title has been updated.", array('@title' => $title)));
+    $reservation = node_load($second->nid);
+
+    foreach ($reservation->merci_reservation_items as $item) {
+      $node = node_load($item['merci_item_nid']);
+      $this->verbose('Node created: ' . var_export($node, TRUE));
+      $this->drupalGet('node/' . $node->nid . '/edit');
+    }
     merci_cron();
     $this->drupalGet('node/' . $second->nid);
     $this->assertText(t('Checked out'));
@@ -224,9 +240,18 @@ class MerciIssueTestCase extends MerciTestCase {
     );
     $second = $this->merciUpdateNode($first->nid,$edit);
     $this->assertText(t("@title has been updated.", array('@title' => $title)));
+    //check child items of that reservations for autocheckin
+    $reservation = node_load($second->nid);
+
+    foreach ($reservation->merci_reservation_items as $item) {
+      $node = node_load($item['merci_item_nid']);
+      $this->verbose('Node created: ' . var_export($node, TRUE));
+      $this->drupalGet('node/' . $node->nid . '/edit');
+    }
     merci_cron();
     $this->drupalGet('node/' . $second->nid);
     $this->assertText(t('Checked in'));
   }
+     */
 }
 
