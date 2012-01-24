@@ -2,16 +2,18 @@
 name = MERCI Inventory
 package = MERCI
 description = "Applies inventory fields to MERCI resources"
+
 core = 7.x
 dependencies[] = merci
-dependencies[] = content_copy
-dependencies[] = text
+dependencies[] = field_group
 dependencies[] = field_sync
-
-
+dependencies[] = entityreference
+#dependencies[] = views_bulk_operations
+#dependencies[] = views 
 
 files[] = merci_inventory.install
+files[] = merci_inventory.info
 files[] = merci_inventory.module
-files[] = merci_inventory.views_default.inc
-files[] = content_types/content_types.inc
-files[] = content_types/merci_inventory_master_content_type.inc
+files[] = merci_inventory.field_group.inc
+
+
