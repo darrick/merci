@@ -294,6 +294,30 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['empty']['text']['empty'] = FALSE;
   $handler->display->display_options['empty']['text']['content'] = '<div class="messages status">Anticipating no returns.</div>';
   $handler->display->display_options['empty']['text']['tokenize'] = 0;
+  $handler->display->display_options['defaults']['filters'] = FALSE;
+  /* Filter criterion: Content: Type */
+  $handler->display->display_options['filters']['type']['id'] = 'type';
+  $handler->display->display_options['filters']['type']['table'] = 'node';
+  $handler->display->display_options['filters']['type']['field'] = 'type';
+  $handler->display->display_options['filters']['type']['value'] = array(
+    'merci_reservation' => 'merci_reservation',
+  );
+  $handler->display->display_options['filters']['type']['group'] = 0;
+  $handler->display->display_options['filters']['type']['expose']['operator'] = FALSE;
+  /* Filter criterion: Content: Reservation - end date (field_merci_date:value2) */
+  $handler->display->display_options['filters']['field_merci_date_value2']['id'] = 'field_merci_date_value2';
+  $handler->display->display_options['filters']['field_merci_date_value2']['table'] = 'field_data_field_merci_date';
+  $handler->display->display_options['filters']['field_merci_date_value2']['field'] = 'field_merci_date_value2';
+  $handler->display->display_options['filters']['field_merci_date_value2']['group'] = 0;
+  $handler->display->display_options['filters']['field_merci_date_value2']['default_date'] = 'now';
+  /* Filter criterion: MERCI: Reservation status */
+  $handler->display->display_options['filters']['status']['id'] = 'status';
+  $handler->display->display_options['filters']['status']['table'] = 'merci_reservation';
+  $handler->display->display_options['filters']['status']['field'] = 'status';
+  $handler->display->display_options['filters']['status']['value'] = array(
+    3 => '3',
+  );
+  $handler->display->display_options['filters']['status']['group'] = 0;
   $handler->display->display_options['path'] = 'admin/merci/manage/reservations/incoming';
   $handler->display->display_options['menu']['type'] = 'tab';
   $handler->display->display_options['menu']['title'] = 'Incoming';
@@ -383,6 +407,7 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['filters']['field_merci_date_value2']['field'] = 'field_merci_date_value2';
   $handler->display->display_options['filters']['field_merci_date_value2']['operator'] = '<=';
   $handler->display->display_options['filters']['field_merci_date_value2']['group'] = 0;
+  $handler->display->display_options['filters']['field_merci_date_value2']['granularity'] = 'minute';
   $handler->display->display_options['filters']['field_merci_date_value2']['default_date'] = 'now';
   /* Filter criterion: MERCI: Reservation status */
   $handler->display->display_options['filters']['status']['id'] = 'status';
@@ -592,7 +617,6 @@ function merci_ui_views_default_views() {
   $handler->display->display_options['menu']['type'] = 'tab';
   $handler->display->display_options['menu']['title'] = 'Browse';
   $handler->display->display_options['menu']['weight'] = '5';
-
 
   $views[$view->name] = $view;
   $view = new view;
