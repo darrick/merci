@@ -50,62 +50,64 @@ function merci_inventory_node_info() {
 /**
  * Implementation of hook_node_operations().
  */
-/*
 function merci_inventory_action_info() {
   return array(
     'merci_inventory_operations_update' => array(
       'type' => 'node',
       'label' => t('Confirm Selected Items Are Currently in Inventory'),
       'configurable' => FALSE,
+      'aggregate' => TRUE,
+  //    'pass rows' => TRUE,
     ),
   );
 }
- */
+
 /**
  * Callback function for adding items to new merci_inventory node.
  */
-/*
-function merci_inventory_operations_update($node, $context) {
-  dpm($context);
-  return;
+function merci_inventory_operations_update($objects, $context = array()) {
   global $user;
-
-  $account = user_load(array('uid' => $user->uid));
 
   // Construct the new node object.
   $node = new stdClass();
 
   $node->title = 'Inventory - ' . format_date(time(), $type = 'small');
   $node->type = 'merci_inventory';
-  $node->created = time();
-  $node->changed = $node->created;
-  $node->status = 1; // Published?
-  $node->promote = 0; // Display on front page?
-  $node->sticky = 0; // Display top of page?
-  $node->format = 1; // Filtered HTML?
-  $node->uid = $account->uid; //  Content owner uid (author)?
-  $node->language = 'en';
+  $node->language = 'und';
+  $node->uid = $user->uid;
 
-  $count = 0;
-  foreach ($nodes as $nid) {
-    $node->field_merci_inventory_item[$count]['nid']  = $nid;
-    $count++;
+  foreach (array_keys($objects) as $nid) {
+    $target = array(
+      'target_id' => $nid,
+    );
+    $node->field_merci_inventory_item[$node->language][]  = $target;
   }
 
-  //node_submit($node);
+  $node = node_submit($node);
   node_save($node);
+  $node_link = l($node->title, 'node/' . $node->nid);
+  $watchdog_args = array(
+    '@type' => $node->type,
+    '!title' => $node_link,
+  );
+  $t_args = array(
+    '@type' => node_type_get_name($node),
+    '!title' => $node_link,
+  );
+
+  if ($node->nid) {
+    watchdog('content', '@type: added !title.', $watchdog_args, WATCHDOG_NOTICE, $node_link);
+    drupal_set_message(t('@type !title has been created.', $t_args));
+  }
 }
- */
 
 /**
  * Implementation of hook_views_api().
  */
-/*
 function merci_inventory_views_api() {
   return array(
     'api' => 3,
     'path' => drupal_get_path('module', 'merci_inventory'),
   );
 }
- */
 
