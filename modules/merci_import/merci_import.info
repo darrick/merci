@@ -1,0 +1,15 @@
+name = MERCI Import 
+package = MERCI
+description = "Provides a feeds processor plugin to import data into MERCI."
+
+core = 7.x
+
+dependencies[] = merci
+dependencies[] = feeds 
+
+
+files[] = merci_import.module
+files[] = merci_import.install
+files[] = MerciItemProcessor.inc
+files[] = MerciTypeProcessor.inc
+
