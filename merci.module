@@ -913,7 +913,7 @@ function merci_node_revision_delete($node) {
     merci_delete_record('merci_' . $merci_type . '_node', $node, 'vid');
     merci_delete_record('merci_reservation_item_node', $node, 'vid');
   }
-  else if ($type == 'merci_reservation') {
+  elseif ($type == 'merci_reservation') {
     merci_delete_record('merci_reservation', $node, 'vid');
     merci_delete_record('merci_reservation_detail', $node, 'vid');
   }
@@ -1308,7 +1308,7 @@ function merci_build_reservation_table_form($form, &$form_state, $node, $edit_pa
           '#default_value' => $item['merci_item_nid'],
         );
         if ($node->merci_reservation_status >= MERCI_STATUS_CHECKED_OUT) {
-          $form['merci_item_nid']['#disabled'] = true;
+          $form['merci_item_nid']['#disabled'] = TRUE;
         }
       }
     }
@@ -1369,7 +1369,7 @@ function merci_add_settings_form(&$form, $form_state) {
       '#size' => 10,
       '#default_value' => isset($node->merci_rate_per_hour) ? $node->merci_rate_per_hour : NULL,
       '#element_validate' => array('merci_is_numeric_validate'),
-      '#description' => t('The per hour rental fee for the item.') . $warning,
+      '#description' => t('The per hour rental fee for the item. !warning', array('!warning' => $warning)),
     );
     $form['merci']['merci_late_fee_per_hour'] = array(
       '#type' => 'textfield',

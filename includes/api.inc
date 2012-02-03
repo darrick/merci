@@ -270,7 +270,16 @@ function merci_validate_status($form, &$form_state) {
   }
   // Prevent status changes on reservations that have past.
   $current_status = $node->merci_original_reservation_status;
-  if ($current_status && $current_status != $node->merci_reservation_status && time() > strtotime($node->field_merci_date[$langcode][0]['value2']) && !in_array((int) $node->merci_reservation_status, array(MERCI_STATUS_CANCELLED, MERCI_STATUS_CHECKED_IN, MERCI_STATUS_DENIED))) {
+  if ($current_status 
+    && $current_status != $node->merci_reservation_status 
+    && time() > strtotime($node->field_merci_date[$langcode][0]['value2']) 
+    && !in_array((int) $node->merci_reservation_status, array(
+      MERCI_STATUS_CANCELLED, 
+      MERCI_STATUS_CHECKED_IN, 
+      MERCI_STATUS_DENIED,
+      MERCI_STATUS_NO_SHOW
+    ))
+  ) {
     $statuses = merci_record_status();
     form_set_error('merci_reservation_status', t('You cannot change the status to %status for a reservation that has past.', array('%status' => $statuses[$node->merci_reservation_status])));
   }
