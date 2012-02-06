@@ -652,7 +652,7 @@ function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_d
    */
 
   $type_settings = merci_type_setting($type);
-  if ($type_settings == 'bucket') {
+  if ($type_settings == 'bucket' and empty($item_nid)) {
     return merci_reserved_bucket_items($type, $start_date, $end_date, $reservation_vid);
   }
   else {
