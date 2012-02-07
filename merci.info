@@ -8,6 +8,7 @@ dependencies[] = content
 dependencies[] = number 
 dependencies[] = date
 dependencies[] = date_api
+dependencies[] = jquery_ui 
 dependencies[] = date_popup
 dependencies[] = date_timezone
 dependencies[] = views
