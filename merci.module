@@ -88,7 +88,7 @@ function merci_menu() {
     'description' => 'Displays list',
     'page callback' => 'theme',
     'page arguments' => array('merci_current_inventory'),
-    'access arguments' => array('manage MERCI'),
+    'access arguments' => array('manage reservations'),
     'type' => MENU_NORMAL_ITEM,
   );
 
