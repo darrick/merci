@@ -107,7 +107,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
       $overdue_items_array = merci_overdue_items($type, $start, $node->nid);
       $overdue_count = 0;
       $overdue_message = '';
-      if (!empty($overdue_items_array)) {
+      if ((empty($item_nid) and !empty($overdue_items_array)) or (!empty($item_nid) and array_key_exists($item_nid,$overdue_items_array))) {
         $overdue_message = '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
         foreach ($overdue_items_array as $reservations) {
           foreach (array_keys($reservations) as $nid) {
