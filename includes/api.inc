@@ -98,7 +98,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
 
       // Is the item available at this time?
       $count = merci_is_item_reservable($item_nid, $type, $start, $end, $vid);
-      if (!$count or (merci_type_setting($type) == 'bucket' and $count - $selected_count[$type] < 0)) {
+      if (!$count or (empty($item_nid) and merci_type_setting($type) == 'bucket' and $count - $selected_count[$type] < 0)) {
         $messages[$did] = merci_theme_conflict_grid($type, $title, $start, $end, $item_nid, $node->vid);
         form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
         continue;
@@ -108,7 +108,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
       $overdue_items_array = merci_overdue_items($type, $start, $node->nid);
       $overdue_count = 0;
       $overdue_message = '';
-      if (!empty($overdue_items_array)) {
+      if ((empty($item_nid) and !empty($overdue_items_array)) or (!empty($overdue_items_array) and !empty($item_nid) and array_key_exists($item_nid,$overdue_items_array))) {
         $overdue_message = '<div> ' . t("%name is not available because it is still checked out by:", array('%name' => $title)) . '</div>';
         foreach ($overdue_items_array as $reservations) {
           foreach (array_keys($reservations) as $nid) {

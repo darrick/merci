@@ -750,7 +750,7 @@ function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_d
 
   $type_settings = merci_type_setting($type);
   if ($type_settings == 'bucket' and empty($item_nid)) {
-    return merci_reserved_bucket_items($type, $start_date, $end_date, $reservation_vid);
+    return merci_reserved_bucket_items($type, $start_date, $end_date, $reservation_vid, FALSE);
   }
   else {
     $sql = "SELECT r.entity_id AS nid, $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2, merci_item_nid
