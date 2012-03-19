@@ -962,7 +962,7 @@ function merci_theme() {
     ),
     'merci_conflict_grid' => array(
       'template' => 'merci_conflict_grid',
-      'arguments' => array('type' => NULL, 'title' => NULL, 'start' => NULL, 'end' => NULL, 'nid' => NULL, 'reservation_vid' => NULL),
+      'arguments' => array('type' => NULL, 'title' => NULL, 'start' => NULL, 'end' => NULL, 'nid' => NULL, 'reservation_nid' => NULL),
       'path' => drupal_get_path('module', 'merci') . '/theme',
       'file' => 'theme.inc',
     ),
@@ -1210,8 +1210,8 @@ function merci_ahah_output($selected_portion, $show_status = FALSE) {
 }
 
 // TODO: should not do theming in validation funcitons.
-function merci_theme_conflict_grid($type, $title, $start, $end, $value, $vid) {
-  return theme('merci_conflict_grid', $type, $title, $start, $end, $value, $vid);
+function merci_theme_conflict_grid($type, $title, $start, $end, $value, $nid) {
+  return theme('merci_conflict_grid', $type, $title, $start, $end, $value, $nid);
 }
 /**
  * Builds the form item for the status display.

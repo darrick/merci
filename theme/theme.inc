@@ -12,7 +12,7 @@ function template_preprocess_merci_conflict_grid(&$variables) {
   $start = $variables['start'];
   $end = $variables['end'];
   $nid = $variables['nid'];
-  $reservation_vid = $variables['reservation_vid'];
+  $reservation_nid = $variables['reservation_nid'];
 
   $hours = array();
   if (user_access('create reservations outside hours of operation')) {
@@ -47,7 +47,7 @@ function template_preprocess_merci_conflict_grid(&$variables) {
   $start_mysql = $dates['value'];
   $end_mysql = $dates['value2'];
 
-  $reservations = merci_load_reservations_for_node_in_timespan($nid, $type, $start_mysql, $end_mysql, $reservation_vid);
+  $reservations = merci_load_reservations_for_node_in_timespan($nid, $type, $start_mysql, $end_mysql, $reservation_nid);
 
   $reservations_by_date = array();
 

@@ -93,12 +93,12 @@ function merci_validate_merci_selected_items($form, &$form_state) {
       // Is it available?
 
       // Are we checking an existing item?
-      $vid = isset($item['did']) ? $node->vid : NULL; 
+      $nid = isset($item['did']) ? $node->nid : NULL; 
 
       // Is the item available at this time?
-      $count = merci_is_item_reservable($item_nid, $type, $start, $end, $vid);
+      $count = merci_is_item_reservable($item_nid, $type, $start, $end, $nid);
       if (!$count or (empty($item_nid) and merci_type_setting($type) == 'bucket' and $count - $selected_count[$type] < 0)) {
-        $messages[$did] = merci_theme_conflict_grid($type, $title, $start, $end, $item_nid, $node->vid);
+        $messages[$did] = merci_theme_conflict_grid($type, $title, $start, $end, $item_nid, $node->nid);
         form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
         continue;
       }
