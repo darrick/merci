@@ -165,7 +165,7 @@ function merci_ui_views_default_views() {
       'validate_argument_is_member' => 'OG_VIEWS_DO_NOT_VALIDATE_MEMBERSHIP',
       'validate_argument_php' => 'global $user;
 
-  if ($context->uid == $user->uid && user_access(\'create reservations\')) {
+  if ($argument[0] == $user->uid && user_access(\'create reservations\')) {
     return TRUE;
 }
 
