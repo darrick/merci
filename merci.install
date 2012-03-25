@@ -798,6 +798,17 @@ function merci_update_6213() {
 
   return $ret;
 }
+function merci_update_6214() {
+  $ret = array();
+
+  // Rebuild possibly out of sync reservation statuses.
+  $ret[] = update_sql("UPDATE {merci_reservation_item_node} mrn SET mrn.merci_item_status = 0");
+  // Migrate reservation to new table.
+  // Pull the merci_item_status for items which are in the CHECKED OUT state for the current reservation revision.
+  $ret[] = update_sql("UPDATE {merci_reservation_item_node} mrn LEFT JOIN {merci_reservation_detail} md ON mrn.nid = md.merci_item_nid JOIN {node} n ON n.vid = md.vid SET mrn.merci_item_status = md.merci_item_status WHERE md.merci_item_nid <> 0 AND md.merci_item_status =2");
+
+  return $ret;
+}
 
 function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
