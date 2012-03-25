@@ -791,6 +791,14 @@ function merci_update_6212() {
   return array(array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.'));
 }
 
+function merci_update_6213() {
+  $ret = array();
+
+  $ret[] = update_sql("ALTER TABLE {merci_reservation} ADD INDEX ( merci_reservation_status )");
+
+  return $ret;
+}
+
 function merci_create_cck_fields() {
   // Create the date, commercial_total, and member_total fields for the reservation.
   $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
