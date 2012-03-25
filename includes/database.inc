@@ -660,7 +660,9 @@ function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_d
       FROM {node} n
       JOIN {merci_reservation_detail} d ON n.nid = d.merci_item_nid
       JOIN {" . $table . "} r ON d.vid = r.vid
+      JOIN {node} rn ON rn.vid = r.vid
       WHERE n.nid = %d
+        AND NOT d.merci_item_status <= %d
         AND
                     (($column_start_date >= '%s' AND $column_start_date <= '%s')
                     OR ($column_end_date >= '%s' AND $column_end_date <= '%s')
@@ -668,7 +670,7 @@ function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_d
       ";
   }
 
-  $args = array($item_nid, $start_date, $end_date, $start_date, $end_date, $start_date, $end_date);
+  $args = array($item_nid, MERCI_ITEM_STATUS_AVAILABLE, $start_date, $end_date, $start_date, $end_date, $start_date, $end_date);
 
   // If we're checking an existing reservation, exclude it from the
   // reserved items.
