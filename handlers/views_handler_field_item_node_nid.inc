@@ -9,7 +9,7 @@
  * Field handler for terms.
  */
 class views_handler_field_item_node_nid extends views_handler_field_prerender_list {
-  function init(&$view, $options) {
+  function init(&$view, &$options) {
     parent::init($view, $options);
     if ($view->base_table == 'node_revisions') {
       $this->additional_fields['vid'] = array(
@@ -32,7 +32,7 @@ class views_handler_field_item_node_nid extends views_handler_field_prerender_li
     $this->add_additional_fields();
   }
 
-  function pre_render($values) {
+  function pre_render(&$values) {
     $this->field_alias = $this->aliases['vid'];
     $vids = array();
     foreach ($values as $result) {
