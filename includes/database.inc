@@ -227,6 +227,21 @@ function merci_total_usage($id, $type = 'user', $date = NULL) {
   return $minutes;
 }
 
+function merci_checked_out_reservations_for_item_nid($nid, $exclude_nid) {
+  // Determine CCK table and columns the date data is stored in.
+
+  // Pull any incomplete reservations that use the item in question
+  $reservations = db_query(db_rewrite_sql("SELECT n.nid, n.title FROM {node} n INNER JOIN {merci_reservation_detail} md ON n.vid = md.vid WHERE n.nid != %d AND md.merci_item_nid = %d AND (md.merci_item_status = %d)"), $exclude_nid, $nid, MERCI_ITEM_STATUS_CHECKED_OUT);
+
+  $bad_reservations = array();
+  while ($reservation = db_fetch_object($reservations)) {
+    $bad_reservations[] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
+  }
+
+  return $bad_reservations;
+
+}
+
 function merci_incomplete_reservations_for_item_nid($nid) {
   // Determine CCK table and columns the date data is stored in.
   $field           = content_fields('field_merci_date');
