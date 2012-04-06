@@ -1160,7 +1160,7 @@ function merci_add_reservation_items($node) {
       if (is_numeric($item['merci_item_nid']) and $item['merci_item_nid'] > 0) {
         // Only set to available if previously this reservation was checked out.
         // Or if this reservation is being set to checked out.
-        if ($item_status == MERCI_ITEM_STATUS_CHECKED_OUT or ($node->merci_original_reservation_status == MERCI_ITEM_STATUS_CHECKED_OUT and $item_status == MERCI_ITEM_STATUS_AVAILABLE)){
+        if ($item_status == MERCI_ITEM_STATUS_CHECKED_OUT or ($node->merci_original_reservation_status == MERCI_STATUS_CHECKED_OUT and $item_status == MERCI_ITEM_STATUS_AVAILABLE)){
           $update = array();
           $update['nid'] = $item['merci_item_nid'];
           $update['merci_item_status'] = $item_status;
