@@ -256,10 +256,10 @@ function merci_insert($node) {
  * Implementation of hook_update().
  */
 function merci_update($node) {
-  if ($node->revision) {
+  if (!empty($node->revision)) {
     drupal_write_record("merci_reservation", $node);
-      }
-      else {
+  }
+  else {
     drupal_write_record("merci_reservation", $node, "vid");
   }
   merci_add_reservation_items($node);

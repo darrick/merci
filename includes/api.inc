@@ -1120,7 +1120,10 @@ function merci_add_reservation_items($node) {
       // If we have an item assigned.  Set status to reserved.
       $item['merci_item_status'] = $item_status;
 
-      if ($node->revision or is_string($did) or $node->is_new) {
+      if (!empty($node->revision) or is_string($did) or $node->is_new) {
+        if (array_key_exists('did', $item)) {
+          unset($item['did']);
+        }
         $item['nid'] = $node->nid;
         $item['vid'] = $node->vid;
         drupal_write_record('merci_reservation_detail', $item);
