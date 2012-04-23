@@ -713,3 +713,15 @@ function merci_update_7002() {
   );
   db_change_field('merci_node_type', 'merci_grouping', 'merci_grouping', $spec);
 }
+
+function merci_update_7203() {
+
+  // Rebuild possibly out of sync reservation statuses.
+  db_query("UPDATE {merci_reservation_item_node} mrn SET mrn.merci_item_status = 0");
+  // Migrate reservation to new table.
+  // Pull the merci_item_status for items which are in the CHECKED OUT state for the current reservation revision.
+  db_query("UPDATE {merci_reservation_item_node} mrn LEFT JOIN {merci_reservation_detail} md ON mrn.nid = md.merci_item_nid JOIN {node} n ON n.vid = md.vid SET mrn.merci_item_status = md.merci_item_status WHERE md.merci_item_nid <> 0 AND md.merci_item_status =2");
+
+  return(t('Reset checked out statuses for items'));
+}
+

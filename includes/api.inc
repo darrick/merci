@@ -1133,12 +1133,17 @@ function merci_add_reservation_items($node) {
         drupal_write_record('merci_reservation_detail', $item, 'did');
       }
 
+      // Update merci_item_status to Checked out or available.
       $item_status = $item_status == MERCI_ITEM_STATUS_CHECKED_OUT ? MERCI_ITEM_STATUS_CHECKED_OUT : MERCI_ITEM_STATUS_AVAILABLE;
       if (is_numeric($item['merci_item_nid']) and $item['merci_item_nid'] > 0) {
-        $update = array();
-        $update['nid'] = $item['merci_item_nid'];
-        $update['merci_item_status'] = $item_status;
-        drupal_write_record('merci_reservation_item_node', $update, 'nid');
+        // Only set to available if previously this reservation was checked out.
+        // Or if this reservation is being set to checked out.
+        if ($item_status == MERCI_ITEM_STATUS_CHECKED_OUT or ($node->merci_original_reservation_status == MERCI_STATUS_CHECKED_OUT and $item_status == MERCI_ITEM_STATUS_AVAILABLE)){
+          $update = array();
+          $update['nid'] = $item['merci_item_nid'];
+          $update['merci_item_status'] = $item_status;
+          drupal_write_record('merci_reservation_item_node', $update, 'nid');
+        }
       }
     }
   }
