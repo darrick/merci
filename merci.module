@@ -310,7 +310,6 @@ function merci_view($node, $view_mode) {
  */
 function merci_form($node, &$form_state) {
 
-  merci_update_test();
   $form = node_content_form($node, $form_state);
 
   // During initial form build, add the node entity to the form state for use
