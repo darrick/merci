@@ -265,6 +265,17 @@ function merci_validate_status($form, &$form_state) {
         if (!is_numeric($item['merci_item_nid']) and strlen($item['merci_item_nid'])) {
           form_set_error("merci_reservation_items][$did][merci_item_nid", t("You cannot finalize a reservation while adding a bucket item."));
         }
+        if (!empty($item['merci_item_nid'])) {
+          $bad_reservations = merci_checked_out_reservations_for_item_nid($item['merci_item_nid'], $node->nid);
+          if (!empty($bad_reservations)) {
+            $output = '<ul>';
+            foreach ($bad_reservations as $reservation) {
+              $output .= '<li>' . $reservation . '</li>';
+            }
+            $output .= '</ul>';
+            form_set_error("merci_reservation_items][$did][merci_item_nid", t("Cannot check out this item as it is currently checked out by:") . $output);
+          }
+        }
       }
     }
   }
