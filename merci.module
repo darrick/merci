@@ -830,9 +830,9 @@ function merci_cron() {
   // Give no shows a one hour grace period.
   // TODO: move grace period to admin option.
   // 2009-05-22 20:45:00
-  $time = gmdate('Y-m-j H:i:s', time() + 3600);
+  $time = gmdate('Y-m-j H:i:s', time() - 3600);
   //find all pending reservations that have started and set their stauts to no show
-  $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_PENDING), NULL, $time);
+  $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_PENDING), $time, NULL);
 
   foreach (array_keys($nodes) as $reservation_nid) {
     watchdog('merci', "Setting node " . $reservation_nid . " to no show");

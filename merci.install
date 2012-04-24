@@ -263,6 +263,11 @@ function merci_schema() {
       ),
     ),
     'primary key' => array('nid', 'vid'),
+    'indexes' => array(
+      'merci_reservation_status' => array('merci_reservation_status')
+    )
+
+
   );
 
   $schema['merci_reservation_detail'] = array(
@@ -723,5 +728,12 @@ function merci_update_7203() {
   db_query("UPDATE {merci_reservation_item_node} mrn LEFT JOIN {merci_reservation_detail} md ON mrn.nid = md.merci_item_nid JOIN {node} n ON n.vid = md.vid SET mrn.merci_item_status = md.merci_item_status WHERE md.merci_item_nid <> 0 AND md.merci_item_status =2");
 
   return(t('Reset checked out statuses for items'));
+}
+
+function merci_update_7204() {
+
+  db_query("ALTER TABLE {merci_reservation} ADD INDEX ( merci_reservation_status )");
+
+  return (t('Added merci_reservation_status index to merci_reservation table.')); 
 }
 
