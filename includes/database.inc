@@ -495,7 +495,7 @@ function _merci_sort_array($a, $b) {
   return count($b) - count($a);
 }
 //TODO: the following three functions look very much a like.
-function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, $reservation_vid = NULL, $overdue = TRUE) {
+function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, $exclude_nid = NULL, $overdue = TRUE) {
 
   // Determine CCK table and columns the date data is stored in.
   $field = field_info_field('field_merci_date');
@@ -530,9 +530,9 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
 
   // If we're checking an existing reservation, exclude it from the
   // reserved items.
-  if (isset($reservation_vid)) {
-    $where = ' AND ct.revision_id <> :reservation_vid';
-    $args[':reservation_vid'] = $reservation_vid;
+  if (isset($exclude_nid)) {
+    $where = ' AND ct.entity_id <> :exclude_nid';
+    $args[':exclude_nid'] = $exclude_nid;
   }
   else {
     $where = '';
@@ -565,7 +565,7 @@ function merci_reserved_bucket_items($content_type, $start = NULL, $end = NULL, 
   }
 
   if ($overdue) {
-    $overdue_items_array = merci_overdue_items($content_type, $start, $reservation_vid);
+    $overdue_items_array = merci_overdue_items($content_type, $start, $exclude_nid);
 
     if (!empty($overdue_items_array)) {
       foreach ($overdue_items_array as $merci_item_nid => $nodes) {
@@ -711,8 +711,8 @@ function merci_get_count($type, $default_availability = MERCI_AVA_F) {
     )->fetchField();
 }
 
-function merci_is_item_reservable($item_nid, $type, $start, $end, $exclude_vid = NULL) {
-  $items = merci_load_reservations_for_node_in_timespan($item_nid, $type, $start, $end, $exclude_vid);
+function merci_is_item_reservable($item_nid, $type, $start, $end, $exclude_nid = NULL) {
+  $items = merci_load_reservations_for_node_in_timespan($item_nid, $type, $start, $end, $exclude_nid);
 
   // If we are checking an item?
   if ($item_nid) {
@@ -738,7 +738,7 @@ function merci_is_item_reservable($item_nid, $type, $start, $end, $exclude_vid =
  * @return
  *   An associative array with keys as times (in MySQL datetime format) and values as number of reservations.
  */
-function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_date, $end_date, $reservation_vid = NULL) {
+function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_date, $end_date, $exclude_nid = NULL) {
 
   // Determine CCK table and columns the date data is stored in.
   $field = field_info_field('field_merci_date');
@@ -750,14 +750,16 @@ function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_d
 
   $type_settings = merci_type_setting($type);
   if ($type_settings == 'bucket' and empty($item_nid)) {
-    return merci_reserved_bucket_items($type, $start_date, $end_date, $reservation_vid, FALSE);
+    return merci_reserved_bucket_items($type, $start_date, $end_date, $exclude_nid, FALSE);
   }
   else {
     $sql = "SELECT r.entity_id AS nid, $column_start_date AS field_merci_date_value, $column_end_date AS field_merci_date_value2, merci_item_nid
       FROM {node} n
       JOIN {merci_reservation_detail} d ON n.nid = d.merci_item_nid
       JOIN {" . $table . "} r ON d.vid = r.revision_id
+      JOIN {node} rn on rn.vid = r.revision_id
       WHERE n.nid = :item_nid 
+        AND NOT d.merci_item_status <= :item_status
         AND
                     (($column_start_date >= :start1 AND $column_start_date <= :start2)
                     OR ($column_end_date >= :start3 AND $column_end_date <= :start4)
@@ -767,6 +769,7 @@ function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_d
 
   $args = array(
     ':item_nid' => $item_nid, 
+    ':item_status' => MERCI_ITEM_STATUS_AVAILABLE,
     ':start1' => $start_date, 
     ':start2' => $end_date, 
     ':start3' => $start_date, 
@@ -777,9 +780,9 @@ function merci_load_reservations_for_node_in_timespan($item_nid, $type, $start_d
 
   // If we're checking an existing reservation, exclude it from the
   // reserved items.
-  if ($reservation_vid) {
-    $sql .= " AND d.vid <> :reservation_vid";
-    $args[':reservation_vid'] = $reservation_vid;
+  if ($exclude_nid) {
+    $sql .= " AND d.nid <> :exclude_nid";
+    $args[':exclude_nid'] = $exclude_nid;
   }
   $sql .= " ORDER BY $column_start_date ";
 
