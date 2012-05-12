@@ -10,11 +10,12 @@ function merci_validate_merci_selected_items($form, &$form_state) {
   $node = (object) $form_state['values'];
 
   $langcode = $node->language;
+//  $start = drupal_array_get_nested_value($node->field_merci_date,$parents,$exists);
   // ****
   // Build date objects we'll need for our different validations.
   // ****
-  $start              = $node->field_merci_date[$langcode][0]['value'];
-  $end                = $node->field_merci_date[$langcode][0]['value2'];
+  $start              = $node->field_merci_date[LANGUAGE_NONE][0]['value'];
+  $end                = $node->field_merci_date[LANGUAGE_NONE][0]['value2'];
 
   $messages = array();
   foreach ($node->merci_reservation_items as $did => $item) {
@@ -159,8 +160,8 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
   // ****
   // Build date objects we'll need for our different validations.
   // ****
-  $start              = $node->field_merci_date[$langcode][0]['value'];
-  $end                = $node->field_merci_date[$langcode][0]['value2'];
+  $start              = $node->field_merci_date[LANGUAGE_NONE][0]['value'];
+  $end                = $node->field_merci_date[LANGUAGE_NONE][0]['value2'];
   $start_object       = merci_create_local_date_object($start);
   $end_object         = merci_create_local_date_object($end);
   $hours_of_operation = merci_load_hours_of_operation();
@@ -283,7 +284,7 @@ function merci_validate_status($form, &$form_state) {
   $current_status = $node->merci_original_reservation_status;
   if ($current_status 
     && $current_status != $node->merci_reservation_status 
-    && time() > strtotime($node->field_merci_date[$langcode][0]['value2']) 
+    && time() > strtotime($node->field_merci_date[LANGUAGE_NONE][0]['value2']) 
     && !in_array((int) $node->merci_reservation_status, array(
       MERCI_STATUS_CANCELLED, 
       MERCI_STATUS_CHECKED_IN, 
@@ -440,12 +441,12 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
   $langcode = $node->language;
   // Newly set dates take precedence.
   if (isset($form_state['values']['field_merci_date'])) {
-    $start = $form_state['values']['field_merci_date'][$langcode][0]['value'];
-    $end = $form_state['values']['field_merci_date'][$langcode][0]['value2'];
+    $start = $form_state['values']['field_merci_date'][LANGUAGE_NONE][0]['value'];
+    $end = $form_state['values']['field_merci_date'][LANGUAGE_NONE][0]['value2'];
   }
   // Dates loaded from the reservation are next.
   elseif (isset($node->nid)) {
-    $date_info = $node->field_merci_date[$langcode][0];
+    $date_info = $node->field_merci_date[LANGUAGE_NONE][0];
     $start     = $date_info['value'];
     $end       = $date_info['value2'];
   }
@@ -806,8 +807,8 @@ function merci_record_status($code = NULL) {
  */
 function merci_get_available_bucket_items($node, $bucket_type) {
 
-  $langcode = $node->language;
-  $date_info = $node->field_merci_date[$langcode][0];
+  // field_merci_date is not translatable.
+  $date_info = $node->field_merci_date[LANGUAGE_NONE][0];
   $start     = $date_info['value'];
   $end       = $date_info['value2'];
 
@@ -1016,7 +1017,7 @@ function merci_add_reservation_items($node) {
   $commercial_total = 0;
 
   $langcode = $node->language;
-  $hours = round(strtotime($node->field_merci_date[$langcode][0]['value2']) - strtotime($node->field_merci_date[$langcode][0]['value'])) / 3600;
+  $hours = round(strtotime($node->field_merci_date[LANGUAGE_NONE][0]['value2']) - strtotime($node->field_merci_date[LANGUAGE_NONE][0]['value'])) / 3600;
 
   $exempt_items = array();
   // Update existing items or add new ones.
@@ -1055,7 +1056,7 @@ function merci_add_reservation_items($node) {
           $settings = merci_load_item_settings($item['type']);
           $item['name']  = $settings->type_name;
           if ($settings->merci_auto_assign_bucket_item) {
-            $date_info = $node->field_merci_date[$langcode][0];
+            $date_info = $node->field_merci_date[LANGUAGE_NONE][0];
             $start     = $date_info['value'];
             $end       = $date_info['value2'];
 
@@ -1099,6 +1100,8 @@ function merci_add_reservation_items($node) {
         $reservation->merci_fee_free_hours = (isset($settings->merci_fee_free_hours)) ? $settings->merci_fee_free_hours : 0;
         $reservation->merci_autocheckin  = (isset($settings->merci_autocheckin))  ? $settings->merci_autocheckin  : 0;
         $reservation->merci_autocheckout = (isset($settings->merci_autocheckout)) ? $settings->merci_autocheckout : 0;
+        // TODO not sure why this is not set automatically.
+        $reservation->language = $langcode;
         $reservation = node_submit($reservation);
         node_save($reservation);
 

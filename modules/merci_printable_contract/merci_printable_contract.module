@@ -151,8 +151,8 @@ function merci_preprocess_merci_printable_contract(&$variables) {
 
   $langcode = $node->language;
   // Convert to site timezone.
-  $start_date       = merci_create_local_date_object($node->field_merci_date[$langcode][0]['value']);
-  $end_date         = merci_create_local_date_object($node->field_merci_date[$langcode][0]['value2']);
+  $start_date       = merci_create_local_date_object($node->field_merci_date[LANGUAGE_NONE][0]['value']);
+  $end_date         = merci_create_local_date_object($node->field_merci_date[LANGUAGE_NONE][0]['value2']);
 
   $hours = round((intval(date_format($end_date, "U")) - intval(date_format($start_date, "U"))) / 3600, 2);
 
