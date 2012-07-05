@@ -42,7 +42,7 @@ $handler->display->display_options['style_options']['with_weekno'] = '0';
 $handler->display->display_options['style_options']['multiday_theme'] = '1';
 $handler->display->display_options['style_options']['theme_style'] = '1';
 $handler->display->display_options['style_options']['max_items'] = '0';
-$handler->display->display_options['row_plugin'] = 'calendar_node';
+$handler->display->display_options['row_plugin'] = 'calendar_entity';
 /* Field: Content: Title */
 $handler->display->display_options['fields']['title']['id'] = 'title';
 $handler->display->display_options['fields']['title']['table'] = 'node';
@@ -151,7 +151,7 @@ $handler->display->display_options['style_options']['theme_style'] = '1';
 $handler->display->display_options['style_options']['max_items'] = '0';
 $handler->display->display_options['defaults']['style_options'] = FALSE;
 $handler->display->display_options['defaults']['row_plugin'] = FALSE;
-$handler->display->display_options['row_plugin'] = 'calendar_node';
+$handler->display->display_options['row_plugin'] = 'calendar_entity';
 $handler->display->display_options['row_options']['colors']['legend'] = 'type';
 $handler->display->display_options['defaults']['row_options'] = FALSE;
 $handler->display->display_options['defaults']['arguments'] = FALSE;
@@ -191,7 +191,7 @@ $handler->display->display_options['style_options']['theme_style'] = '1';
 $handler->display->display_options['style_options']['max_items'] = '0';
 $handler->display->display_options['defaults']['style_options'] = FALSE;
 $handler->display->display_options['defaults']['row_plugin'] = FALSE;
-$handler->display->display_options['row_plugin'] = 'calendar_node';
+$handler->display->display_options['row_plugin'] = 'calendar_entity';
 $handler->display->display_options['defaults']['row_options'] = FALSE;
 $handler->display->display_options['defaults']['arguments'] = FALSE;
 /* Contextual filter: Date: Date (node) */
@@ -227,7 +227,7 @@ $handler->display->display_options['style_options']['theme_style'] = '1';
 $handler->display->display_options['style_options']['max_items'] = '0';
 $handler->display->display_options['defaults']['style_options'] = FALSE;
 $handler->display->display_options['defaults']['row_plugin'] = FALSE;
-$handler->display->display_options['row_plugin'] = 'calendar_node';
+$handler->display->display_options['row_plugin'] = 'calendar_entity';
 $handler->display->display_options['defaults']['row_options'] = FALSE;
 $handler->display->display_options['defaults']['arguments'] = FALSE;
 /* Contextual filter: Date: Date (node) */
@@ -262,7 +262,7 @@ $handler->display->display_options['style_options']['theme_style'] = '1';
 $handler->display->display_options['style_options']['max_items'] = '0';
 $handler->display->display_options['defaults']['style_options'] = FALSE;
 $handler->display->display_options['defaults']['row_plugin'] = FALSE;
-$handler->display->display_options['row_plugin'] = 'calendar_node';
+$handler->display->display_options['row_plugin'] = 'calendar_entity';
 $handler->display->display_options['defaults']['row_options'] = FALSE;
 $handler->display->display_options['defaults']['arguments'] = FALSE;
 /* Contextual filter: Date: Date (node) */
@@ -297,7 +297,7 @@ $handler->display->display_options['style_options']['theme_style'] = '1';
 $handler->display->display_options['style_options']['max_items'] = '0';
 $handler->display->display_options['defaults']['style_options'] = FALSE;
 $handler->display->display_options['defaults']['row_plugin'] = FALSE;
-$handler->display->display_options['row_plugin'] = 'calendar_node';
+$handler->display->display_options['row_plugin'] = 'calendar_entity';
 $handler->display->display_options['defaults']['row_options'] = FALSE;
 $handler->display->display_options['defaults']['arguments'] = FALSE;
 /* Contextual filter: Date: Date (node) */
