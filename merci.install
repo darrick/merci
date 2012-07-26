@@ -24,7 +24,7 @@ function merci_install() {
 function merci_uninstall() {
 
   // Delete the vocabulary.
-  $vid = variable_get('merci_equipment_grouping_vid', '');
+  $vid = variable_get('merci_equipment_grouping_vid', 0);
   taxonomy_vocabulary_delete($vid);
 
   // Loop over each of the fields defined by this module and delete
@@ -590,7 +590,7 @@ function merci_add_group_taxonomy() {
   // a low weight so it will appear first in forum topic create and edit
   // forms.
   // Delete the vocabulary.
-  $vid = variable_get('merci_equipment_grouping_vid', '');
+  $vid = variable_get('merci_equipment_grouping_vid', 0);
   if (!taxonomy_vocabulary_load($vid)) {
     $vocabulary = array(
       'name' => t('MERCI Equipment Grouping'),
