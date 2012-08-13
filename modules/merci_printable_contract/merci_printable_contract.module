@@ -161,7 +161,9 @@ function merci_preprocess_merci_printable_contract(&$variables) {
   $variables['hours'] = $hours;
   $variables['username'] = $username;
   $variables['email'] = $email;
-  $variables['phone'] = $phone;
+  if (isset($phone)) {
+    $variables['phone'] = $phone;
+  }
   $variables['items'] = $items;
 
 }

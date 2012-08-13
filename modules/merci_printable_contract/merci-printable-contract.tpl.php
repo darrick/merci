@@ -25,7 +25,7 @@ $logourl = theme_get_setting('logo_path', '');
         Returned by: <?php print $end_date . '<br />'; ?>
         Name: <?php print $username ?><br />
         Email: <?php print $email ?><br />
-        <?php print $phone ? "Phone: $phone" . '<br />' : '' ?>
+        <?php print isset($phone) ? "Phone: $phone" . '<br />' : '' ?>
         
         </div>
         <table id="cost">
@@ -69,7 +69,7 @@ $logourl = theme_get_setting('logo_path', '');
               <td>
                 <div><?php print $ttitle; ?>(<?php print money_format('%(#10n', $day_rate); ?> per day)</div>
                 <?php
-    if (count($item_node->taxonomy) > 0) {
+    if (isset($item_node->taxonomy) and count($item_node->taxonomy) > 0) {
 
       ?>
                   <ul class="accessories">
