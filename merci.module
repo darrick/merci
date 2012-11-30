@@ -721,47 +721,59 @@ function merci_node_operations($return = NULL) {
  * Implementation of hook_token_list().
  *
  */
-function merci_token_list($type = 'all') {
-  if ($type == 'node' || $type == 'all') {
-    //@TODO: Fix This Token
-    //$tokens['node']['merci_resources'] = t('Reserved resource');
-    return $tokens;
-  }
+function merci_token_info() {
+  // Node tokens.
+  $info['tokens']['node']['merci_resources'] = array(
+    'name' => t('Reserved items'),
+    'description' => t("The list of items reserved."),
+  );
+  return $info;
 }
 
 /**
  * Implementation of hook_token_values().
  * @see {merci_token_list}
  */
-function merci_token_values($type, $object = NULL, $options = array()) {
-  switch ($type) {
-    case 'node':
-      $node = merci_load($object);
-      if ($node) {
-        $values['merci_resources'] = '';
+function merci_tokens($type, $tokens, array $data = array(), array $options = array()) {
 
-        // We want these timestamps generated in UTC.
-        $old_timezone = date_default_timezone_get();
-        date_default_timezone_set('UTC');
-        $starthour = strtotime($node->field_merci_date[0]['value']);
-        $endhour = strtotime($node->field_merci_date[0]['value2']);
-        date_default_timezone_set($old_timezone);
-        $hours = round(($endhour - $starthour) / 3600, 2);
-        $titles = array();
-        foreach ($node->merci_reservation_items as $item) {
-          $item_node = node_load($item['merci_placeholder_nid']);
-          if ($item['item_title'] != '') {
+  $replacements = array();
+  if ($type == 'node' && !empty($data['node'])) {
+    $node = $data['node'];
+  //  $node = merci_load($object);
+    foreach ($tokens as $name => $original) {
+      switch($name) {
+        case 'merci_resources':
+          $titles = array();
+          foreach ($node->merci_reservation_items as $did => $item) {
+
+            if (empty($item['merci_item_nid']) and empty($item['type'])) {
+              // Empty choice.
+              continue;
+            }
+
+            if (!is_numeric($item['merci_item_nid'])) {
+              // Unassinged bucket item.
+              $item['type'] = $item['merci_item_nid'];
+            }
+
+            // Get the title of the item. 
+            $new_item = node_load($item['merci_item_nid']);
+            if ($new_item) {
+              $item['item_title'] = $new_item->title;
+              $item['type']       = $new_item->type;
+            } else {
+              //TODO: should not be doing theming here.
+              $content_settings   = merci_load_item_settings($item['type']);
+              $item['item_title'] = $content_settings->type_name;
+            }
             $titles[] = $item['item_title'];
-  }
-          else {
-            $titles[] = $item['merci_placeholder_title'];
+          }
+          $replacements[$original] = check_plain(implode(", ", $titles));
+        break;
+      }
     }
   }
-
-        $values['merci_resources'] = check_plain(implode(", ", $titles));
-        return $values;
-      }
-  }
+  return $replacements;
 }
 
 /**
