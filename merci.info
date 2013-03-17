@@ -2,6 +2,9 @@ name = Merci
 description = Provides entity functionality as an example to use in your own development projects
 core = 7.x
 
+dependencies[] = date
+dependencies[] = date_api
+dependencies[] = date_popup
 dependencies[] = entity
 dependencies[] = views
 
@@ -15,7 +18,7 @@ files[] = views/merci_handler_edit_link_field.inc
 files[] = views/merci_handler_merci_operations_field.inc
 
 ; Information added by drupal.org packaging script on 2011-07-03
-version = "7.x-1.0-alpha2"
+version = "7.x-3.x-dev"
 core = "7.x"
 project = "merci"
 datestamp = "1309730820"
