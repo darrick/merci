@@ -948,7 +948,7 @@ function merci_confirm_reservation($nid) {
 
   //only update if MERCI Status is Unconfirmed
   if ($node->merci_reservation_status == MERCI_STATUS_UNCONFIRMED) {
-    $node->merci_reseravation_status = MERCI_STATUS_PENDING;
+    $node->merci_reservation_status = MERCI_STATUS_PENDING;
     node_save($node);
     return TRUE;
   }
