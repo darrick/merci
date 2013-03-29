@@ -1,0 +1,39 @@
+<?php
+
+define('MERCI_PERMISSION_FIELD', 'field_merci_permision');
+
+function merci_permissions_merci_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+  return;
+    // Does the user have access to manage reservations or this content type?
+  $target_ids = array();
+  foreach ($items as $item_id => $item) {
+    $target_ids[$item_id]  = $item['target_id'];        
+  }
+
+  if (empty($target_ids)) {
+    return;
+  }
+
+  $uid = $entity->field_merci_user[$langcode][0]['target_id'];
+  if (empty($uid)) {
+    global $user;
+    $uid = $user->uid;
+  }
+  $query = db_select('field_data_field_merci_permission', 'fi')
+    ->fields('fi', array('entity_id', 'field_merci_permission_target_id'))
+    ->condition('entity_id', $uid)
+    ->condition('field_merci_permission_target_id', $target_ids, 'IN');
+  $result = $query->execute();
+
+  $permissions = $result->fetchAllAssoc('field_merci_permission_target_id');
+
+  foreach ($items as $item_id => $item) {
+    if (!array_key_exists($item['target_id'], $permissions)) {
+      $errors[$field['field_name']][$langcode][$item_id][] = array(
+        'error' => 'merci_item_permission',
+        'message' => t('%name: you don not have permission.', array('%name' => $instance['label'])),
+      );
+    }
+  }
+}
+

@@ -1,0 +1,56 @@
+<?php
+
+define('MERCI_BUCKET', 2);
+
+function merci_bucket_merci_validate($entity_type, $entity, $field, $instance, $langcode, $target_id, &$error){
+  $entity_items = entity_load($instance['entity_type'], array($target_id));
+  $bucket_item = $entity_items[$target_id];
+  if (!field_info_instance($instance['entity_type'], MERCI_TYPE_FIELD, $bucket_item->type)) {
+    return;
+  }
+  $property = MERCI_TYPE_FIELD;
+  $merci_type = $bucket_item->{$property}[$langcode][0]['value'];
+
+  if ($merci_type != MERCI_BUCKET) {
+    return;
+  }
+
+  $merci_bucket_field = 'field_bucket_items';
+
+  $items = $bucket_item->{$merci_bucket_field}[$langcode];
+
+
+
+  $max = 20;
+  // Reservations reserving the item directly.
+  foreach ($items as $target) {
+    // Is it available?
+    $conflicts = merci_api_check_conflicts($entity_type, $entity, $field, $target['target_id']);
+    if (count($conflicts)) {
+      $max++;
+    }
+  }
+  dpm($items);
+  dpm($conflicts);
+
+  // Other bucket reservations.
+  $conflicts = merci_api_check_conflicts($entity_type, $entity, $field, $target_id);
+  // Determine how many bucket items are needed for this time period.
+
+  $conflict_entities = entity_load($entity_type, $conflicts);
+  dpm($conflict_entities);
+  foreach ($conflict_entities as $conflict_id => $conflict) {
+
+    $this_conflicts = merci_api_check_conflicts($entity_type, $conflict, $field, $target_id);
+    $max = count($this_conflicts) >= $max ? count($this_conflicts) + 1 : $max;
+    dpm($this_conflicts);
+  }
+  dpm($max);
+  if ($max >= count($items)) {
+    $error[] = array(
+      'error' => 'merci_item_conflict',
+      'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $instance['label'])),
+    );
+  }
+}
+
