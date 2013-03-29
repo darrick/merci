@@ -45,46 +45,40 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
    * Overrides EntityReference_BehaviorHandler_Abstract::settingsForm().
    */
   public function settingsForm($field, $instance) {
+
+/**
+ * get all date fields on the site organized by entity and bundle
+ */
+    $fields_info = field_info_instances($instance['entity_type'], $instance['bundle']);
+    $date_fields = array();
+    foreach ($fields_info as $field_name => $info) {
+      $more_info = field_info_field($field_name);
+      if ( $more_info['type'] == 'datetime' || $more_info['type'] == 'date' || $more_info['type'] == 'datestamp') {
+        $date_fields[$field_name] = $info['label'];
+      }
+    }
     $form = array();
-    $form['merci'] = array(
-      '#markup' => t('This behavior has no options')
-    );
-    return $form;
-  }
-  public function validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
-    dpm ($entity);
-    dpm($field);
-    dpm($instance);
-    dpm($items);
-    dpm($entity_type);
 
-    $langcode = $entity->language ? $entity->language : LANGUAGE_NONE;
-    $target_id  = $items[0]['target_id'];        
+    if (empty($date_fields)) {
+      $form['merci'] = array(
+        '#markup' => t('Please add a date field to this entity to use to filter reservations.')
+      );
+    } else {
 
-    // Is this content type active?
+      $settings = $field['settings']['handler_settings']['behaviors']['merci'];
 
-    // Does the user have access to manage reservations or this content type?
-
-    // Did the user select too many of the same bucket item?
-
-    // Did the user select too many of the same item?
-
-    // Is it available?
-    if (merci_is_item_reserved($target_id, $entity)) {
-      $errors[$field['field_name']][$langcode][0][] = array(
-        'error' => 'merci_item_conflict',
-        'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $instance['label'])),
+      $form['date_field'] = array(
+        '#type' => 'select',
+        '#title' => t('Date field'),
+        '#options' => $date_fields,
+        '#default_value' => $settings['date_field'],
+        '#description' => t('Select the date field to use to limit reservations of this entity field.'),
       );
     }
+    return $form;
+  }
 
-    // Are we checking an existing item?
-
-    // Is the item available at this time?
-
-    // How many items are overdue and thus unavailable at this time?
-
-    // Show the error if conflict due to overdue.
-
-    // Check item restrictions.  max hours, etc.
+  public function validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+    merci_api_validate_reference($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
   }
 }
