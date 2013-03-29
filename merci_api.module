@@ -1,0 +1,367 @@
+<?php
+
+/**
+ * Group field.
+ */
+define('MERCI_TYPE_FIELD', 'merci_type');
+define('MERCI_RESROUCE', 1);
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function merci_api_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'entityreference' || $module == 'ctools') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+function merci_api_validate_reference($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+  if (empty($entity_type)) {
+    return;
+  }
+
+  /*
+  $entity_item_ids = array();
+  foreach ($items as $delta => $item) {
+    $entity_item_ids[$delta] = $item['target_id'];
+  }
+  $entity_items = entity_load($instance['entity_type'], $entity_item_ids);
+
+  $entity_item_ids = array_flip($entity_item_ids);
+   */
+  foreach ($items as $delta => $item) {
+    $error = array();
+    foreach (module_implements('merci_validate') as $module) {
+      $function = $module . '_merci_validate';
+      $function($entity_type, $entity, $field, $instance, $langcode, $item['target_id'], &$error);
+    }
+    if (!empty($error)) {
+      $errors[$field['field_name']][$langcode][$delta] = empty($errors[$field['field_name']][$langcode][$delta]) ? $error : $errors[$field['field_name']][$langcode][$delta] + $error;
+    }
+  }
+
+}
+
+function merci_api_merci_validate($entity_type, $entity, $field, $instance, $langcode, $target_id, &$error){
+  $entity_items = entity_load($instance['entity_type'], array($target_id));
+  $bucket_item = $entity_items[$target_id];
+  if (field_info_instance($instance['entity_type'], MERCI_TYPE_FIELD, $bucket_item->type)) {
+    $property = MERCI_TYPE_FIELD;
+    $merci_type = $bucket_item->{$property}[$langcode][0]['value'];
+
+    if ($merci_type != MERCI_RESOURCE) {
+      return;
+    }
+  }
+  //list($target_id, $vid, $bundle) = entity_extract_ids($instance['entity_type'], $item);
+
+  // Is this content type active?
+
+  // Does the user have access to manage reservations or this content type?
+
+  // Did the user select too many of the same bucket item?
+
+  // Did the user select too many of the same item?
+
+  // Is it available?
+  $conflicts = merci_api_check_conflicts($entity_type, $entity, $field, $target_id);
+  if (!empty($conflicts)) {
+    $error[] = array(
+      'error' => 'merci_item_conflict',
+      'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $instance['label'])),
+    );
+  }
+
+  // Are we checking an existing item?
+
+  // Is the item available at this time?
+
+  // How many items are overdue and thus unavailable at this time?
+
+  // Show the error if conflict due to overdue.
+
+  // Check item restrictions.  max hours, etc.
+}
+
+function merci_api_check_conflicts($entity_type, $entity, $field, $target_id) {
+
+
+  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['date_field'];
+  $field_item_name = $field['field_name'];
+
+  $date_field_info = field_info_field($field_date_name);
+
+  $date_storage      = $date_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
+  $date_table        = reset(array_keys($date_storage));
+  $date_column  = $date_storage[$date_table]['value'];
+  $date_column2 = $date_storage[$date_table]['value2'];
+
+  $item_field_info = field_info_field($field_item_name);
+  $item_storage      = $item_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
+  $item_table        = reset(array_keys($item_storage));
+  $item_column  = $item_storage[$item_table]['target_id'];
+
+  list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+  $langcode = $entity->language ? $entity->language : LANGUAGE_NONE;
+
+
+  $dates = $entity->{$field_date_name}[$langcode][0];
+
+
+  $query = db_select($item_table, 'item_table');
+  $query->addField('item_table', 'entity_id', 'entity_id');
+
+  $query->condition($item_column, $target_id);
+
+  // Ignore myself.
+  if ($entity_id) {
+    $query->condition('item_table.entity_id', $entity_id, '!=');
+  }
+
+  $query->join($date_table, 'date_table', 'item_table.entity_id = date_table.entity_id');
+  //$query->addField('date_table', $date_column, 'field_date_value');
+  //$query->addField('date_table', $date_column2, 'field_date_value2');
+
+  $query->condition( db_or()
+    //  start falls within another reservation.
+    //                     |-------------this-------------|
+    //            |-------------conflict-------------------------|
+    //            OR
+    //                     |-------------this-------------------------------|
+    //            |-------------conflict-------------------------|
+      ->condition(db_and() 
+      ->condition($date_column, $dates['value'], '<=')->condition($date_column2, $dates['value'], '>=')
+    )
+  //  end falls within another reservation.
+  //                     |-------------this-------------------------------|
+  //                                   |-------------conflict-------------------------|
+      ->condition(db_and() 
+      ->condition($date_column, $dates['value2'], '<=')->condition($date_column2, $dates['value2'], '>=')
+    )
+//  start before another reservation.
+//  end after another reservation.
+//                     |-------------------------this-------------------------------|
+//                            |----------------conflict------------------|
+      ->condition(db_and()
+      ->condition($date_column, $dates['value'], '>')->condition($date_column2, $dates['value2'], '<')
+            )
+    );
+
+  return ($query->execute()->fetchCol());
+}
+
+/**
+ * Implement hook_form_FORM_ID_alter().
+ */
+function merci_api_form_node_type_form_alter(&$form, &$form_state) {
+
+  // Node add/edit forms.
+
+  $form['merci'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Merci'),
+    '#collapsible' => TRUE,
+    '#group' => 'additional_settings',
+  );
+
+  $node_type = $form['#node_type']->type;
+
+  // Group settings.
+  $url = array(
+    '!url' => l(t('Manage fields'), 'admin/structure/types/manage/' . str_replace('_', '-', $node_type) . '/fields'),
+  );
+  $type = merci_api_is_merci_type('node', $node_type) ? 'merci_type' : 'omitted';
+
+  $disabled = $type != 'omitted';
+
+  $description = t('Set the content type to be reservable.');
+  if ($disabled) {
+    $description .= '<br/>' . t('To unset you should delete the "Merci type" field via !url.', $url);
+  }
+
+  $form['merci']['merci_type'] = array(
+    '#type' => 'radios',
+    '#title' => t('Merci'),
+    '#default_value' => $type,
+    '#options' => array('omitted' => t('Not a merci type'), 'merci_type' => t('Merci type')),
+    '#description' => $description,
+    '#disabled' => $disabled,
+  );
+}
+
+/**
+ * Create an organic groups field in a bundle.
+ *
+ * @param $field_name
+ *   The field name
+ * @param $entity_type
+ *   The entity type
+ * @param $bundle
+ *   The bundle name.
+ */
+function merci_api_create_field($field_name, $entity_type, $bundle) {
+
+  if ($merci_field = merci_api_fields_info($field_name)) {
+    $field = field_info_field($field_name);
+    if (empty($field)) {
+      $field = field_create_field($merci_field['field']);
+    }
+
+    $instance = field_info_instance($entity_type, $field_name, $bundle);
+    if (empty($instance)) {
+      $instance = $merci_field['instance'];
+      $instance += array(
+        'field_name' => $field_name,
+        'bundle' => $bundle,
+        'entity_type' => $entity_type,
+      );
+
+      field_create_instance($instance);
+    }
+  }
+}
+
+/**
+ * Get all the modules fields that can be assigned to fieldable enteties.
+ */
+function merci_api_fields_info($field_name = NULL) {
+  $return = &drupal_static(__FUNCTION__, array());
+
+  if (empty($return)) {
+    foreach (module_implements('merci_fields_info') as $module) {
+      if ($fields = module_invoke($module, 'merci_fields_info')) {
+        foreach ($fields as $key => $field) {
+          // Add default values.
+          $field += array(
+            'entity type' => array(),
+            'disable on node translate' => TRUE,
+          );
+
+          // Add the module information.
+          $return[$key] = array_merge($field, array('module' => $module));
+        }
+      }
+    }
+
+    // Allow other modules to alter the field info.
+    drupal_alter('merci_fields_info', $return);
+  }
+
+  return empty($field_name) ? $return : $return[$field_name];
+}
+
+/**
+ * Implements hook_og_fields_info().
+ */
+function merci_api_merci_fields_info() {
+  $items[MERCI_TYPE_FIELD] = array(
+    'type' => array('merci_type'),
+    'description' => t('MERCI Reservable item type.'),
+    'field' => array(
+      'cardinality' => '1',
+      'field_name' => MERCI_TYPE_FIELD,
+      'no_ui' => TRUE,
+      'settings' => array(
+        'allowed_values' => array(
+          0 => 'disabled',
+          1 => 'item',
+        ),
+        'allowed_values_function' => '',
+      ),
+      'translatable' => '0',
+      'type' => 'list_integer',
+    ),
+    'instance' => array(
+      'default_value' => array(
+        0 => array(
+          'value' => '1',
+        ),
+      ),
+      'description' => t('Merci item type'),
+      'label' => 'Merci Type',
+      'display_label' => 1,
+      'widget' => array(
+        'active' => 1,
+        'module' => 'options',
+        'settings' => array(),
+        'type' => 'options_select',
+        'weight' => 0,
+      ),
+    ),
+  );
+
+  return $items;
+}
+
+/**
+ * Add group and group content fields to new content types.
+ *
+ * @param $bundle_name
+ *   The content type name.
+ */
+function merci_api_node_type_save($bundle_name) {
+  if (variable_get('merci_type_' . $bundle_name, 'omitted') == 'merci_type') {
+    merci_api_create_field(MERCI_TYPE_FIELD, 'node', $bundle_name);
+    // Delete the variable, as we will rely on the presence of th field.
+    variable_del('merci_type_' . $bundle_name);
+  }
+}
+
+/**
+ * Implement hook_node_type_delete().
+ *
+ * We immediately delete those variables as they are only used to indicate a
+ * content type should be a group or a group content. However, the actual
+ * indication for it is in the field API. This is just a workaround, specifically
+ * for the node entity, to allow users to define groups via the "content type"
+ * page.
+ */
+function merci_api_node_type_delete($info) {
+  variable_del('merci_type_' . $info->type);
+}
+
+/**
+ * Implement hook_node_type_insert().
+ */
+function merci_api_node_type_insert($info) {
+  merci_api_node_type_save($info->type);
+}
+
+/**
+ * Implement hook_node_type_update().
+ */
+function merci_api_node_type_update($info) {
+  merci_api_node_type_save($info->type);
+}
+
+/**
+ * Return the group type (i.e. "group" or "group_content") of an entity.
+ *
+ * @param $bundle_name
+ *   The bundle name to be checked.
+ * @param $entity_type
+ *   The entity type.
+ * @param $type
+ *   The group usage type. Must be "group" or "group content".
+ *
+ * @return
+ *   The group type or an "omitted" if node type doesn't participate in
+ *   Group.
+ */
+function merci_api_get_merci_type($entity_type, $bundle_name, $type = 'merci_type') {
+  if ($type == 'merci_type') {
+    return (bool)field_info_instance($entity_type, MERCI_TYPE_FIELD, $bundle_name);
+  }
+}
+
+/**
+ * Return TRUE if the entity type is a "group" type.
+ *
+ * This is a wrapper function around og_get_group_type().
+ *
+ * @param $node_type
+ *   The node type to be checked.
+ */
+function merci_api_is_merci_type($entity_type, $bundle_name) {
+  return merci_api_get_merci_type($entity_type, $bundle_name);
+}
+

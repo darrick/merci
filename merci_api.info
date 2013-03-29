@@ -1,0 +1,13 @@
+name = Merci API
+description = Provides core functionality for MERCI. 
+core = 7.x
+
+dependencies[] = date
+dependencies[] = entityreference 
+
+; Information added by drupal.org packaging script on 2011-07-03
+version = "7.x-3.x-dev"
+core = "7.x"
+project = "merci"
+datestamp = "1309730820"
+
