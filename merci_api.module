@@ -19,29 +19,76 @@ function merci_api_validate_reference($entity_type, $entity, $field, $instance, 
     return;
   }
 
-  /*
-  $entity_item_ids = array();
-  foreach ($items as $delta => $item) {
-    $entity_item_ids[$delta] = $item['target_id'];
+  foreach (module_implements('merci_validate') as $module) {
+    $function = $module . '_merci_validate';
+    $function($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
   }
-  $entity_items = entity_load($instance['entity_type'], $entity_item_ids);
-
-  $entity_item_ids = array_flip($entity_item_ids);
-   */
   foreach ($items as $delta => $item) {
-    $error = array();
-    foreach (module_implements('merci_validate') as $module) {
-      $function = $module . '_merci_validate';
-      $function($entity_type, $entity, $field, $instance, $langcode, $item['target_id'], &$error);
+    $messages = array();
+    foreach ($errors[$field['field_name']][$langcode][$delta] as $error) {
+      $messages[] = $error['message'];
     }
-    if (!empty($error)) {
-      $errors[$field['field_name']][$langcode][$delta] = empty($errors[$field['field_name']][$langcode][$delta]) ? $error : $errors[$field['field_name']][$langcode][$delta] + $error;
+    if (!empty($messages)) {
+      unset ($errors[$field['field_name']][$langcode][$delta]);
+      $errors[$field['field_name']][$langcode][$delta][] = array(
+        'error' => 'merci',
+        'message' => implode ('<br>', $messages),
+      );
     }
   }
-
 }
 
-function merci_api_merci_validate($entity_type, $entity, $field, $instance, $langcode, $target_id, &$error){
+function merci_api_settings_form($field, $instance) {
+  $form = array();
+  foreach (module_implements('merci_settings_form') as $module) {
+    $function = $module . '_merci_settings_form';
+    $function($field, $instance, &$form);
+  }
+  return $form;
+}
+
+function merci_api_merci_settings_form($field, $instance, &$form) {
+  /**
+   * get all date fields on the site organized by entity and bundle
+   */
+  $fields_info = field_info_instances($instance['entity_type'], $instance['bundle']);
+  $date_fields = array();
+  $date_fields = array('disabled' => t('Disabled'));
+  foreach ($fields_info as $field_name => $info) {
+    $more_info = field_info_field($field_name);
+    if ( $more_info['type'] == 'datetime' || $more_info['type'] == 'date' || $more_info['type'] == 'datestamp') {
+      $date_fields[$field_name] = $info['label'];
+    }
+  }
+
+  $settings = $field['settings']['handler_settings']['behaviors']['merci']['merci'];
+  $default_value = array_key_exists('merci_date_field', $settings) ? $settings['merci_date_field'] : 'disabled';
+  $form['merci'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Merci'),
+    '#collapsible' => TRUE,
+    '#collapsed' => $default_value == 'disabled' ? true : false, 
+  );
+
+  if (empty($date_fields)) {
+    $form['merci']['merci_date_field'] = array(
+      '#markup' => t('Please add a date field to this entity to use to filter reservations.')
+    );
+  } else {
+
+
+    $form['merci']['merci_date_field'] = array(
+      '#type' => 'select',
+      '#title' => t('Date field'),
+      '#options' => $date_fields,
+      '#default_value' => $default_value,
+      '#description' => t('Select the date field to use to limit reservations of this entity field.'),
+    );
+  }
+}
+
+function merci_api_merci_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+  /*
   $entity_items = entity_load($instance['entity_type'], array($target_id));
   $bucket_item = $entity_items[$target_id];
   if (field_info_instance($instance['entity_type'], MERCI_TYPE_FIELD, $bucket_item->type)) {
@@ -52,6 +99,7 @@ function merci_api_merci_validate($entity_type, $entity, $field, $instance, $lan
       return;
     }
   }
+   */
   //list($target_id, $vid, $bundle) = entity_extract_ids($instance['entity_type'], $item);
 
   // Is this content type active?
@@ -63,12 +111,15 @@ function merci_api_merci_validate($entity_type, $entity, $field, $instance, $lan
   // Did the user select too many of the same item?
 
   // Is it available?
-  $conflicts = merci_api_check_conflicts($entity_type, $entity, $field, $target_id);
-  if (!empty($conflicts)) {
-    $error[] = array(
-      'error' => 'merci_item_conflict',
-      'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $instance['label'])),
-    );
+
+  foreach ($items as $delta => $item) {
+    $conflicts = merci_api_check_conflicts($entity_type, $entity, $field, $item['target_id']);
+    if (!empty($conflicts)) {
+      $errors[$field['field_name']][$langcode][$delta][] = array(
+        'error' => 'merci_item_conflict',
+        'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $instance['label'])),
+      );
+    }
   }
 
   // Are we checking an existing item?
@@ -85,7 +136,7 @@ function merci_api_merci_validate($entity_type, $entity, $field, $instance, $lan
 function merci_api_check_conflicts($entity_type, $entity, $field, $target_id) {
 
 
-  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['date_field'];
+  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
   $field_item_name = $field['field_name'];
 
   $date_field_info = field_info_field($field_date_name);
@@ -118,8 +169,8 @@ function merci_api_check_conflicts($entity_type, $entity, $field, $target_id) {
   }
 
   $query->join($date_table, 'date_table', 'item_table.entity_id = date_table.entity_id');
-  //$query->addField('date_table', $date_column, 'field_date_value');
-  //$query->addField('date_table', $date_column2, 'field_date_value2');
+  $query->addField('date_table', $date_column, 'field_date_value');
+  $query->addField('date_table', $date_column2, 'field_date_value2');
 
   $query->condition( db_or()
     //  start falls within another reservation.
@@ -146,7 +197,7 @@ function merci_api_check_conflicts($entity_type, $entity, $field, $target_id) {
             )
     );
 
-  return ($query->execute()->fetchCol());
+  return ($query->execute()->fetchAllAssoc('entity_id'));
 }
 
 /**
@@ -365,3 +416,14 @@ function merci_api_is_merci_type($entity_type, $bundle_name) {
   return merci_api_get_merci_type($entity_type, $bundle_name);
 }
 
+function merci_api_get_local_date_object($field_name, $field_data) {
+  $date_field_info = field_info_field($field_name);
+  $timezone_db = date_get_timezone_db($date_field_info['settings']['tz_handling']);
+  $start_date     = new DateObject($field_data['value'], $timezone_db);//, DATE_FORMAT_DATETIME);
+  $start_date->setTimezone(timezone_open($field_data['timezone']));
+  if (array_key_exists('value2', $field_data)) {
+    $end_date       = new DateObject($field_data['value2'], $timezone_db);//, DATE_FORMAT_DATETIME);
+    $end_date->setTimezone(timezone_open($field_data['timezone']));
+  }
+  return array('start' => $start_date, 'end' => isset($end_date) ? $end_date : null);
+}

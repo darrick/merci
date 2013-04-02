@@ -25,6 +25,13 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
     return true;
   }
 
+  public function presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+   // merci_api_presave_reference($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
+  }
+  public function insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
+
+    //merci_api_insert_reference($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
+  }
   /**
    * Overrides EntityReference_BehaviorHandler_Abstract::entityPostInsert().
    *
@@ -45,37 +52,7 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
    * Overrides EntityReference_BehaviorHandler_Abstract::settingsForm().
    */
   public function settingsForm($field, $instance) {
-
-/**
- * get all date fields on the site organized by entity and bundle
- */
-    $fields_info = field_info_instances($instance['entity_type'], $instance['bundle']);
-    $date_fields = array();
-    foreach ($fields_info as $field_name => $info) {
-      $more_info = field_info_field($field_name);
-      if ( $more_info['type'] == 'datetime' || $more_info['type'] == 'date' || $more_info['type'] == 'datestamp') {
-        $date_fields[$field_name] = $info['label'];
-      }
-    }
-    $form = array();
-
-    if (empty($date_fields)) {
-      $form['merci'] = array(
-        '#markup' => t('Please add a date field to this entity to use to filter reservations.')
-      );
-    } else {
-
-      $settings = $field['settings']['handler_settings']['behaviors']['merci'];
-
-      $form['date_field'] = array(
-        '#type' => 'select',
-        '#title' => t('Date field'),
-        '#options' => $date_fields,
-        '#default_value' => $settings['date_field'],
-        '#description' => t('Select the date field to use to limit reservations of this entity field.'),
-      );
-    }
-    return $form;
+    return merci_api_settings_form($field, $instance);
   }
 
   public function validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){

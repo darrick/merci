@@ -1,0 +1,8 @@
+name = "MERCI Blackout dates"
+package = MERCI
+description = "Validate reservations based on blackout dates."
+core = 7.x
+dependencies[] = merci 
+project = "merci"
+
+files[] = merci_blackout_dates.module

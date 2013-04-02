@@ -19,33 +19,69 @@ function merci_bucket_merci_validate($entity_type, $entity, $field, $instance, $
 
   $items = $bucket_item->{$merci_bucket_field}[$langcode];
 
+  // Temp array to store all the bucket items tied to their reservations during the given time period.
+  $bucket_items = array();
 
 
-  $max = 20;
   // Reservations reserving the item directly.
   foreach ($items as $target) {
     // Is it available?
-    $conflicts = merci_api_check_conflicts($entity_type, $entity, $field, $target['target_id']);
-    if (count($conflicts)) {
-      $max++;
-    }
+    $reservations = merci_api_check_conflicts($entity_type, $entity, $field, $target['target_id']);
+    $bucket_items[$target['target_id']] = $reservations;
   }
-  dpm($items);
-  dpm($conflicts);
 
   // Other bucket reservations.
-  $conflicts = merci_api_check_conflicts($entity_type, $entity, $field, $target_id);
+  $bucket_reservations = merci_api_check_conflicts($entity_type, $entity, $field, $target_id);
+
   // Determine how many bucket items are needed for this time period.
+  // Need to sort like this:
+  //            .... time ....
+  // item1  x x b b b x x x x x x x b b b x x x x x
+  // item2  x x x b b b b b b x x x x b b b x x x x
+  // item3  x x b b b b b b b b b b b b b x x x x x
+  // etc ......
+  //
+  // I.e. For each conflict first see if it doesn't conflict with any reservation using item 1.  
+  //      If it does test by using the next item.  
+  //      If it doesn't then assign it that item.
 
-  $conflict_entities = entity_load($entity_type, $conflicts);
-  dpm($conflict_entities);
-  foreach ($conflict_entities as $conflict_id => $conflict) {
 
-    $this_conflicts = merci_api_check_conflicts($entity_type, $conflict, $field, $target_id);
-    $max = count($this_conflicts) >= $max ? count($this_conflicts) + 1 : $max;
-    dpm($this_conflicts);
+  foreach ($bucket_reservations as $reservation_id => $reservation) {
+
+    foreach ($bucket_items as $reserved_id => $conflicts) {
+
+      $available = TRUE;
+
+      foreach ($conflicts as $conflict) {
+        // Does the start date overlap this reservation.
+        if (
+          (
+            date_create($reservation->field_date_value) > date_create($conflict->field_date_value) and
+            date_create($reservation->field_date_value) < date_create($conflict->field_date_value2)
+          ) or
+          // Does the end date overlap this reservation.
+          (
+            date_create($reservation->field_date_value2) > date_create($conflict->field_date_value) and
+            date_create($reservation->field_date_value2) < date_create($conflict->field_date_value2)
+          ) or
+          // Does the start and end date overlap this reservation.
+          (
+            date_create($reservation->field_date_value) <= date_create($conflict->field_date_value) and
+            date_create($reservation->field_date_value2) >= date_create($conflict->field_date_value2)
+          )
+        ) {
+          // Can't use this item for this reservation. So try another.
+          $available = FALSE;
+          break;
+        }
+      // Check if this reservation conflicts with any existing reservations.
+      }
+      if ($available) {
+        $bucket_items[$reserved_id][] = $reservation;
+        break;
+      }
+    }
   }
-  dpm($max);
   if ($max >= count($items)) {
     $error[] = array(
       'error' => 'merci_item_conflict',

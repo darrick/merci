@@ -1,0 +1,8 @@
+name = "MERCI Hours"
+package = MERCI
+description = "Validate reservations based on Hours of operation."
+core = 7.x
+dependencies[] = merci 
+project = "merci"
+
+files[] = merci_hours.module

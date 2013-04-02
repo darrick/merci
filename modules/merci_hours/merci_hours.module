@@ -1,0 +1,140 @@
+<?php
+
+
+function merci_hours_merci_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+  foreach ($items as $delta => $item) {
+    $entity_ids[] = $item['target_id'];
+  }
+  $entity_items = entity_load($instance['entity_type'], $entity_ids);
+
+  $settings = $field['settings']['handler_settings']['behaviors']['merci']['merci_hours'];
+  $merci_time_reference_field_name = $settings['merci_time_reference_field'];
+  $merci_time_field_name            = $settings['merci_time_field'];
+
+  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
+  $date_field_info = field_info_field($field_date_name);
+  $timezone_db = date_get_timezone_db($date_field_info['settings']['tz_handling']);
+  $date_field = $entity->{$field_date_name}[$langcode][0];
+  $start_date     = new DateObject($date_field['value'], $timezone_db);//, DATE_FORMAT_DATETIME);
+  $end_date       = new DateObject($date_field['value2'], $timezone_db);//, DATE_FORMAT_DATETIME);
+  $start_date->setTimezone(timezone_open($date_field['timezone']));
+  $end_date->setTimezone(timezone_open($date_field['timezone']));
+  $start_seconds  = $start_date->format('H')  * 3600 + $start_date->format('i') * 60 + $start_date->format('s');
+  $end_date->setTimezone(timezone_open($date_field['timezone']));
+  $end_seconds    = $end_date->format('H')    * 3600 + $end_date->format('i')   * 60 + $end_date->format('s');
+
+  $start_weekday      = strtolower($start_date->format('D'));
+  $end_weekday        = strtolower($end_date->format('D'));
+
+  foreach ($items as $delta => $item) {
+    $item_entity = $entity_items[$item['target_id']];
+    $instance_info = field_info_instance($instance['entity_type'], $merci_time_reference_field_name, $item_entity->type);
+
+    foreach ($item_entity->{$merci_time_reference_field_name}[$langcode] as $hours) {
+      $hour_entities = entity_load($instance_info['entity_type'], array($hours['target_id']));
+      $valid_start = false;
+      $valid_end   = false;
+      foreach ($hour_entities as $hour_id => $hour_entity) {
+        foreach ($hour_entity->{$merci_time_field_name}[$langcode] as $timefield) {
+          if ($timefield['value'] <= $start_seconds 
+            and $timefield['value2'] >= $start_seconds 
+            and $timefield[$start_weekday] == 1) {
+              // Start falls at a time we are open.
+              $valid_start = true;
+            }
+          if ($timefield['value'] <= $end_seconds 
+            and $timefield['value2'] >= $end_seconds 
+            and $timefield[$end_weekday] == 1) {
+              // End falls at a time we are open.
+              $valid_end = true;
+            }
+        }
+        if (!$valid_start) {
+          $errors[$field['field_name']][$langcode][$delta][] = array(
+            'error' => 'merci_hours',
+            'message' => t('%name: Start time is out of bounds.', array('%name' => $instance['label'])),
+          );
+        }
+        if (!$valid_end) {
+          $errors[$field['field_name']][$langcode][$delta][] = array(
+            'error' => 'merci_hours',
+            'message' => t('%name: End time is out of bounds.', array('%name' => $instance['label'])),
+          );
+        }
+      }
+
+    }
+  }
+
+  return;
+}
+
+function merci_hours_merci_settings_form($field, $instance, &$form) {
+  /**
+   * get all date fields on the site organized by entity and bundle
+   */
+  $fields_info = field_info_instances();
+
+  /**
+   * get all date fields on the site organized by entity and bundle
+   */
+  $reference_fields = array('disabled' => t('Disabled'));
+
+  $time_fields = array('disabled' => t('Disabled'));
+  foreach ($fields_info as $type => $bundles) {
+    foreach ($bundles as $name => $bundle) {
+      foreach ($bundle as $field_name => $field_info) {
+        $more_info = field_info_field($field_name);
+        if ( $more_info['type'] == 'timefield') {
+          $time_fields[$field_name] = $field_info['label'];
+        }
+        if ( $more_info['type'] == 'entityreference') {
+          $reference_fields[$field_name] = $field_info['label'];
+        }
+      }
+    }
+  }
+
+  $settings = $field['settings']['handler_settings']['behaviors']['merci']['merci_hours'];
+  $default_value = array_key_exists('merci_time_field', $settings) ? $settings['merci_time_field'] : 'disabled';
+
+  $form['merci_hours'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Merci hours'),
+    '#collapsible' => TRUE,
+    '#collapsed' => $default_value == 'disabled' ? true : false, 
+  );
+  if (empty($time_fields)) {
+    $form['merci_hours']['merci_time_field'] = array(
+      '#markup' => t('Please add a time field to a entity to use to filter reservations.')
+    );
+  } else {
+
+
+    $form['merci_hours']['merci_time_field'] = array(
+      '#type' => 'select',
+      '#title' => t('Time field'),
+      '#options' => $time_fields,
+      '#default_value' => $default_value,
+      '#description' => t('Select the time field to use to limit reservations of this entity field.'),
+    );
+  }
+
+  $default_value = array_key_exists('merci_time_reference_field', $settings) ? $settings['merci_time_reference_field'] : 'disabled';
+  if (empty($reference_fields)) {
+    $form['merci_hours']['merci_time_reference_field'] = array(
+      '#markup' => t('Please add a entityreference field to the user entity to use to filter reservations by permission.')
+    );
+  } else {
+
+
+    $form['merci_hours']['merci_time_reference_field'] = array(
+      '#type' => 'select',
+      '#title' => t('Time reference field'),
+      '#options' => $reference_fields,
+      '#default_value' => $default_value,
+      '#description' => t('Select the entityreference field to use to limit reservations of this entity field.'),
+    );
+  }
+}
+
