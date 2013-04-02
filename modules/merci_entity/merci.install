@@ -1,0 +1,433 @@
+<?php
+
+/**
+ * @file
+ * Sets up the base table for our entity and a table to store information about
+ * the entity types.
+ */
+
+/**
+ * Implements hook_install()
+ */
+function merci_install() {
+  // Create a basic reservations type
+  merci_create_reservation_type();
+  merci_create_cck_fields();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function merci_uninstall() {
+
+  $fields = merci_reservation_default_fields();
+  // Loop over each of the fields defined by this module and delete
+  // all instances of the field, their data, and the field itself.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  foreach (array_keys($fields) as $field) {
+    field_delete_field($field['field_config']);
+  }
+
+  // Loop over any remaining field instances attached to the node_example
+  // content type (such as the body field) and delete them individually.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  $instances = field_info_instances('merci', 'reservation');
+  foreach ($instances as $instance_name => $instance) {
+    field_delete_instance($instance);
+  }
+
+  field_purge_batch(1000);
+
+}
+
+
+/**
+ * Implements hook_schema().
+ */
+function merci_schema() {
+  $schema = array();
+
+  $schema['merci'] = array(
+    'description' => 'The base table for merci entities.',
+    'fields' => array(
+      'merci_id' => array(
+        'description' => 'Primary Key: Identifier for a merci.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'The {merci_type}.type of this merci.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'language' => array(
+        'description' => 'The language of the merci.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'name' => array(
+        'description' => 'The name of the merci - a human-readable identifier.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the merci was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the merci was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data.',
+      ),
+      ),
+    'primary key' => array('merci_id'),
+    'indexes' => array(
+      'type' => array('type'),
+      ),
+  );
+
+  $schema['merci_type'] = array(
+    'description' => 'Stores information about defined merci types.',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique merci type identifier.',
+      ),
+      'type' => array(
+        'description' => 'The machine-readable name of this merci type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'description' => 'The human-readable name of this merci type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'The weight of this merci type in relation to others.',
+      ),
+      'data' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data related to this merci type.',
+      ),
+    ) + entity_exportable_schema_fields(),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'type' => array('type'),
+      ),
+  );
+
+  return $schema;
+}
+
+function merci_create_cck_fields() {
+  $fields = merci_reservation_default_fields();
+
+  foreach ($fields as $field) {
+    $field_config = $field['field_config'];
+    if (!field_info_field($field_config['field_name'])) {
+      field_create_field($field_config);
+    }
+    $field_instance = $field['field_instance'];
+    if (!field_info_instance($field_instance['entity_type'], $field_instance['field_name'], $field_instance['bundle'])) {
+      field_create_instance($field_instance);
+    }
+  }
+
+
+}
+
+function merci_reservation_default_fields() {
+  $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
+  $fields = array();
+
+  // Exported field: 'merci-reservation-field_merci_date'
+  $fields['field_merci_date'] = array(
+    'field_config' => array(
+      'active' => '1',
+      'locked' => '1',
+      'cardinality' => '1',
+      'deleted' => '0',
+      'entity_types' => array(),
+      'field_name' => 'field_merci_date',
+      'foreign keys' => array(),
+      'indexes' => array(),
+      'module' => 'date',
+      'settings' => array(
+        'cache_count' => '4',
+        'cache_enabled' => 0,
+        'granularity' => array(
+          'day' => 'day',
+          'hour' => 'hour',
+          'minute' => 'minute',
+          'month' => 'month',
+          'second' => 0,
+          'year' => 'year',
+      ),
+        'timezone_db' => 'UTC',
+        'todate' => 'required',
+        'tz_handling' => 'site',
+      ),
+      'translatable' => '0',
+      'type' => 'datetime',
+      ),
+    'field_instance' => array(
+      'bundle' => 'reservation',
+      'deleted' => '0',
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'date',
+          'settings' => array(
+            'format_type' => 'long',
+            'fromto' => 'both',
+            'multiple_from' => '',
+            'multiple_number' => '',
+            'multiple_to' => '',
+      ),
+          'type' => 'date_default',
+          'weight' => 0,
+      ),
+        'entityreference_view_widget' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+      ),
+      ),
+      'entity_type' => 'merci',
+      'field_name' => 'field_merci_date',
+      'label' => 'Merci Date',
+      'required' => 0,
+      'settings' => array(
+        'default_value' => 'now',
+        'default_value2' => 'same',
+        'default_value_code' => '',
+        'default_value_code2' => '',
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 1,
+        'module' => 'date',
+        'settings' => array(
+          'increment' => '15',
+          'input_format' => $short_date_format,
+          'input_format_custom' => '',
+          'label_position' => 'above',
+          'text_parts' => array(),
+          'year_range' => '-3:+3',
+      ),
+        'type' => 'date_popup',
+        'weight' => '1',
+      ),
+    ),
+  );
+
+  // Exported field: 'merci-reservation-field_merci_item'
+  $fields['field_merci_item'] = array(
+    'field_config' => array(
+      'active' => '1',
+      'locked' => '1',
+      'cardinality' => '-1',
+      'deleted' => '0',
+      'entity_types' => array(),
+      'field_name' => 'field_merci_item',
+      'foreign keys' => array(
+        'node' => array(
+          'columns' => array(
+            'target_id' => 'nid',
+      ),
+          'table' => 'node',
+      ),
+      ),
+      'indexes' => array(
+        'target_id' => array(
+          0 => 'target_id',
+      ),
+      ),
+      'module' => 'entityreference',
+      'settings' => array(
+        'handler' => 'base',
+        'handler_settings' => array(
+          'behaviors' => array(
+            'test_field_behavior' => array(
+              'status' => 0,
+              'test_field' => 0,
+            ),
+            'views-select-list' => array(
+              'status' => 0,
+            ),
+          ),
+          'sort' => array(
+            'direction' => 'ASC',
+            'field' => 'body:value',
+            'property' => 'nid',
+            'type' => 'none',
+          ),
+          'target_bundles' => array(),
+        ),
+        'handler_submit' => 'Change handler',
+        'target_type' => 'node',
+      ),
+      'translatable' => '0',
+      'type' => 'entityreference',
+    ),
+    'field_instance' => array(
+      'bundle' => 'reservation',
+      'default_value' => NULL,
+      'deleted' => '0',
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'entityreference',
+          'settings' => array(
+            'link' => FALSE,
+      ),
+          'type' => 'entityreference_label',
+          'weight' => 1,
+      ),
+        'entityreference_view_widget' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+      ),
+      ),
+      'entity_type' => 'merci',
+      'field_name' => 'field_merci_item',
+      'label' => 'Merci Item',
+      'required' => 0,
+      'settings' => array(
+        'behaviors' => array(
+          'test_instance_behavior' => array(
+            'status' => 0,
+            'test_instance' => 0,
+      ),
+      ),
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 1,
+        'module' => 'options',
+        'settings' => array(),
+        'type' => 'options_select',
+        'weight' => '2',
+      ),
+    ),
+  );
+  // Exported field: 'merci-reservation-field_merci_status'
+  $fields['field_merci_status'] = array(
+    'field_config' => array(
+      'active' => '1',
+      'locked' => '1',
+      'cardinality' => '1',
+      'deleted' => '0',
+      'entity_types' => array(),
+      'field_name' => 'field_merci_status',
+      'foreign keys' => array(),
+      'indexes' => array(
+        'value' => array(
+          0 => 'value',
+      ),
+      ),
+      'module' => 'list',
+      'settings' => array(
+        'allowed_values' => array(
+          1 => 'Unconfirmed',
+          2 => 'Pending',
+          3 => 'Checked Out',
+          4 => 'Checked In',
+          5 => 'Canceled',
+          6 => 'Denied',
+          7 => 'No Show',
+        ),
+        'allowed_values_function' => '',
+      ),
+      'translatable' => '0',
+      'type' => 'list_integer',
+    ),
+    'field_instance' => array(
+      'bundle' => 'reservation',
+      'default_value' => array(
+        0 => array(
+          'value' => '2',
+    ),
+    ),
+      'deleted' => '0',
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'list',
+          'settings' => array(),
+          'type' => 'list_default',
+          'weight' => 2,
+        ),
+        'entityreference_view_widget' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+      'weight' => 0,
+        ),
+      ),
+      'entity_type' => 'merci',
+      'field_name' => 'field_merci_status',
+      'label' => 'Merci Status',
+      'required' => 0,
+      'settings' => array(
+        'user_register_form' => FALSE,
+        ),
+      'widget' => array(
+        'active' => 1,
+        'module' => 'options',
+        'settings' => array(),
+        'type' => 'options_select',
+        'weight' => '3',
+      ),
+    ),
+  );
+
+
+  // Translatables
+  // Included for use with string extractors like potx.
+  t('Merci Date');
+  t('Merci Item');
+  t('Merci Status');
+
+  return $fields;
+}
+
+function merci_create_reservation_type() {
+  $reservation = new MerciType(array('label'=>'Reservation', 'type'=>'reservation'));
+  merci_type_save($reservation);
+}
