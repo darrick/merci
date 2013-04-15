@@ -2,6 +2,11 @@
 
 
 function merci_hours_merci_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
+
+  if (!property_exists($entity, $field_date_name)) {
+    return;
+  }
   foreach ($items as $delta => $item) {
     $entity_ids[] = $item['target_id'];
   }
@@ -11,7 +16,6 @@ function merci_hours_merci_validate($entity_type, $entity, $field, $instance, $l
   $merci_time_reference_field_name = $settings['merci_time_reference_field'];
   $merci_time_field_name            = $settings['merci_time_field'];
 
-  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
   $date_field_info = field_info_field($field_date_name);
   $timezone_db = date_get_timezone_db($date_field_info['settings']['tz_handling']);
   $date_field = $entity->{$field_date_name}[$langcode][0];

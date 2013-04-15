@@ -2,6 +2,13 @@
 
 
 function merci_blackout_dates_merci_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
+
+  if (!property_exists($entity, $field_date_name)) {
+    return;
+  }
+
+  $dates = merci_api_get_local_date_object($field_date_name, $entity->{$field_date_name}[$langcode][0]);
   foreach ($items as $delta => $item) {
     $entity_ids[] = $item['target_id'];
   }
@@ -11,9 +18,6 @@ function merci_blackout_dates_merci_validate($entity_type, $entity, $field, $ins
   $merci_blackout_reference_field_name = $settings['merci_blackout_reference_field'];
   $merci_date_field_name            = $settings['merci_date_field'];
 
-  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
-
-  $dates = merci_api_get_local_date_object($field_date_name, $entity->{$field_date_name}[$langcode][0]);
 
   $start_day = $dates['start']->format('Ymd');
   $end_day = $dates['end']->format('Ymd');
@@ -21,6 +25,9 @@ function merci_blackout_dates_merci_validate($entity_type, $entity, $field, $ins
   foreach ($items as $delta => $item) {
     $item_entity = $entity_items[$item['target_id']];
     $instance_info = field_info_instance($instance['entity_type'], $merci_blackout_reference_field_name, $item_entity->type);
+    if (empty($instance_info)) {
+      continue;
+    }
 
     foreach ($item_entity->{$merci_blackout_reference_field_name}[$langcode] as $hours) {
       $hour_entities = entity_load($instance_info['entity_type'], array($hours['target_id']));

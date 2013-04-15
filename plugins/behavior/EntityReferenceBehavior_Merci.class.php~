@@ -56,7 +56,6 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
   }
 
   public function validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
-    dpm($items);
     merci_api_validate_reference($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
     foreach ($items as $delta => $item) {
       $messages = array();

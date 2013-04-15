@@ -3,6 +3,12 @@
 define('MERCI_BUCKET', 2);
 
 function merci_bucket_merci_validate($entity_type, $entity, $field, $instance, $langcode, $target_id, &$error){
+  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
+
+  if (!property_exists($entity, $field_date_name)) {
+    return;
+  }
+  $dates = merci_api_get_local_date_object($field_date_name, $entity->{$field_date_name}[$langcode][0]);
   $entity_items = entity_load($instance['entity_type'], array($target_id));
   $bucket_item = $entity_items[$target_id];
   if (!field_info_instance($instance['entity_type'], MERCI_TYPE_FIELD, $bucket_item->type)) {
