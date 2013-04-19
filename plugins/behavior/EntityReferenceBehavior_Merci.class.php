@@ -56,19 +56,21 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
   }
 
   public function validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
-    dpm($items);
-    merci_api_validate_reference($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
+    merci_api_validate_conflicts($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
+    merci_api_validate_restrictions($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
     foreach ($items as $delta => $item) {
-      $messages = array();
-      foreach ($errors[$field['field_name']][$langcode][$delta] as $error) {
-        $messages[] = $error['message'];
-      }
-      if (!empty($messages)) {
-        unset ($errors[$field['field_name']][$langcode][$delta]);
-        $errors[$field['field_name']][$langcode][$delta][] = array(
-          'error' => 'merci',
-          'message' => implode ('<br>', $messages),
-        );
+      if (!empty($errors)) {
+        $messages = array();
+        foreach ($errors[$field['field_name']][$langcode][$delta] as $error) {
+          $messages[] = $error['message'];
+        }
+        if (!empty($messages)) {
+          unset ($errors[$field['field_name']][$langcode][$delta]);
+          $errors[$field['field_name']][$langcode][$delta][] = array(
+            'error' => 'merci',
+            'message' => implode ('<br>', $messages),
+          );
+        }
       }
     }
   }

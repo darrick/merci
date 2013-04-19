@@ -2,97 +2,134 @@
 
 define('MERCI_BUCKET', 2);
 
-function merci_bucket_merci_validate($entity_type, $entity, $field, $instance, $langcode, $target_id, &$error){
+function merci_bucket_merci_validate_conflicts($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
   $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
+  $field_item_name = $field['field_name'];
 
   if (!property_exists($entity, $field_date_name)) {
     return;
   }
   $dates = merci_api_get_local_date_object($field_date_name, $entity->{$field_date_name}[$langcode][0]);
-  $entity_items = entity_load($instance['entity_type'], array($target_id));
-  $bucket_item = $entity_items[$target_id];
-  if (!field_info_instance($instance['entity_type'], MERCI_TYPE_FIELD, $bucket_item->type)) {
-    return;
+
+
+  // Load the reserved item entities.
+  foreach ($items as $delta => $item) {
+    $entity_ids[] = $item['target_id'];
   }
-  $property = MERCI_TYPE_FIELD;
-  $merci_type = $bucket_item->{$property}[$langcode][0]['value'];
+  $entity_items = entity_load($instance['entity_type'], $entity_ids);
 
-  if ($merci_type != MERCI_BUCKET) {
-    return;
-  }
+  foreach ($items as $delta => $item) {
 
-  $merci_bucket_field = 'field_bucket_items';
+    $bucket_item = $entity_items[$item['target_id']];
+    if (merci_api_get_merci_type($instance['entity_type'], $bucket_item, $langcode) != MERCI_BUCKET) {
+      continue;
+    }
 
-  $items = $bucket_item->{$merci_bucket_field}[$langcode];
+    $merci_bucket_field = 'field_bucket_items';
 
-  // Temp array to store all the bucket items tied to their reservations during the given time period.
-  $bucket_items = array();
+    // Get all the items in the bucket.
+    $items = $bucket_item->{$merci_bucket_field}[$langcode];
+    $max = count($items);
+
+    // Temp array to store all the bucket items tied to their reservations during the given time period.
+    $bucket = array();
+
+    // Reservations reserving the item directly.
+    foreach ($items as $target) {
+      // Is it available?
+      $item_reservations = merci_api_check_conflicts($entity_type, $entity, $field, $target['target_id']);
+      $bucket[$target['target_id']] = $item_reservations;
+    }
+
+    // Other bucket reservations.
+    $bucket_reservations = merci_api_check_conflicts($entity_type, $entity, $field, $item['target_id']);
+
+    // Add ourselves to the list of reservations.
+    $dates = $entity->{$field_date_name}[$langcode][0];
+    $bucket_reservations[0] = new StdClass;
+    $bucket_reservations[0]->field_date_value = $dates['value']; 
+    $bucket_reservations[0]->field_date_value2 = $dates['value2']; 
+    $bucket_reservations[0]->entity_id = 0; 
+
+    // Determine how many bucket items are needed for this time period.
+    // Need to sort like this:
+    //            .... time ....
+    // item1  x x a a a x x x x x f x e e e x x x x x
+    // item2  x x x d d d d d d x x x x c c c x x x x
+    // item3  x x b b b b b b b b b b b b b x x x x x
+    // etc ......
+    //
+    //      // Order by lenght of reservation descending.
+    //      // Do first-fit algorythm.
 
 
-  // Reservations reserving the item directly.
-  foreach ($items as $target) {
-    // Is it available?
-    $reservations = merci_api_check_conflicts($entity_type, $entity, $field, $target['target_id']);
-    $bucket_items[$target['target_id']] = $reservations;
-  }
 
-  // Other bucket reservations.
-  $bucket_reservations = merci_api_check_conflicts($entity_type, $entity, $field, $target_id);
+    // Sort by length of reservation.
+    uasort($bucket_reservations, "merci_bucket_cmp_length");
 
-  // Determine how many bucket items are needed for this time period.
-  // Need to sort like this:
-  //            .... time ....
-  // item1  x x b b b x x x x x x x b b b x x x x x
-  // item2  x x x b b b b b b x x x x b b b x x x x
-  // item3  x x b b b b b b b b b b b b b x x x x x
-  // etc ......
-  //
-  // I.e. For each conflict first see if it doesn't conflict with any reservation using item 1.  
-  //      If it does test by using the next item.  
-  //      If it doesn't then assign it that item.
+    // First-fit algorythm.
+    foreach ($bucket_reservations as $reservation_id => $bucket_reservation) {
 
-
-  foreach ($bucket_reservations as $reservation_id => $reservation) {
-
-    foreach ($bucket_items as $reserved_id => $conflicts) {
-
-      $available = TRUE;
-
-      foreach ($conflicts as $conflict) {
-        // Does the start date overlap this reservation.
-        if (
-          (
-            date_create($reservation->field_date_value) > date_create($conflict->field_date_value) and
-            date_create($reservation->field_date_value) < date_create($conflict->field_date_value2)
-          ) or
-          // Does the end date overlap this reservation.
-          (
-            date_create($reservation->field_date_value2) > date_create($conflict->field_date_value) and
-            date_create($reservation->field_date_value2) < date_create($conflict->field_date_value2)
-          ) or
-          // Does the start and end date overlap this reservation.
-          (
-            date_create($reservation->field_date_value) <= date_create($conflict->field_date_value) and
-            date_create($reservation->field_date_value2) >= date_create($conflict->field_date_value2)
-          )
-        ) {
-          // Can't use this item for this reservation. So try another.
-          $available = FALSE;
-          break;
+      // Go through each bucket item to look for a available slot for this reservation.
+      foreach ($bucket as $target_id => $reservations) {
+        foreach ($reservations as $reservation) {
+          if (merci_bucket_intersects($reservation, $bucket_reservation)) {
+            //Conflict so skip saving the reservation to this slot and try to use the next bucket item.
+            goto end;
+          }
         }
-      // Check if this reservation conflicts with any existing reservations.
+        // We've found a slot so test the next reservation.
+        $bucket[$target_id][$bucket_reservation->entity_id] = $bucket_reservation;
+        $bucket_reservations[$reservation_id]->item_id = $target_id;
+
+        // Look for a slot for the next reservation.
+        break;
+        end:
       }
-      if ($available) {
-        $bucket_items[$reserved_id][] = $reservation;
+      // No slots for this reservation.
+      if (!property_exists($bucket_reservations[$reservation_id], 'item_id')){
+        // Ran out out of items to use for this reservation.
+        $errors[$field['field_name']][$langcode][$delta][] = array(
+          'error' => 'merci_item_conflict',
+          'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $instance['label'])),
+        );
         break;
       }
+
     }
   }
-  if ($max >= count($items)) {
-    $error[] = array(
-      'error' => 'merci_item_conflict',
-      'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $instance['label'])),
-    );
+}
+
+/*
+ * |----------------------|        range 1
+ * |--->                           range 2 overlap
+ *  |--->                          range 2 overlap
+ *                        |--->    range 2 overlap
+ *                         |--->   range 2 no overlap
+ */
+function merci_bucket_intersects($r1, $r2) {
+  /*
+   * Make sure r1 start date is before r2 start date.
+   */
+  if (date_create($r1->field_date_value) > date_create($r2->field_date_value)) {
+    $temp = $r1;
+    $r1 = $r2;
+    $r2 = $temp;
   }
+
+  if (date_create($r2->field_date_value) <= date_create($r2->field_date_value2)) {
+    return true;
+  }
+  return false;
+
+}
+
+function merci_bucket_cmp_length($a, $b) {
+  $len_a = date_format(date_create($a->field_date_value2),'U') - date_format(date_create($a->field_date_value), 'U');  
+  $len_b = date_format(date_create($b->field_date_value2),'U') - date_format(date_create($b->field_date_value), 'U');  
+  if ($len_a == $len_b) {
+    return 0;
+  }
+  return ($len_a < $len_b) ? 1 : -1;
 }
 

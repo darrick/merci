@@ -4,7 +4,7 @@
  * Group field.
  */
 define('MERCI_TYPE_FIELD', 'merci_type');
-define('MERCI_RESROUCE', 1);
+define('MERCI_RESOURCE', 1);
 /**
  * Implements hook_ctools_plugin_directory().
  */
@@ -14,13 +14,34 @@ function merci_api_ctools_plugin_directory($module, $plugin) {
   }
 }
 
-function merci_api_validate_reference($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function merci_api_ctools_plugin_type() {
+  $plugins['merci'] = array(
+    'classes' => array('class'),
+  );
+  return $plugins;
+}
+
+function merci_api_validate_conflicts($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
   if (empty($entity_type)) {
     return;
   }
 
-  foreach (module_implements('merci_validate') as $module) {
-    $function = $module . '_merci_validate';
+  foreach (module_implements('merci_validate_conflicts') as $module) {
+    $function = $module . '_merci_validate_conflicts';
+    $function($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
+  }
+}
+
+function merci_api_validate_restrictions($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+  if (empty($entity_type)) {
+    return;
+  }
+
+  foreach (module_implements('merci_validate_restrictions') as $module) {
+    $function = $module . '_merci_validate_restrictions';
     $function($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
   }
 }
@@ -74,7 +95,7 @@ function merci_api_merci_settings_form($field, $instance, &$form) {
   }
 }
 
-function merci_api_merci_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+function merci_api_merci_validate_conflicts($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
   /*
   $entity_items = entity_load($instance['entity_type'], array($target_id));
   $bucket_item = $entity_items[$target_id];
@@ -99,7 +120,16 @@ function merci_api_merci_validate($entity_type, $entity, $field, $instance, $lan
 
   // Is it available?
 
+  // Load the reserved item entities.
   foreach ($items as $delta => $item) {
+    $entity_ids[] = $item['target_id'];
+  }
+
+  $entity_items = entity_load($instance['entity_type'], $entity_ids);
+  foreach ($items as $delta => $item) {
+    if (merci_api_get_merci_type($instance['entity_type'], $entity_items[$item['target_id']], $langcode) != MERCI_RESOURCE) {
+      continue;
+    }
     $conflicts = merci_api_check_conflicts($entity_type, $entity, $field, $item['target_id']);
     if (!empty($conflicts)) {
       $errors[$field['field_name']][$langcode][$delta][] = array(
@@ -118,79 +148,6 @@ function merci_api_merci_validate($entity_type, $entity, $field, $instance, $lan
   // Show the error if conflict due to overdue.
 
   // Check item restrictions.  max hours, etc.
-}
-
-function merci_api_build_availability_query($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
-  $item_field_info = field_info_field($field_item_name);
-  $item_storage      = $item_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
-  $item_table        = reset(array_keys($item_storage));
-  $item_column  = $item_storage[$item_table]['target_id'];
-
-  $query = db_select($item_table, 'item_table');
-  $query->addField('item_table', 'entity_id', 'entity_id');
-
-  $query->condition($item_column, $items, 'IN');
-  // Ignore myself.
-  list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
-  if ($entity_id) {
-    $query->condition('item_table.entity_id', $entity_id, '!=');
-  }
-
-  foreach (module_implements('merci_alter_query') as $module) {
-    $function = $module . '_merci_alter_query';
-    $function(&$query, $entity_type, $entity, $field, $instance, $langcode, $items);
-  }
-
-  return $query;
-}
-
-function merci_api_merci_alter_query(&$query, $entity_type, $entity, $field, $instance, $langcode, $items) {
-
-
-  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
-  $field_item_name = $field['field_name'];
-
-  $date_field_info = field_info_field($field_date_name);
-
-  $date_storage      = $date_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
-  $date_table        = reset(array_keys($date_storage));
-  $date_column  = $date_storage[$date_table]['value'];
-  $date_column2 = $date_storage[$date_table]['value2'];
-
-
-  $dates = $entity->{$field_date_name}[$langcode][0];
-
-
-
-  $query->join($date_table, 'date_table', 'item_table.entity_id = date_table.entity_id');
-  $query->addField('date_table', $date_column, 'field_date_value');
-  $query->addField('date_table', $date_column2, 'field_date_value2');
-
-  $query->condition( db_or()
-    //  start falls within another reservation.
-    //                     |-------------this-------------|
-    //            |-------------conflict-------------------------|
-    //            OR
-    //                     |-------------this-------------------------------|
-    //            |-------------conflict-------------------------|
-      ->condition(db_and() 
-      ->condition($date_column, $dates['value'], '<=')->condition($date_column2, $dates['value'], '>=')
-    )
-  //  end falls within another reservation.
-  //                     |-------------this-------------------------------|
-  //                                   |-------------conflict-------------------------|
-      ->condition(db_and() 
-      ->condition($date_column, $dates['value2'], '<=')->condition($date_column2, $dates['value2'], '>=')
-    )
-//  start before another reservation.
-//  end after another reservation.
-//                     |-------------------------this-------------------------------|
-//                            |----------------conflict------------------|
-      ->condition(db_and()
-      ->condition($date_column, $dates['value'], '>')->condition($date_column2, $dates['value2'], '<')
-            )
-    );
-
 }
 
 function merci_api_check_conflicts($entity_type, $entity, $field, $target_id) {
@@ -260,6 +217,8 @@ function merci_api_check_conflicts($entity_type, $entity, $field, $target_id) {
       ->condition($date_column, $dates['value'], '>')->condition($date_column2, $dates['value2'], '<')
             )
     );
+
+  $query->orderBy($date_column, 'ASC');
 
   return ($query->execute()->fetchAllAssoc('entity_id'));
 }
@@ -462,10 +421,14 @@ function merci_api_node_type_update($info) {
  *   The group type or an "omitted" if node type doesn't participate in
  *   Group.
  */
-function merci_api_get_merci_type($entity_type, $bundle_name, $type = 'merci_type') {
-  if ($type == 'merci_type') {
-    return (bool)field_info_instance($entity_type, MERCI_TYPE_FIELD, $bundle_name);
-  }
+function merci_api_get_merci_type($entity_type, $entity, $langcode) {
+    // Check the item is a merci bucket.
+    if (!field_info_instance($entity_type, MERCI_TYPE_FIELD, $entity->type)) {
+      return;
+    }
+    $property = MERCI_TYPE_FIELD;
+    return $entity->{$property}[$langcode][0]['value'];
+
 }
 
 /**
@@ -477,7 +440,7 @@ function merci_api_get_merci_type($entity_type, $bundle_name, $type = 'merci_typ
  *   The node type to be checked.
  */
 function merci_api_is_merci_type($entity_type, $bundle_name) {
-  return merci_api_get_merci_type($entity_type, $bundle_name);
+  return (bool)field_info_instance($entity_type, MERCI_TYPE_FIELD, $bundle_name);
 }
 
 function merci_api_get_local_date_object($field_name, $field_data) {

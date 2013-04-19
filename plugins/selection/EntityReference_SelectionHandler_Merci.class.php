@@ -9,10 +9,6 @@
 class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHandler_Generic {
 
   public static function getInstance($field, $instance = NULL, $entity_type = NULL, $entity = NULL) {
-    dpm($field);
-    dpm($instance);
-    dpm($entity_type);
-    dpm($entity);
     return new EntityReference_SelectionHandler_Merci($field, $instance, $entity_type, $entity);
   }
   /**
@@ -30,7 +26,6 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
     }
 
     $results = $query->execute();
-    dpm($results);
     $items = array();
     foreach($results[$entity_type] as $id => $target) {
       $items[] = array('target_id' => $id);
@@ -38,11 +33,10 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
 
     extract(get_object_vars($this));
     $langcode = $entity->language;
-    dpm($items);
 
     $errors = array();
-    merci_api_validate_reference($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
-    dpm($errors);
+    //merci_api_validate_conflicts($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
+    //merci_api_validate_restrictions($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
     foreach($items as $delta => $target) {
       if (isset($errors[$field_item_name][$langcode][$delta])) {
         unset($results[$entity_type][$target['target_id']]);
