@@ -35,7 +35,7 @@ function merci_staff_load_user($post = NULL) {
   if (empty($admin_user)) {
     $admin_user = $user;
   }
-  if ($post and empty($post['override']) and ($newuser = array_shift(user_load_multiple(array(), array('name' => $post['name']))))) {
+  if ($post and empty($post['override']) and ($newuser = user_load_by_name($post['name']))) {
     $user = $newuser;
   }
   else {
