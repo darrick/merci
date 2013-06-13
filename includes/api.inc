@@ -1,5 +1,7 @@
 <?php
 
+// Report all PHP errors
+error_reporting(-1);
 /**
  * @file
  * MERCI - Managed Equipment Reservation Checkout and Inventory
@@ -387,7 +389,8 @@ function merci_validate_empty_reservation_items($form, &$form_state) {
     }
   }
   if ($unselected == count($choices)) {
-    $first = array_shift(array_keys($choices));
+    $choice_keys = array_keys($choices);
+    $first = reset($choice_keys);
     form_set_error("merci_reservation_items][$first][merci_item_nid", t("You cannot create a reservation without any items selected."));
   }
 }
