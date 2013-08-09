@@ -5,8 +5,8 @@
 <div><?php print  t("The dates and times for %name conflict with one or more existing reservations", array('%name' => $title)); ?> </div>
 
 <div class="merci-availability-key">
-<span class="available"></span> = available 
-<span class="unavailable"></span> = unavailable
+<span class="available"></span> = <?php print t("available"); ?> 
+<span class="unavailable"></span> = <?php print t("unavailable"); ?>
 </div>
 
 <?php foreach ($reservations_by_date as $date => $items): ?>
