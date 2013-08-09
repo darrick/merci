@@ -15,7 +15,7 @@ function merci_permissions_menu() {
       'page arguments' => array('merci_permissions_form'),
       'access callback' => 'user_access',
       'access arguments' => array('administer site configuration'),
-      'description' => t('Configure reservation permissions for MERCI.'),
+      'description' => 'Configure reservation permissions for MERCI.',
       'type' => MENU_NORMAL_ITEM,
       'weight' => 3,
     );
@@ -114,7 +114,7 @@ function merci_permissions_form($form, &$form_state) {
 
   foreach ($merci_perms as $perm => $data) {
     $options[$perm] = '';
-    $form['permission'][$perm] = array('#markup' => t($perm));
+    $form['permission'][$perm] = array('#markup' => t("@perm",array('@perm' => $perm)));
     foreach ($role_names as $rid => $name) {
       // Builds arrays for checked boxes for each role
       if (isset($role_permissions[$rid][$perm])) {
@@ -128,7 +128,7 @@ function merci_permissions_form($form, &$form_state) {
   foreach ($merci_types as $type => $name) {
     $perm = "reserve $type";
     $options[$perm] = '';
-    $form['permission'][$perm] = array('#markup' => t($name));
+    $form['permission'][$perm] = array('#markup' => t("@name", array('@name' => $name)));
     foreach ($role_names as $rid => $name) {
       // Builds arrays for checked boxes for each role
       if (

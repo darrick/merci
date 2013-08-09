@@ -813,7 +813,7 @@ function merci_cron() {
     }
 
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
-    watchdog('merci', "Setting node " . $reservation_nid . " to checked out");
+    watchdog('merci', "Setting node @reservation_nid to checked out", array('@reservation_nid' => $reservation_nid));
     $reservation->merci_reservation_status = MERCI_STATUS_CHECKED_OUT;
     node_save($reservation);
   }
@@ -834,7 +834,7 @@ function merci_cron() {
       }
 
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
-    watchdog('merci', "Setting node " . $reservation_nid . " to checked in");
+    watchdog('merci', "Setting node @reservation_nid to checked in", array('@reservation_nid' => $reservation_nid));
     $reservation->merci_reservation_status = MERCI_STATUS_CHECKED_IN;
     node_save($reservation);
   }
@@ -847,7 +847,7 @@ function merci_cron() {
   $nodes = merci_db_reservations_by_status_in_timespan(array(MERCI_STATUS_PENDING), $time, NULL);
 
   foreach (array_keys($nodes) as $reservation_nid) {
-    watchdog('merci', "Setting node " . $reservation_nid . " to no show");
+    watchdog('merci', "Setting node @reservation_nid to no show", array('@reservation_nid' => $reservation_nid));
     $node = node_load($reservation_nid);
     $node->merci_reservation_status = MERCI_STATUS_NO_SHOW;
         node_save($node);

@@ -33,7 +33,7 @@ function merci_printable_contract_menu() {
     'page arguments' => array('merci_printable_contract_admin_settings'),
     'access callback' => 'user_access',
     'access arguments' => $admin,
-    'description' => t('Configure settings for MERCI\'s Printable Contract.'),
+    'description' => 'Configure settings for MERCI\'s Printable Contract.',
     'type' => MENU_LOCAL_TASK,
   );
 

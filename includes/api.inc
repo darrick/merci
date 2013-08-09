@@ -140,11 +140,11 @@ function merci_validate_merci_selected_items($form, &$form_state) {
 
 
       // Check item restrictions.  max hours, etc.
-      $restrictions = merci_check_content_type_restrictions($type, $start, $end);
+      $restrictions = merci_check_content_type_restrictions($type, $start, $end, $title);
 
       if (!empty($restrictions)) {
         foreach ($restrictions as $restriction) {
-          $messages[$did] .= '<div>' . t($restriction, array('%name' => $title)) . '</div>';
+          $messages[$did] .= '<div>' . t("@restriction", array('@restriction' => $restriction)) . '</div>';
         }
         form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
         continue;
@@ -419,7 +419,7 @@ function merci_date_filter($form, &$form_state) {
 function merci_verbose_logging($string) {
 
   if (variable_get('merci_verbose_logging', 0)) {
-    watchdog('merci', $string);
+    watchdog('merci', "@string", array('@string' => $string));
   }
 }
 
@@ -538,7 +538,7 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
  */
 
 
-function merci_check_content_type_restrictions($content_type, $start, $end) {
+function merci_check_content_type_restrictions($content_type, $start, $end, $title = '') {
   if (!user_access("manage reservations")) {
 
     //TODO I don't like this.
@@ -592,7 +592,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
         // Only extend if the following day is closed/weekend.
         // TODO check that the end time is not the same day and within the hours of being open.
         if (!array_key_exists(date('w', $start_timestamp + 86400), $closed_days)) {
-          $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->merci_max_hours_per_reservation));
+          $return[] = t('%name cannot be reserved for more than %hours hours.', array('%name' => $title, '%hours' => $type_settings->merci_max_hours_per_reservation));
         }
 
         // Only extend the max time if the default max time falls on a weekend.
@@ -607,7 +607,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
               // Does the end_day fall here?
               // TODO force time to be exactly when open.
               if ($end_day_of_week != date('w', $start_timestamp + $i * 86400)) {
-                $return[] = t('%name cannot be reserved more then one day after a weekend.', array('%hours' => $type_settings->merci_max_hours_per_reservation));
+                $return[] = t('%name cannot be reserved more then one day after a weekend.', array('%name' => $title, '%hours' => $type_settings->merci_max_hours_per_reservation));
               }
               break;
             }
@@ -615,7 +615,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
         }
       }
       else {
-        $return[] = t('%name cannot be reserved for more than %hours hours.', array('%hours' => $type_settings->merci_max_hours_per_reservation));
+        $return[] = t('%name cannot be reserved for more than %hours hours.', array('%name' => $title, '%hours' => $type_settings->merci_max_hours_per_reservation));
       }
     }
 
@@ -624,7 +624,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end) {
       // Need the 48 hour check in case somebody starts and ends their
       // reservation on the same day.
       if ($start_day_of_week != $end_day_of_week || $reserved_hours > 48) {
-        $return[] = t('%name cannot be reserved overnight.');
+        $return[] = t('%name cannot be reserved overnight.', array('%name' => $title));
       }
     }
   }

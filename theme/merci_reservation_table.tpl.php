@@ -34,7 +34,7 @@ foreach ($reservations as $date => $times) {
 
       ?>
         <tr>
-          <th><?php print ($count > 1) ? t($title) .' '. $i .'/'. $count : t($title); ?></th>
+          <th><?php print ($count > 1) ? t("@title", array('@title' => $title)) .' '. $i .'/'. $count : t("@title", array('@title' => $title)); ?></th>
           <?php
       $time = $hours_date['open'];
 
