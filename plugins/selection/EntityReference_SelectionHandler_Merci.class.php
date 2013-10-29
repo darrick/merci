@@ -9,16 +9,24 @@
 class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHandler_Generic {
 
   public static function getInstance($field, $instance = NULL, $entity_type = NULL, $entity = NULL) {
+    dpm($entity);
+    dpm($entity_type);
     return new EntityReference_SelectionHandler_Merci($field, $instance, $entity_type, $entity);
   }
   /**
    * Implements EntityReferenceHandler::getReferencableEntities().
    */
   public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
-    $options = parent::getReferencableEntities($match, $match_operator, $limit);
+    //$options = parent::getReferencableEntities($match, $match_operator, $limit);
+    //extract(get_object_vars($this));
     $options = array();
-    $entity_type = $this->field['settings']['target_type'];
-    $field_item_name = $this->field['field_name'];
+    $entity_type = $this->instance['entity_type'];
+    $bundle = $this->instance['bundle'];
+    $entity = $this->entity;
+
+    //$entity_type = $this->entity_type;
+    $merci_settings = merci_settings_load($entity_type, $bundle);
+    $field_item_name = $merci_settings['target_field'];
 
     $query = $this->buildEntityFieldQuery($match, $match_operator);
     if ($limit > 0) {
@@ -27,16 +35,18 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
 
     $results = $query->execute();
     $items = array();
+    //$this->entity_type = $entity_type;
+
     foreach($results[$entity_type] as $id => $target) {
       $items[] = array('target_id' => $id);
     }
 
-    extract(get_object_vars($this));
-    $langcode = $entity->language;
-
     $errors = array();
-    //merci_api_validate_conflicts($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
+
+    module_load_include('inc', 'merci', 'merci.validate');
+    merci_api_validate_items($entity_type, $entity, $items, &$errors);
     //merci_api_validate_restrictions($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
+    $langcode = $entity ? $entity->language : LANGUAGE_NONE;
     foreach($items as $delta => $target) {
       if (isset($errors[$field_item_name][$langcode][$delta])) {
         unset($results[$entity_type][$target['target_id']]);
@@ -49,6 +59,7 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
         $options[$bundle][$entity_id] = check_plain($this->getLabel($entity));
       }
     }
+    dpm($options);
     return $options;
   }
 

@@ -14,7 +14,7 @@ function merci_reservation_uninstall() {
   // Loop over each of the fields defined by this module and delete
   // all instances of the field, their data, and the field itself.
   // http://api.drupal.org/api/function/field_delete_field/7
-  foreach (merci_field_default_fields() as $field_name => $field) {
+  foreach (merci_reservation_field_default_fields() as $field_name => $field) {
     field_delete_field($field_name);
     field_delete_instance($field['field_instance']);
   }
@@ -58,7 +58,7 @@ function merci_reservation_uninstall() {
  * Implements hook_enable().
  */
 function merci_reservation_enable() {
-  merci_create_cck_fields();
+  merci_reservation_create_cck_fields();
 }
 
 /**
@@ -67,7 +67,7 @@ function merci_reservation_enable() {
  */
 function merci_reservation_create_cck_fields() {
 
-  foreach (merci_field_default_fields() as $field_name => $field) {
+  foreach (merci_reservation_field_default_fields() as $field_name => $field) {
     if (!field_info_field($field['field_config']['field_name'])) {
       field_create_field($field['field_config']);
     }

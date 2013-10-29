@@ -1,16 +1,14 @@
 <?php
 
-module_load_include('inc', 'merci', 'merci.validate');
-
 /**
  * Implements hook_node_info().
  */
-function merci_node_info() {
+function merci_reservation_node_info() {
   return array(
     // Reservation nodes.
     'merci_reservation' => array(
       'name' => t('Reservation'),
-      'base' => 'merci',
+      'base' => 'merci_reservation',
       'has_body' => FALSE,
       'description' => t("A reservation reserves a resource or group of resources for some period of time."),
     ),
@@ -20,7 +18,12 @@ function merci_node_info() {
 /**
  * Implementation of hook_form().
  */
-function merci_form($node, &$form_state) {
+function merci_reservation_form($node, &$form_state) {
   return node_content_form($node, $form_state);
+}
+
+function merci_reservation_merci_settings_load($entity_type, $bundle, &$settings) {
+  $settings['date_field'] = 'field_merci_date';
+  $settings['target_field'] = 'field_merci_items'; 
 }
 

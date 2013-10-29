@@ -4,6 +4,7 @@
  * Main entry for validation.
  * Developers should either call via hook_validate, hook_node_validate or hook_field_validate.
  */
+
 function merci_api_validate_items($entity_type, $entity, $items, &$errors){
   if (empty($entity_type)) {
     return;
@@ -18,29 +19,13 @@ function merci_api_validate_items($entity_type, $entity, $items, &$errors){
   }
 }
 
-function merci_api_validate_restrictions($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
-  if (empty($entity_type)) {
-    return;
-  }
-
-  foreach (module_implements('merci_validate_restrictions') as $module) {
-    $function = $module . '_merci_validate_restrictions';
-    $function($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
-  }
-}
-
-function merci_settings_load($node) {
+function merci_settings_load($entity_type, $bundle) {
   $settings = array();
   foreach (module_implements('merci_settings_load') as $module) {
     $function = $module . '_merci_settings_load';
-    $function($node, &$settings);
+    $function($entity_type, $bundle, &$settings);
   }
   return $settings;
-}
-
-function merci_merci_settings_load($node, &$settings) {
-  $settings['date_field'] = 'field_merci_date';
-  $settings['target_field'] = 'field_merci_items'; 
 }
 
 function is_merci_reservation_node($node) {
@@ -66,14 +51,17 @@ function merci_api_get_item_count($target_id) {
 function merci_api_check_item_conflicts($entity_type, $entity, $date_field, $target_field, $target_id) {
 
 
-  if (!property_exists($entity, $date_field) or !property_exists($entity, $target_field)) {
+  if (!$entity or !property_exists($entity, $date_field) or !property_exists($entity, $target_field)) {
     return;
   }
+
   // Get entity ids and language.
-  list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
-  $langcode = $entity->language ? $entity->language : LANGUAGE_NONE;
+  if ($entity) {
+    list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+  }
 
 
+  $langcode = $entity->language;
   // Storage location for date field.
   $date_field_info = field_info_field($date_field);
   $date_storage      = $date_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
@@ -134,8 +122,6 @@ function merci_api_check_item_conflicts($entity_type, $entity, $date_field, $tar
   $query->orderBy($date_column, 'ASC');
 
   $conditions = $query->conditions();
-  dpm( $conditions);
-  dpm($conditions[2]['field']->conditions());
   foreach (module_implements('merci_alter_conflict_query') as $module) {
     $function = $module . '_merci_alter_conflict_query';
     $function($entity, &$query);
