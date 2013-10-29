@@ -1,0 +1,262 @@
+<?php
+
+// Reservation status options.
+define('MERCI_STATUS_UNCONFIRMED', 1);
+define('MERCI_STATUS_PENDING', 2);
+define('MERCI_STATUS_CHECKED_OUT', 3);
+define('MERCI_STATUS_CHECKED_IN', 4);
+define('MERCI_STATUS_CANCELLED', 5);
+define('MERCI_STATUS_DENIED', 6);
+define('MERCI_STATUS_NO_SHOW', 7);
+
+/**
+ * Implements hook_permission().
+ */
+function merci_status_permission() {
+  return array(
+    'create confirmed reservations' => array(
+      'title' => t('create confirmed reservations'),
+      'description' => t('TODO Add a description for \'create confirmed reservations\''),
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function merci_status_node_access($node, $op, $account) {
+
+  if (is_merci_reservation_node($node)) {
+
+    $status_field = merci_status_field();
+    //users working with their own reservations access reservation
+    //additional check in merci_form permission to edit confirmed reservations
+    // Users without administer or manage reservations permission can only alter their own Unconfirmed Reservations.
+    if (($op == 'delete' or $op == 'update') && isset($node->{$status_field})){
+      if(user_access('create confirmed reservations') 
+        && $node->{$status_field} > MERCI_STATUS_CONFIRMED) {
+          return NODE_ACCESS_DENY;
+        } elseif ($node->{$status_field} != MERCI_STATUS_UNCONFIRMED) {
+          return NODE_ACCESS_DENY;
+        } 
+    }
+  }
+  return NODE_ACCESS_IGNORE;
+}
+
+/**
+ * Implementation of hook_node_operations().
+ */
+function merci_status_node_operations($return = NULL) {
+  $operations = array(
+    'merci_status_update' => array(
+      'label' => t('Confirm Reservation(s)'),
+      'callback' => 'merci_status_update',
+    ),
+  );
+  return $operations;
+}
+
+
+/*
+function merci_status_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'merci_admin_settings') {
+    $statuses = array();
+
+    $statuses[MERCI_STATUS_UNCONFIRMED] = t('Unconfirmed');
+    $statuses[MERCI_STATUS_PENDING] = t('Confirmed');
+    $statuses[MERCI_STATUS_CHECKED_OUT] = t('Checked Out');
+
+    $form['merci_default_reservation_status'] = array(
+      '#type' => 'select',
+      '#title' => t('Default Reservation Status'),
+      '#options' => $statuses,
+      '#default_value' => variable_get('merci_default_reservation_status', ''),
+      '#description' => t('lala New Reservations will be set to this by default.  Use Checked Out if you are using MERCI to manage the checkout, but do not allow actual Reservations.'),
+    );
+    $form['#submit'][] = 'merci_status_admin_settings_submit';
+    dpm($form);
+
+  }
+}
+
+function merci_status_admin_settings_submit($form, &$form_state) {
+  $status_field = merci_status_field();
+  $status_field_info = field_info_field($status_field);
+  dpm($status_field_info);
+}
+ */
+/**
+ * Callback function for updating Reservation status from VBO.
+ */
+function merci_status_update($nodes) {
+  $status_field = merci_status_field();
+  foreach ($nodes as $nid) {
+    $node = node_load($nid);
+
+    //only update if MERCI Status is Unconfirmed
+    if ($node->{$status_field} == MERCI_STATUS_UNCONFIRMED) {
+      $node->{$status_field} = MERCI_STATUS_PENDING;
+      node_save($node);
+    }
+  }
+}
+
+/**
+ * Callback function for updating Reservation status.
+ */
+function merci_confirm_reservation($nid) {
+}
+/*
+ * Amend conflict query to only include conflicts if the reservation status is below MERCI_STATUS_CHECKED_IN
+ */
+function merci_status_merci_alter_conflict_query($entity, &$query) {
+  $status_field = merci_status_field();
+  if (!property_exists($entity, $status_field)) {
+    return;
+  }
+
+  // Storage location for date field.
+  $status_field_info = field_info_field($status_field);
+  $status_storage      = $status_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
+  $keys = array_keys($status_storage);
+  $status_table        = reset($keys);
+  $status_column  = $status_storage[$status_table]['value'];
+
+  $query->join($status_table, 'status_table', 'item_table.entity_id = status_table.entity_id');
+  $query->addField('status_table', $status_column, 'field_status_value');
+  $query->condition($status_column, MERCI_STATUS_CHECKED_OUT, '<=');
+}
+
+function merci_status_field() {
+  return 'field_merci_status'; 
+}
+
+function merci_status_gracetime() {
+  $gracetime = NULL;
+  return $gracetime;
+}
+/**
+ * Implementation of hook_validate().
+ */
+function merci_status_node_validate($node, $form, &$form_state) {
+
+  if (is_merci_reservation_node($node)) {
+
+    if (!empty($form_state['ahah_submission'])) {
+      return;
+    }
+
+    // No validation necessary on deletion.
+    if ($form_state['triggering_element']['#id'] == 'edit-delete') {
+      return;
+    }
+
+    // Do no validation if their errors from the main validation function.
+    if (form_get_errors()) {
+      return;
+    }
+
+    $entity = (object) $form_state['values'];
+    $entity_type = 'node';
+    $date_field = 'field_merci_date';
+    $target_field = 'field_merci_items';
+    $items = $node->{$target_field}[$node->language];
+
+    foreach ($items as $delta => $item) {
+      if ($item['target_id']) {
+        $entity_ids[] = $item['target_id'];
+      }
+    }
+
+    $entity_items = entity_load($entity_type, $entity_ids);
+
+    foreach ($items as $delta => $item) {
+      if ($item['target_id']) {
+
+        $gracetime = merci_status_gracetime();
+        if($gracetime) {
+          // TODO: add gracetime to startdate.
+        }
+
+        $conflicts = merci_api_check_overdue($entity_type, $node, $date_field, $target_field, $item['target_id']);
+        if (!empty($conflicts)) {
+          form_set_error("field_merci_items][$delta][target_id", 
+            t('%name: the item cannot be reserved at this time as it is overdue.', array('%name' => $entity_items[$item['target_id']]->title)));
+        }
+      }
+    }
+  }
+}
+
+/*
+ * Check if $target_id and date field are unique.
+ * i.e. Given a $entity of $entity_type with date field $field and entity reference $target_id ...
+ * check to ensure no other entities reference the $target_id at the same time.
+ */
+function merci_api_check_overdue($entity_type, $entity, $date_field, $target_field, $target_id) {
+
+
+  if (!property_exists($entity, $date_field) or !property_exists($entity, $target_field)) {
+    return;
+  }
+  // Get entity ids and language.
+  list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+  $langcode = $entity->language ? $entity->language : LANGUAGE_NONE;
+
+
+  // Storage location for date field.
+  $date_field_info = field_info_field($date_field);
+  $date_storage      = $date_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
+  $keys = array_keys($date_storage);
+  $date_table        = reset($keys);
+  $date_column  = $date_storage[$date_table]['value'];
+  $date_column2 = $date_storage[$date_table]['value2'];
+
+  $dates = $entity->{$date_field}[$langcode][0];
+  // Storage location for target field.
+  $item_field_info = field_info_field($target_field);
+  $item_storage      = $item_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
+  $keys = array_keys($item_storage);
+  $item_table        = reset($keys);
+  $item_column  = $item_storage[$item_table]['target_id'];
+
+
+  // Build the query.
+  $query = db_select($item_table, 'item_table');
+  $query->addField('item_table', 'entity_id', 'entity_id');
+
+  $query->condition($item_column, $target_id);
+
+  // Ignore myself.
+  if ($entity_id) {
+    $query->condition('item_table.entity_id', $entity_id, '!=');
+  }
+
+  $query->join($date_table, 'date_table', 'item_table.entity_id = date_table.entity_id');
+  $query->addField('date_table', $date_column, 'field_date_value');
+  $query->addField('date_table', $date_column2, 'field_date_value2');
+
+  /* reservations in the past ... */
+  $query->condition($date_column2, $dates['value'], '<=');
+
+  $status_field = merci_status_field();
+  if (!property_exists($entity, $status_field)) {
+    return;
+  }
+  // Storage location for date field.
+  $status_field_info = field_info_field($status_field);
+  $status_storage      = $status_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
+  $keys = array_keys($status_storage);
+  $status_table        = reset($keys);
+  $status_column  = $status_storage[$status_table]['value'];
+
+  $query->join($status_table, 'status_table', 'item_table.entity_id = status_table.entity_id');
+  $query->addField('status_table', $status_column, 'field_status_value');
+  $query->condition($status_column, MERCI_STATUS_CHECKED_OUT, '=');
+  $query->orderBy($date_column, 'ASC');
+
+  // Return any ids of conflicting reservations if any.
+  return ($query->execute()->fetchAllAssoc('entity_id'));
+}
+

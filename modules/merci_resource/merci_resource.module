@@ -1,0 +1,68 @@
+<?php
+
+module_load_include('inc', 'merci', 'merci.validate');
+
+function merci_resource_merci_validate_items($entity_type, $entity, $date_field, $target_field, $items, &$errors) {
+
+  foreach ($items as $delta => $item) {
+    if (!$item['target_id']) {
+      unset($items[$delta]);
+    }
+  }
+
+  $target_field_info = field_read_field($target_field);
+  $target_type = $target_field_info['settings']['target_type'];
+  $langcode = $entity->language;
+  $selected_count = array();
+  $inventory_count = array();
+
+  foreach ($items as $delta => $item) {
+    $target_id = $item['target_id'];
+    $entities = entity_load($target_type, array($target_id));
+    $node = reset($entities);
+    dpm($node);
+    /*
+    if (merci_type_setting($node) != 'resource') {
+      continue;
+    }
+     */
+
+    // Check availability
+    $conflicts = merci_api_check_item_conflicts($entity_type, $entity, $date_field, $target_field, $target_id);
+    if (!empty($conflicts)) {
+      $entities = entity_load($target_type, array($target_id));
+      $entity = reset($entities);
+      $errors[$target_field][$langcode][$delta][] = array(
+        'error' => 'merci_item_conflict',
+        'message' => t('%name: conflict with one or more existing reservations.', array('%name' => $entity->title)),
+      );
+    }
+    // Check too many.
+    $selected_count[$target_id] = isset($selected_count[$target_id]) ? $selected_count[$target_id] + 1 : 1;
+    if ( ! isset($inventory_count[$target_id])) { 
+      $inventory_count[$target_id]       = merci_api_get_item_count($target_id); 
+    }
+    if ($selected_count[$target_id] > $inventory_count[$target_id]) {
+      $entities = entity_load($target_type, array($target_id));
+      $entity = reset($entities);
+      $errors[$target_field][$langcode][$delta][] = array(
+        'error' => 'merci_item_conflict',
+        'message' => t("You've selected too many %name's.  We only have %amount in the current inventory.", 
+        array('%name' => $entity->title, '%amount' => $inventory_count[$target_id])),
+      );
+      continue;
+    }
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function merci_resource_form_alter(&$form, &$form_state, $form_id) {
+  
+  // Node add/edit forms.
+
+  if($form_id == 'node_type_form') {
+    $form['merci']['merci_type_setting']['#options']['resource'] = t('Resource');
+  }
+}

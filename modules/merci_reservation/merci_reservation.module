@@ -1,0 +1,26 @@
+<?php
+
+module_load_include('inc', 'merci', 'merci.validate');
+
+/**
+ * Implements hook_node_info().
+ */
+function merci_node_info() {
+  return array(
+    // Reservation nodes.
+    'merci_reservation' => array(
+      'name' => t('Reservation'),
+      'base' => 'merci',
+      'has_body' => FALSE,
+      'description' => t("A reservation reserves a resource or group of resources for some period of time."),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_form().
+ */
+function merci_form($node, &$form_state) {
+  return node_content_form($node, $form_state);
+}
+

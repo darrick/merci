@@ -1,0 +1,21 @@
+<?php
+
+
+/**
+ * @file
+ * merci Installer / Uninstaller
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function merci_uninstall() {
+
+
+  // Remove all MERCI variables.
+  $variables = db_query("SELECT name FROM {variable} WHERE name LIKE 'merci_%'");
+  foreach($variables as $variable) {
+    variable_del($variable->name);
+  }
+}
+

@@ -1,15 +1,55 @@
 <?php
 
-define('MERCI_BUCKET', 2);
+module_load_include('inc', 'merci', 'merci.validate');
 
 function merci_bucket_merci_validate_conflicts($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
-  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
-  $field_item_name = $field['field_name'];
 
-  if (!property_exists($entity, $field_date_name)) {
+  $date_field = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
+  $target_field = $field['field_name'];
+  $langcode = $entity->language ? $entity->language : LANGUAGE_NONE;
+
+  if (!property_exists($entity, $date_field)) {
     return;
   }
-  $dates = merci_api_get_local_date_object($field_date_name, $entity->{$field_date_name}[$langcode][0]);
+  $dates = merci_api_get_local_date_object($date_field, $entity->{$date_field}[$langcode][0]);
+
+
+  // Load the reserved item entities.
+  foreach ($items as $delta => $item) {
+    $entity_ids[] = $item['target_id'];
+  }
+  $entity_items = entity_load($instance['entity_type'], $entity_ids);
+
+  foreach ($items as $delta => $item) {
+
+    $bucket_item = $entity_items[$item['target_id']];
+    if (merci_api_get_merci_type($instance['entity_type'], $bucket_item, $langcode) != MERCI_BUCKET) {
+      continue;
+    }
+
+    $bucket_field = 'field_bucket_items';
+    // No slots for this reservation.
+    $conflicts = merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $target_field, $bucket_field, $instance['entity_type'], $item['target_id']); 
+    if ($conflicts){
+      // Ran out out of items to use for this reservation.
+      $errors[$field['field_name']][$langcode][$delta][] = array(
+        'error' => 'merci_item_conflict',
+        'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $instance['label'])),
+      );
+      break;
+    }
+
+  }
+}
+function merci_bucket_merci_validate_conflicts_old($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+
+  $date_field = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
+  $target_field = $field['field_name'];
+
+  if (!property_exists($entity, $date_field)) {
+    return;
+  }
+  $dates = merci_api_get_local_date_object($date_field, $entity->{$field_date_name}[$langcode][0]);
 
 
   // Load the reserved item entities.
@@ -37,12 +77,12 @@ function merci_bucket_merci_validate_conflicts($entity_type, $entity, $field, $i
     // Reservations reserving the item directly.
     foreach ($items as $target) {
       // Is it available?
-      $item_reservations = merci_api_check_conflicts($entity_type, $entity, $field, $target['target_id']);
+      $item_reservations = merci_api_check_conflicts($entity_type, $entity, $date_field, $target_field, $target['target_id']);
       $bucket[$target['target_id']] = $item_reservations;
     }
 
     // Other bucket reservations.
-    $bucket_reservations = merci_api_check_conflicts($entity_type, $entity, $field, $item['target_id']);
+    $bucket_reservations = merci_api_check_conflicts($entity_type, $entity, $date_field, $target_field, $item['target_id']);
 
     // Add ourselves to the list of reservations.
     $dates = $entity->{$field_date_name}[$langcode][0];
@@ -98,38 +138,5 @@ function merci_bucket_merci_validate_conflicts($entity_type, $entity, $field, $i
 
     }
   }
-}
-
-/*
- * |----------------------|        range 1
- * |--->                           range 2 overlap
- *  |--->                          range 2 overlap
- *                        |--->    range 2 overlap
- *                         |--->   range 2 no overlap
- */
-function merci_bucket_intersects($r1, $r2) {
-  /*
-   * Make sure r1 start date is before r2 start date.
-   */
-  if (date_create($r1->field_date_value) > date_create($r2->field_date_value)) {
-    $temp = $r1;
-    $r1 = $r2;
-    $r2 = $temp;
-  }
-
-  if (date_create($r2->field_date_value) <= date_create($r2->field_date_value2)) {
-    return true;
-  }
-  return false;
-
-}
-
-function merci_bucket_cmp_length($a, $b) {
-  $len_a = date_format(date_create($a->field_date_value2),'U') - date_format(date_create($a->field_date_value), 'U');  
-  $len_b = date_format(date_create($b->field_date_value2),'U') - date_format(date_create($b->field_date_value), 'U');  
-  if ($len_a == $len_b) {
-    return 0;
-  }
-  return ($len_a < $len_b) ? 1 : -1;
 }
 
