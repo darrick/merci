@@ -29,8 +29,8 @@ define('MERCI_ITEM_STATUS_RESERVED', 1);
 define('MERCI_ITEM_STATUS_CHECKED_OUT', 2);
 
 
-module_load_include('inc', 'merci', 'includes/database');
-module_load_include('inc', 'merci', 'includes/api');
+//module_load_include('inc', 'merci', 'includes/database');
+//module_load_include('inc', 'merci', 'includes/api');
 
 module_load_include('inc', 'merci', 'merci.validate');
 
