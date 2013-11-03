@@ -29,8 +29,8 @@ function merci_settings_load($entity_type, $bundle) {
 }
 
 function is_merci_reservation_node($node) {
-  //dpm($node);
-  return ($node->type == 'merci_reservation');
+  $type = isset($node->type) ? $node->type : $node;
+  return ($type == 'merci_reservation');
 }
 
 function merci_type_setting($node) {

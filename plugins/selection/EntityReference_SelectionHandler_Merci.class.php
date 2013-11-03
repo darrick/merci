@@ -9,8 +9,6 @@
 class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHandler_Generic {
 
   public static function getInstance($field, $instance = NULL, $entity_type = NULL, $entity = NULL) {
-    dpm($entity);
-    dpm($entity_type);
     return new EntityReference_SelectionHandler_Merci($field, $instance, $entity_type, $entity);
   }
   /**
@@ -59,7 +57,6 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
         $options[$bundle][$entity_id] = check_plain($this->getLabel($entity));
       }
     }
-    dpm($options);
     return $options;
   }
 
