@@ -35,7 +35,6 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
     $items = array();
     //$this->entity_type = $entity_type;
 
-    dpm($results);
     foreach($results[$entity_type] as $id => $target) {
       $items[] = array('target_id' => $id);
     }
@@ -46,7 +45,6 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
     merci_api_validate_items($entity_type, $entity, $items, &$errors);
     //merci_api_validate_restrictions($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
     $sort_settings = $this->field['settings']['handler_settings']['sort'];
-    dpm($sort_settings);
     $langcode = $entity ? $entity->language : LANGUAGE_NONE;
     foreach($items as $delta => $target) {
       if (isset($errors[$field_item_name][$langcode][$delta])) {
