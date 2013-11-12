@@ -59,5 +59,4 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
     }
     return $options;
   }
-
 }

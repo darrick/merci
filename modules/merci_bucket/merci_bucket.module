@@ -1,142 +1,96 @@
 <?php
 
 module_load_include('inc', 'merci', 'merci.validate');
+define('MERCI_BUCKET', 'bucket');
 
-function merci_bucket_merci_validate_conflicts($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+/**
+ * Implementation of hook_form_alter().
+ */
+function merci_bucket_form_alter(&$form, &$form_state, $form_id) {
+  
+  // Node add/edit forms.
 
-  $date_field = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
-  $target_field = $field['field_name'];
-  $langcode = $entity->language ? $entity->language : LANGUAGE_NONE;
-
-  if (!property_exists($entity, $date_field)) {
-    return;
+  if($form_id == 'node_type_form') {
+    $form['merci']['merci_type_setting']['#options'][MERCI_BUCKET] = t('Bucket');
   }
-  $dates = merci_api_get_local_date_object($date_field, $entity->{$date_field}[$langcode][0]);
+}
 
+/**
+ * Implementation of hook_node_validate().
+ */
+function merci_bucket_node_validate($node, $form, &$form_state) {
 
-  // Load the reserved item entities.
-  foreach ($items as $delta => $item) {
-    $entity_ids[] = $item['target_id'];
+  if (is_merci_reservation_node($node)) {
+
+    if (!empty($form_state['ahah_submission'])) {
+      return;
+    }
+
+    // No validation necessary on deletion.
+    if ($form_state['triggering_element']['#id'] == 'edit-delete') {
+      return;
+    }
+
+    // Do no validation if their errors from the main validation function.
+    if (form_get_errors()) {
+      return;
+    }
+
+    $entity_type = 'node';
+    $merci_settings = merci_settings_load($entity_type, $node->type);
+    $target_field = $merci_settings['target_field'];
+    $date_field = $merci_settings['date_field'];
+    $langcode = $node->language;
+    $items = $node->{$target_field}[$langcode];
+
+    $errors = array();
+
+    merci_bucket_merci_validate_items($entity_type, $node, $date_field, $target_field, $items, &$errors);
+
+    if (count($errors)) {
+      foreach ($errors[$target_field][$langcode] as $delta => $error) {
+        //$errors[$target_field][$langcode][$delta][] = array(
+        foreach($error as $error_message){
+          $messages[] = $error_message['message'];
+        }
+        form_set_error("$target_field][$langcode][$delta][target_id", implode('<br>', $messages)); 
+      }
+    }
   }
-  $entity_items = entity_load($instance['entity_type'], $entity_ids);
+}
+
+function merci_bucket_merci_validate_items($entity_type, $entity, $date_field, $target_field, $items, &$errors){
 
   foreach ($items as $delta => $item) {
+    if (!$item['target_id']) {
+      unset($items[$delta]);
+    }
+  }
+  unset($items['add_more']);
 
-    $bucket_item = $entity_items[$item['target_id']];
-    if (merci_api_get_merci_type($instance['entity_type'], $bucket_item, $langcode) != MERCI_BUCKET) {
+  $target_field_info = field_read_field($target_field);
+  $target_type = $target_field_info['settings']['target_type'];
+  $langcode = $entity ? $entity->language : LANGUAGE_NONE;
+
+  foreach ($items as $delta => $item) {
+    $target_id = $item['target_id'];
+    $entities = entity_load($target_type, array($target_id));
+    $node = reset($entities);
+    if (merci_type_setting($node) != MERCI_BUCKET) {
       continue;
     }
 
     $bucket_field = 'field_bucket_items';
     // No slots for this reservation.
-    $conflicts = merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $target_field, $bucket_field, $instance['entity_type'], $item['target_id']); 
+    $conflicts = merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $target_field, $bucket_field, $target_id); 
     if ($conflicts){
       // Ran out out of items to use for this reservation.
-      $errors[$field['field_name']][$langcode][$delta][] = array(
+      $errors[$target_field][$langcode][$delta][] = array(
         'error' => 'merci_item_conflict',
-        'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $instance['label'])),
+        'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $node->title)),
       );
       break;
     }
 
   }
 }
-function merci_bucket_merci_validate_conflicts_old($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
-
-  $date_field = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
-  $target_field = $field['field_name'];
-
-  if (!property_exists($entity, $date_field)) {
-    return;
-  }
-  $dates = merci_api_get_local_date_object($date_field, $entity->{$field_date_name}[$langcode][0]);
-
-
-  // Load the reserved item entities.
-  foreach ($items as $delta => $item) {
-    $entity_ids[] = $item['target_id'];
-  }
-  $entity_items = entity_load($instance['entity_type'], $entity_ids);
-
-  foreach ($items as $delta => $item) {
-
-    $bucket_item = $entity_items[$item['target_id']];
-    if (merci_api_get_merci_type($instance['entity_type'], $bucket_item, $langcode) != MERCI_BUCKET) {
-      continue;
-    }
-
-    $merci_bucket_field = 'field_bucket_items';
-
-    // Get all the items in the bucket.
-    $items = $bucket_item->{$merci_bucket_field}[$langcode];
-    $max = count($items);
-
-    // Temp array to store all the bucket items tied to their reservations during the given time period.
-    $bucket = array();
-
-    // Reservations reserving the item directly.
-    foreach ($items as $target) {
-      // Is it available?
-      $item_reservations = merci_api_check_conflicts($entity_type, $entity, $date_field, $target_field, $target['target_id']);
-      $bucket[$target['target_id']] = $item_reservations;
-    }
-
-    // Other bucket reservations.
-    $bucket_reservations = merci_api_check_conflicts($entity_type, $entity, $date_field, $target_field, $item['target_id']);
-
-    // Add ourselves to the list of reservations.
-    $dates = $entity->{$field_date_name}[$langcode][0];
-    $bucket_reservations[0] = new StdClass;
-    $bucket_reservations[0]->field_date_value = $dates['value']; 
-    $bucket_reservations[0]->field_date_value2 = $dates['value2']; 
-    $bucket_reservations[0]->entity_id = 0; 
-
-    // Determine how many bucket items are needed for this time period.
-    // Need to sort like this:
-    //            .... time ....
-    // item1  x x a a a x x x x x f x e e e x x x x x
-    // item2  x x x d d d d d d x x x x c c c x x x x
-    // item3  x x b b b b b b b b b b b b b x x x x x
-    // etc ......
-    //
-    //      // Order by lenght of reservation descending.
-    //      // Do first-fit algorythm.
-
-
-
-    // Sort by length of reservation.
-    uasort($bucket_reservations, "merci_bucket_cmp_length");
-
-    // First-fit algorythm.
-    foreach ($bucket_reservations as $reservation_id => $bucket_reservation) {
-
-      // Go through each bucket item to look for a available slot for this reservation.
-      foreach ($bucket as $target_id => $reservations) {
-        foreach ($reservations as $reservation) {
-          if (merci_bucket_intersects($reservation, $bucket_reservation)) {
-            //Conflict so skip saving the reservation to this slot and try to use the next bucket item.
-            goto end;
-          }
-        }
-        // We've found a slot so test the next reservation.
-        $bucket[$target_id][$bucket_reservation->entity_id] = $bucket_reservation;
-        $bucket_reservations[$reservation_id]->item_id = $target_id;
-
-        // Look for a slot for the next reservation.
-        break;
-        end:
-      }
-      // No slots for this reservation.
-      if (!property_exists($bucket_reservations[$reservation_id], 'item_id')){
-        // Ran out out of items to use for this reservation.
-        $errors[$field['field_name']][$langcode][$delta][] = array(
-          'error' => 'merci_item_conflict',
-          'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $instance['label'])),
-        );
-        break;
-      }
-
-    }
-  }
-}
-
