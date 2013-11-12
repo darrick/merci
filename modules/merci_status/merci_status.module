@@ -159,8 +159,9 @@ function merci_status_node_validate($node, $form, &$form_state) {
 
     $entity = (object) $form_state['values'];
     $entity_type = 'node';
-    $date_field = 'field_merci_date';
-    $target_field = 'field_merci_items';
+    $merci_settings = merci_settings_load($entity_type, $node->type);
+    $target_field = $merci_settings['target_field'];
+    $date_field = $merci_settings['date_field'];
     $items = $node->{$target_field}[$node->language];
 
     foreach ($items as $delta => $item) {

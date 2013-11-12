@@ -1,104 +1,202 @@
 <?php
 
-/**
- * Implements hook_node_info().
- */
-function merci_reservation_node_info() {
-  return array(
-    // Reservation nodes.
-    'merci_reservation' => array(
-      'name' => t('Reservation'),
-      'base' => 'merci_reservation',
-      'has_body' => FALSE,
-      'description' => t("A reservation reserves a resource or group of resources for some period of time."),
-    ),
-  );
-}
+define('MERCI_RESERVATION_ITEM_FIELD', 'field_merci_reservation_items');
+define('MERCI_RESERVATION_DATE_FIELD', 'field_merci_reservation_date');
+define('MERCI_RESERVATION', 'reservation');
+
 
 /**
- * Implementation of hook_form().
+ * Implementation of hook_form_alter().
  */
-function merci_reservation_form($node, &$form_state) {
-  return node_content_form($node, $form_state);
+function merci_reservation_form_alter(&$form, &$form_state, $form_id) {
+  
+  // Node add/edit forms.
+
+  if($form_id == 'node_type_form') {
+    $form['merci']['merci_type_setting']['#options'][MERCI_RESERVATION] = t('Reservation');
+  }
 }
 
 function merci_reservation_merci_settings_load($entity_type, $bundle, &$settings) {
-  $settings['date_field'] = 'field_merci_date';
-  $settings['target_field'] = 'field_merci_items'; 
+  $settings['date_field'] = MERCI_RESERVATION_DATE_FIELD;
+  $settings['target_field'] = MERCI_RESERVATION_ITEM_FIELD; 
 }
 
-function merci_reservation_form_alter(&$form, &$form_state, $form_id) {
+/**
+ * Add group and group content fields to new content types.
+ *
+ * @param $bundle_name
+ *   The content type name.
+ */
+function merci_reservation_merci_node_type_save($bundle_name) {
+  if (variable_get('merci_type_setting_' . $bundle_name, 'disabled') == MERCI_RESERVATION) {
+    merci_create_field(MERCI_RESERVATION_DATE_FIELD, 'node', $bundle_name);
+    merci_create_field(MERCI_RESERVATION_ITEM_FIELD, 'node', $bundle_name);
+  }
 }
 /**
-+ * Implements hook_field_widget_form_alter().
-+ */
-function merci_reservation_field_widget_multiple_selects_form_alter(&$element, &$form_state, $context) {
-return;
-  $entity      = $element['#entity'];
-  $entity_type = $element['#entity_type'];
-  $bundle      = $element['#bundle'];
-  $langcode    = $element['#language'];
-  $merci_settings = merci_settings_load($entity_type, $bundle);
-  $target_field = $merci_settings['target_field'];
-  $date_field = $merci_settings['date_field'];
-  if ($target_field == $element['#field_name']) {
+ * Implements hook_merci_fields_info().
+ */
+function merci_reservation_merci_fields_info() {
+  $fields = array();
 
-    $items = array();
-    foreach ($element['target_id']['#options'] as $key => $value) {
-      if ($key == "_none") { 
-        continue; 
-      }
+  // Exported field: 'node-merci_reservation-field_merci_date'.
+  $fields[MERCI_RESERVATION_DATE_FIELD] = array(
+    'field' => array(
+      'active' => '1',
+      'cardinality' => '1',
+      'deleted' => '0',
+      'entity_types' => array(),
+      'field_name' => MERCI_RESERVATION_DATE_FIELD,
+      'foreign keys' => array(),
+      'indexes' => array(),
+      'locked' => '0',
+      'module' => 'date',
+      'settings' => array(
+        'cache_count' => '4',
+        'cache_enabled' => 0,
+        'granularity' => array(
+          'day' => 'day',
+          'hour' => 'hour',
+          'minute' => 'minute',
+          'month' => 'month',
+          'second' => 0,
+          'year' => 'year',
+        ),
+        'timezone_db' => 'UTC',
+        'todate' => 'required',
+        'tz_handling' => 'site',
+      ),
+      'translatable' => '0',
+      'type' => 'datetime',
+    ),
+    'instance' => array(
+      'deleted' => '0',
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'date',
+          'settings' => array(
+            'format_type' => 'long',
+            'fromto' => 'both',
+            'multiple_from' => '',
+            'multiple_number' => '',
+            'multiple_to' => '',
+          ),
+          'type' => 'date_default',
+          'weight' => 0,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+      ),
+      'label' => 'Merci Date',
+      'required' => 0,
+      'settings' => array(
+        'default_value' => 'now',
+        'default_value2' => 'same',
+        'default_value_code' => '',
+        'default_value_code2' => '',
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 1,
+        'module' => 'date',
+        'settings' => array(
+          'increment' => '15',
+          'input_format' => 'm/d/Y - H:i:s',
+          'input_format_custom' => '',
+          'label_position' => 'above',
+          'text_parts' => array(),
+          'year_range' => '-3:+3',
+        ),
+        'type' => 'date_popup',
+        'weight' => '-4',
+      ),
+    ),
+  );
 
-      if (is_array($value)) {
-        foreach ($value as $key2 => $value2) {
-          $items[] = array('target_id' => $key2); 
-        }
-      } else {
-          $items[] = array('target_id' => $key); 
-      }
-    }
+  // Exported field: 'node-merci_reservation-field_merci_items'.
+  $fields[MERCI_RESERVATION_ITEM_FIELD] = array(
+    'field' => array(
+      'active' => '1',
+      'cardinality' => '-1',
+      'deleted' => '0',
+      'entity_types' => array(),
+      'field_name' => MERCI_RESERVATION_ITEM_FIELD,
+      'foreign keys' => array(
+        'node' => array(
+          'columns' => array(
+            'target_id' => 'nid',
+          ),
+          'table' => 'node',
+        ),
+      ),
+      'indexes' => array(
+        'target_id' => array(
+          0 => 'target_id',
+        ),
+      ),
+      'locked' => '0',
+      'module' => 'entityreference',
+      'settings' => array(
+        'handler' => 'base',
+        'handler_settings' => array(
+          'behaviors' => array(
+            'views-select-list' => array(
+              'status' => 0,
+            ),
+          ),
+          'sort' => array(
+            'type' => 'none',
+          ),
+          'target_bundles' => array(),
+        ),
+        'target_type' => 'node',
+      ),
+      'translatable' => '0',
+      'type' => 'entityreference',
+    ),
+    'instance' => array(
+      'default_value' => NULL,
+      'deleted' => '0',
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'entityreference',
+          'settings' => array(
+            'link' => FALSE,
+          ),
+          'type' => 'entityreference_label',
+          'weight' => 1,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+      ),
+      'label' => 'Merci Items',
+      'required' => 0,
+      'settings' => array(
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 0,
+        'module' => 'multiple_selects',
+        'settings' => array(),
+        'type' => 'multiple_selects',
+        'weight' => '-3',
+      ),
+    ),
+  );
 
-    $errors = array();
 
-    merci_resource_merci_validate_items($entity_type, $entity, $date_field, $target_field, $items, &$errors);
-    foreach ($errors[$target_field][$langcode] as $delta => $value) {
-      $target_id = $items[$delta]['target_id'];
-      foreach ($element['target_id']['#options'] as $key => $value) {
-        if ($key == "_none") { 
-          continue; 
-        }
-
-        if (is_array($value)) {
-          foreach ($value as $key2 => $value2) {
-            if ($key2 == $target_id) {
-              $element['target_id']['#disabled'][$key][$key2] = FALSE;
-              break;
-            }
-          }
-        } else {
-          if ($key == $target_id) {
-            $element['target_id']['#disabled'][$key] = FALSE;
-          }
-        }
-      }
-    }
-    /*
-    if (isset($element['#weight'])) {
-      $current_weight = $element['#weight'];
-      $col = key($context['field']['columns']);
-      $current_value = isset($items[$current_weight]) ? $items[$current_weight][$col] : NULL;
-
-      if (isset($instance['widget']['settings']['unique_option']) && $instance['widget']['settings']['unique_option']) 
-        foreach ($items as $item) {
-          if (is_array($item) && isset($item[$col]) && $item[$col]) {
-            if ($current_weight != $item['_weight'] && $item[$col] != $current_value) {
-              unset($element[$col]['#options'][$item[$col]]);
-            }
-          }
-        }
-      }
-    }
-     */
-    dpm($element);
-  }
+  return $fields;
 }

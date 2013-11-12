@@ -2,12 +2,13 @@
 
 module_load_include('inc', 'merci', 'merci.validate');
 define('MERCI_BUCKET', 'bucket');
+define('MERCI_BUCKET_ITEM_FIELD', 'field_merci_bucket_items');
 
 /**
  * Implementation of hook_form_alter().
  */
 function merci_bucket_form_alter(&$form, &$form_state, $form_id) {
-  
+
   // Node add/edit forms.
 
   if($form_id == 'node_type_form') {
@@ -80,7 +81,7 @@ function merci_bucket_merci_validate_items($entity_type, $entity, $date_field, $
       continue;
     }
 
-    $bucket_field = 'field_bucket_items';
+    $bucket_field = MERCI_BUCKET_ITEM_FIELD;
     // No slots for this reservation.
     $conflicts = merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $target_field, $bucket_field, $target_id); 
     if ($conflicts){
@@ -93,4 +94,107 @@ function merci_bucket_merci_validate_items($entity_type, $entity, $date_field, $
     }
 
   }
+}
+
+/**
+ * Add group and group content fields to new content types.
+ *
+ * @param $bundle_name
+ *   The content type name.
+ */
+function merci_bucket_merci_node_type_save($bundle_name) {
+  if (variable_get('merci_type_setting_' . $bundle_name, 'disabled') == MERCI_BUCKET) {
+    merci_create_field(MERCI_BUCKET_ITEM_FIELD, 'node', $bundle_name);
+  }
+}
+
+/**
+ * Implements hook_merci_fields_info().
+ */
+function merci_bucket_merci_fields_info() {
+
+  $items[MERCI_BUCKET_ITEM_FIELD] = array(
+    'field' => array(
+      'active' => '1',
+      'cardinality' => '-1',
+      'deleted' => '0',
+      'entity_types' => array(),
+      'field_name' => MERCI_BUCKET_ITEM_FIELD,
+      'foreign keys' => array(
+        'node' => array(
+          'columns' => array(
+            'target_id' => 'nid',
+          ),
+          'table' => 'node',
+        ),
+      ),
+      'indexes' => array(
+        'target_id' => array(
+          0 => 'target_id',
+        ),
+      ),
+      'locked' => '0',
+      'module' => 'entityreference',
+      'settings' => array(
+        'handler' => 'base',
+        'handler_settings' => array(
+          'behaviors' => array(
+            'merci' => array(
+              'status' => 0,
+            ),
+            'merci_select' => array(
+              'status' => 0,
+            ),
+            'views-select-list' => array(
+              'status' => 0,
+            ),
+          ),
+          'sort' => array(
+            'type' => 'none',
+          ),
+          'target_bundles' => array(
+            'merci_item' => 'merci_item',
+          ),
+        ),
+        'target_type' => 'node',
+      ),
+      'translatable' => '0',
+      'type' => 'entityreference',
+    ),
+    'instance' => array(
+      'default_value' => NULL,
+      'deleted' => '0',
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'entityreference',
+          'settings' => array(
+            'link' => FALSE,
+          ),
+          'type' => 'entityreference_label',
+          'weight' => 1,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+      ),
+      'label' => 'Bucket Items',
+      'required' => 0,
+      'settings' => array(
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 0,
+        'module' => 'multiple_selects',
+        'settings' => array(),
+        'type' => 'multiple_selects',
+        'weight' => '-3',
+      ),
+    ),
+  );
+  return $items;
 }
