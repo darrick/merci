@@ -7,13 +7,18 @@ define('MERCI_BUCKET_ITEM_FIELD', 'field_merci_bucket_items');
 /**
  * Implementation of hook_form_alter().
  */
-function merci_bucket_form_alter(&$form, &$form_state, $form_id) {
+function merci_bucket_form_node_type_form_alter(&$form, &$form_state) {
 
-  // Node add/edit forms.
+  $node_type = $form['#node_type']->type;
 
-  if($form_id == 'node_type_form') {
-    $form['merci']['merci_type_setting']['#options'][MERCI_BUCKET] = t('Bucket');
+  if (merci_type_setting($node_type) == MERCI_BUCKET) {
   }
+
+  $description_items = array(
+    MERCI_BUCKET => t('Use this content type to create interchangeable items that can be reserved (ex. Camera). Buckets reference interchangeable items. The actual item does not have to be chosen until the reservation is checked out.'),
+  );
+  $form['merci']['merci_type_setting']['#options'][MERCI_BUCKET] = t('Bucket');
+  $form['merci']['merci_type_setting']['#description_items'] += $description_items;
 }
 
 /**
@@ -77,20 +82,30 @@ function merci_bucket_merci_validate_items($entity_type, $entity, $date_field, $
     $target_id = $item['target_id'];
     $entities = entity_load($target_type, array($target_id));
     $node = reset($entities);
+    dpm($node);
     if (merci_type_setting($node) != MERCI_BUCKET) {
       continue;
     }
 
     $bucket_field = MERCI_BUCKET_ITEM_FIELD;
-    // No slots for this reservation.
-    $conflicts = merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $target_field, $bucket_field, $target_id); 
-    if ($conflicts){
-      // Ran out out of items to use for this reservation.
-      $errors[$target_field][$langcode][$delta][] = array(
-        'error' => 'merci_item_conflict',
-        'message' => t('%name: the item cannot be reserved at this time.', array('%name' => $node->title)),
-      );
-      break;
+    if(isset($node->{$bucket_field}[$langcode])) {
+      // No slots for this reservation.
+      $conflicts = merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $target_field, $bucket_field, $target_id); 
+      dpm($conflicts);
+      if ($conflicts){
+        // Ran out out of items to use for this reservation.
+        $errors[$target_field][$langcode][$delta][] = array(
+          'error' => 'merci_item_conflict',
+          'message' => t('%name: the bucket item cannot be reserved at this time.', array('%name' => $node->title)),
+        );
+        break;
+      }
+    } else {
+        $errors[$target_field][$langcode][$delta][] = array(
+          'error' => 'merci_item_conflict',
+          'message' => t('%name: selected bucket item has no items.', array('%name' => $node->title)),
+        );
+        break;
     }
 
   }
@@ -151,9 +166,6 @@ function merci_bucket_merci_fields_info() {
           ),
           'sort' => array(
             'type' => 'none',
-          ),
-          'target_bundles' => array(
-            'merci_item' => 'merci_item',
           ),
         ),
         'target_type' => 'node',

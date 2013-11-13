@@ -11,11 +11,10 @@ require_once drupal_get_path('module', 'merci') . '/tests/merci_testcase.php';
 
 // Tests which require 3 buckets and 2 resources.  
 class MerciUserTestCase extends MerciTestCase {
-  public $bucket1;
-  public $bucket2;
-  public $bucket3;
+  public $bucket;
   public $resource;
   public $resource2;
+  public $resoruce3;
   public $merci_user;
   public $merci_role;
 
@@ -29,12 +28,25 @@ class MerciUserTestCase extends MerciTestCase {
   function setUp() {
     // Enable the module.
     parent::setUp();
-    $this->bucket1 = $this->merciCreateItem('bucket');
-    $this->bucket2 = $this->merciCreateItem('bucket');
-    $this->bucket3 = $this->merciCreateItem('bucket');
+    $this->bucket = $this->merciCreateItem('bucket');
     $this->resource = $this->merciCreateItem('resource');
     $this->resource2 = $this->merciCreateItem('resource');
+    $this->resource3 = $this->merciCreateItem('resource');
 
+    $edit = array(
+      MERCI_BUCKET_ITEM_FIELD . '[und][0][target_id]' => $this->resource->nid,
+    );
+    $this->merciUpdateNode($this->bucket->nid,$edit);
+    $edit = array(
+      MERCI_BUCKET_ITEM_FIELD . '[und][1][target_id]' => $this->resource2->nid,
+    );
+    $this->merciUpdateNode($this->bucket->nid,$edit);
+    $edit = array(
+      MERCI_BUCKET_ITEM_FIELD . '[und][2][target_id]' => $this->resource3->nid,
+    );
+    $this->merciUpdateNode($this->bucket->nid,$edit);
+
+    $this->assertText(t("@title has been updated", array('@title' => $this->bucket->title)));
     $this->merci_role = $this->drupalCreateRole(array(
       'view revisions',
       'revert revisions',
@@ -44,7 +56,7 @@ class MerciUserTestCase extends MerciTestCase {
       'edit own resource content',
       'delete own resource content',
       'create reservations',
-      //'access devel information'
+      'access devel information'
     ));
     // Create merci user. 
     $this->merci_user = $this->drupalCreateUser(array(
@@ -59,7 +71,7 @@ class MerciUserTestCase extends MerciTestCase {
       'delete own merci_reservation content',
       'create reservations',
       'create merci_reservation content',
-      //'access devel information'
+      'access devel information'
     ));
 
     $edit = array('roles' => ($this->merci_user->roles + array($this->merci_role => $this->merci_role)));
@@ -89,7 +101,7 @@ class MerciUserTestCase extends MerciTestCase {
       'edit own resource content',
       'delete own resource content',
       'create reservations',
-      //'access devel information',
+      'access devel information',
       'manage reservations',
       'administer nodes'
     ));
@@ -100,11 +112,11 @@ class MerciUserTestCase extends MerciTestCase {
     $node = $bucketstaff;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $today,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $today,
-      'field_merci_date[und][0][value2][time]' => '11:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => $today,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $today,
+      'field_merci_reservation_date[und][0][value2][time]' => '11:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->type
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit);
@@ -166,11 +178,11 @@ class MerciUserTestCase extends MerciTestCase {
     $node = $this->bucket1;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $today,
-      'field_merci_date[und][0][value][time]' => '08:15',
-      'field_merci_date[und][0][value2][date]' => $today,
-      'field_merci_date[und][0][value2][time]' => '11:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => $today,
+      'field_merci_reservation_date[und][0][value][time]' => '08:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $today,
+      'field_merci_reservation_date[und][0][value2][time]' => '11:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->type
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit,FALSE);
@@ -180,11 +192,11 @@ class MerciUserTestCase extends MerciTestCase {
     $node = $this->bucket1;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $today,
-      'field_merci_date[und][0][value][time]' => '16:15',
-      'field_merci_date[und][0][value2][date]' => $today,
-      'field_merci_date[und][0][value2][time]' => '23:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => $today,
+      'field_merci_reservation_date[und][0][value][time]' => '16:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $today,
+      'field_merci_reservation_date[und][0][value2][time]' => '23:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->type
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit,FALSE);
@@ -206,11 +218,11 @@ class MerciUserTestCase extends MerciTestCase {
     $node = $this->bucket1;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $today,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $today,
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => $today,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $today,
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->type
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit,FALSE);
@@ -234,11 +246,11 @@ class MerciUserTestCase extends MerciTestCase {
     $node = $this->bucket1;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $today,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $today,
-      'field_merci_date[und][0][value2][time]' => '11:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => $today,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $today,
+      'field_merci_reservation_date[und][0][value2][time]' => '11:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->type
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit,FALSE);
@@ -264,11 +276,11 @@ class MerciUserTestCase extends MerciTestCase {
     $node = $this->bucket1;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $later,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $later,
-      'field_merci_date[und][0][value2][time]' => '11:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => $later,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $later,
+      'field_merci_reservation_date[und][0][value2][time]' => '11:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->type
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit,FALSE);
@@ -278,7 +290,7 @@ class MerciUserTestCase extends MerciTestCase {
 
   // Multiple bucket tests for conflicts.  Requires three bucket items 
   // and the default merci_user logged in.
-  function _testMerciBucketAvailability() {
+  function testMerciBucketAvailability() {
 
     // Login the merci user.
     $this->drupalLogin($this->merci_user);
@@ -286,19 +298,20 @@ class MerciUserTestCase extends MerciTestCase {
     // Test the fourth reservation at the same time will fail.
 
     // Create our first reservation
-    $node = $this->bucket1;
+    $node = $this->bucket;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '11:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '11:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->nid
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit);
     $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
+    /*
     // Assign an item to test issue #1103328
     // Login the admin user.
     $this->drupalLogin($this->admin_user);
@@ -312,58 +325,59 @@ class MerciUserTestCase extends MerciTestCase {
     $this->assertText(t("@title has been updated.", array('@title' => $title)));
     // Login the merci user.
     $this->drupalLogin($this->merci_user);
+     */
     // Create our second reservation
-    $node = $this->bucket2;
+    //$node = $this->bucket2;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '11:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '11:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->nid
     );
 
     $second = $this->merciCreateNode('merci-reservation',$edit);
     $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
     // Create our third reservation
-    $node = $this->bucket3;
+    //$node = $this->bucket3;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '11:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '11:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->nid
     );
 
     $third = $this->merciCreateNode('merci-reservation',$edit);
     $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
     // Try to create our fourth reservation.  This should FAIL
-    $node = $this->bucket3;
+    //$node = $this->bucket3;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->nid
     );
 
     $fail = $this->merciCreateNode('merci-reservation',$edit,FALSE);
     //$this->assertText(t("The dates and times for @title conflict with one or more existing reservations", array('@title' => $node->type)));
-    $this->assertText(t("conflict with one or more existing reservations"));
+    $this->assertText(t("the bucket item cannot be reserved at this time"));
 
     // Try creating the reservation at a different time.
-    $node = $this->bucket3;
+    //$node = $this->bucket3;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => '2011-01-06',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-06',
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-06',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-06',
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->nid
     );
 
     $fourth = $this->merciCreateNode('merci-reservation',$edit);
@@ -374,10 +388,10 @@ class MerciUserTestCase extends MerciTestCase {
 
     // Update second reservation.
     $edit = array(
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '09:45',
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '09:45',
     );
 
     $title = $second->title;
@@ -387,10 +401,10 @@ class MerciUserTestCase extends MerciTestCase {
 
     // Update our third reservation
     $edit = array(
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '10:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '11:15',
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '10:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '11:15',
     );
 
     $title = $third->title;
@@ -399,19 +413,20 @@ class MerciUserTestCase extends MerciTestCase {
 
     // Now that the above two reservations are sharing an item ....
     // Try to create our fourth reservation.  This should now PASS 
-    $node = $this->bucket3;
+    //$node = $this->bucket3;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->nid
     );
 
     $pass = $this->merciCreateNode('merci-reservation',$edit);
     $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
+    return;
     // Login the merci user.
     $this->drupalLogin($this->admin_user);
     // Cancel the last reservation.  This should Pass
@@ -428,11 +443,11 @@ class MerciUserTestCase extends MerciTestCase {
     $node = $this->bucket3;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->type
     );
 
     $pass = $this->merciCreateNode('merci-reservation',$edit);
@@ -448,35 +463,37 @@ class MerciUserTestCase extends MerciTestCase {
     $node = $this->resource;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '11:15',
-      'field_merci_items[und][0][target_id]' => $node->nid
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '11:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->nid
     );
 
     $third = $this->merciCreateNode('merci-reservation',$edit);
     $this->assertText(t("@title has been created", array('@title' => $edit['title'])));
 
+    /*
     $title = $edit['title'];
     $edit = array(
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '11:15'
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '11:15'
     );
 
     $fourth = $this->merciUpdateNode($third->nid,$edit);
     $this->assertText(t("@title has been updated", array('@title' => $title)));
+     */
     // Try to create our third reservation.  This should FAIL
     $node = $this->resource;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => '2011-01-05',
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => '2011-01-05',
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $node->nid
+      'field_merci_reservation_date[und][0][value][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => '2011-01-05',
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->nid
     );
 
     $fail = $this->merciCreateNode('merci-reservation',$edit,FALSE);
@@ -496,11 +513,11 @@ class MerciUserTestCase extends MerciTestCase {
     $node = $this->bucket1;
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $today,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $today,
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $node->type
+      'field_merci_reservation_date[und][0][value][date]' => $today,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $today,
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $node->type
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit);
@@ -516,7 +533,7 @@ class MerciUserTestCase extends MerciTestCase {
       'edit own resource content',
       'delete own resource content',
       'create reservations',
-      //'access devel information',
+      'access devel information',
       'manage reservations',
       'administer nodes'
     ));

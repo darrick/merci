@@ -71,12 +71,12 @@ class MerciResourceTestCase extends MerciTestCase {
     $day = date('Y-m-d',time() + 3600 * 24);
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $day,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $day,
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $item->nid,
- //     'field_merci_items[und][1][target_id]' => $item->nid,
+      'field_merci_reservation_date[und][0][value][date]' => $day,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $day,
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $item->nid,
+ //     'field_merci_reservation_items[und][1][target_id]' => $item->nid,
     );
 
 
@@ -85,13 +85,13 @@ class MerciResourceTestCase extends MerciTestCase {
     $edit = array(
       /*
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $day,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $day,
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $item->nid,
+      'field_merci_reservation_date[und][0][value][date]' => $day,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $day,
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $item->nid,
        */
-      'field_merci_items[und][1][target_id]' => $item->nid,
+      'field_merci_reservation_items[und][1][target_id]' => $item->nid,
     );
     $this->drupalPost('node/' . $first->nid . '/edit', $edit, t('Save'));
     $this->verbose($this->content);
@@ -113,11 +113,11 @@ class MerciResourceTestCase extends MerciTestCase {
     $day = date('Y-m-d',time() + 3600 * 24);
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $day,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $day,
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $item->nid,
+      'field_merci_reservation_date[und][0][value][date]' => $day,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $day,
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $item->nid,
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit);
@@ -125,12 +125,12 @@ class MerciResourceTestCase extends MerciTestCase {
     $day = date('Y-m-d',time() + 3600 * 24);
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $day,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $day,
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'field_merci_items[und][0][target_id]' => $item->nid,
-      'field_merci_items[und][1][target_id]' => $item->nid,
+      'field_merci_reservation_date[und][0][value][date]' => $day,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $day,
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $item->nid,
+      'field_merci_reservation_items[und][1][target_id]' => $item->nid,
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit);

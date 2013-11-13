@@ -31,6 +31,7 @@ class MerciTestCase extends DrupalWebTestCase {
         //'date_popup',
         //'text',
         //'views',
+        'devel',
         'merci',
         'merci_resource',
         'merci_bucket',
@@ -52,7 +53,7 @@ class MerciTestCase extends DrupalWebTestCase {
       'administer site configuration',
       'view revisions',
       'revert revisions',
-      //'access devel information',
+      'access devel information',
       'administer MERCI',
       'manage reservations'
     ));
@@ -86,6 +87,11 @@ class MerciTestCase extends DrupalWebTestCase {
     $this->drupalPost('admin/config/regional/settings' , $settings, t('Save configuration'));
     $this->assertText(t("The configuration options have been saved."));
 
+    $settings = array (
+        'type'  => 'merci_reservation',
+        );
+    $type = $this->merciCreateContentType($settings, 'reservation');
+    /*
     $settings = array ( 
       'instance[widget][settings][input_format]' => 'Y-m-d H:i:s',
     );
@@ -96,6 +102,7 @@ class MerciTestCase extends DrupalWebTestCase {
     );
     $this->drupalPost('admin/structure/types/manage/merci-reservation/fields/field_merci_items/widget-type', $settings, t('Continue'));
     $this->assertText(t("Changed the widget for field Merci Items."));
+     */
   }
 
 

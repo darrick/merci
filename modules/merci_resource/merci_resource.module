@@ -2,6 +2,7 @@
 
 module_load_include('inc', 'merci', 'merci.validate');
 
+define('MERCI_RESOURCE', 'resource');
 /**
  * Implementation of hook_form_alter().
  */
@@ -9,8 +10,13 @@ function merci_resource_form_alter(&$form, &$form_state, $form_id) {
   
   // Node add/edit forms.
 
+  $description_items = array(
+    MERCI_RESOURCE => t('Use this content type to create unique items that can be reserved.'),
+  );
+
   if($form_id == 'node_type_form') {
     $form['merci']['merci_type_setting']['#options']['resource'] = t('Resource');
+    $form['merci']['merci_type_setting']['#description_items'] += $description_items;
   }
 }
 
@@ -85,7 +91,7 @@ function merci_resource_merci_validate_items($entity_type, $entity, $date_field,
     $target_id = $item['target_id'];
     $entities = entity_load($target_type, array($target_id));
     $node = reset($entities);
-    if (merci_type_setting($node) != 'resource') {
+    if (merci_type_setting($node) != MERCI_RESOURCE) {
       continue;
     }
 

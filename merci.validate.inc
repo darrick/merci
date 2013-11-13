@@ -36,7 +36,7 @@ function is_merci_reservation_node($node) {
 }
 
 function merci_type_setting($node) {
-  $type = $node->type;
+  $type = isset($node->type) ? $node->type : $node;
   return variable_get('merci_type_setting_' . $type, 'disabled');
 }
 
@@ -234,7 +234,7 @@ function merci_bucket_intersects($r1, $r2) {
     $r2 = $temp;
   }
 
-  if (date_create($r2->{MERCI_DATE_FIELD_ALIAS}) <= date_create($r2->{MERCI_DATE_FIELD_ALIAS2})) {
+  if (date_create($r2->{MERCI_DATE_FIELD_ALIAS}) <= date_create($r1->{MERCI_DATE_FIELD_ALIAS2})) {
     return true;
   }
   return false;

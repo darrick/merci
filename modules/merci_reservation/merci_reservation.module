@@ -12,8 +12,12 @@ function merci_reservation_form_alter(&$form, &$form_state, $form_id) {
   
   // Node add/edit forms.
 
+  $description_items = array(
+    MERCI_RESERVATION => t('Use this content type to create reservation types.'),
+  );
   if($form_id == 'node_type_form') {
     $form['merci']['merci_type_setting']['#options'][MERCI_RESERVATION] = t('Reservation');
+    $form['merci']['merci_type_setting']['#description_items'] += $description_items;
   }
 }
 
@@ -108,7 +112,7 @@ function merci_reservation_merci_fields_info() {
         'module' => 'date',
         'settings' => array(
           'increment' => '15',
-          'input_format' => 'm/d/Y - H:i:s',
+          'input_format' => 'Y-m-d H:i:s',
           'input_format_custom' => '',
           'label_position' => 'above',
           'text_parts' => array(),
