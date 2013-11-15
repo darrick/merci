@@ -9,9 +9,9 @@
 
 require_once drupal_get_path('module', 'merci') . '/tests/merci_testcase.php';
 class MerciBucketTestCase extends MerciTestCase {
-  public $bucket1;
-  public $bucket2;
+  public $bucket;
   public $resource;
+  public $resource2;
   public $merci_user;
   public $merci_role;
 
@@ -25,8 +25,20 @@ class MerciBucketTestCase extends MerciTestCase {
   function setUp() {
     // Enable the module.
     parent::setUp();
-    $this->bucket1 = $this->merciCreateItem('bucket');
-    $this->bucket2 = $this->merciCreateItem('bucket');
+    $this->bucket = $this->merciCreateItem('bucket');
+    $this->resource = $this->merciCreateItem('resource');
+    $this->resource2 = $this->merciCreateItem('resource');
+
+    $edit = array(
+      MERCI_BUCKET_ITEM_FIELD . '[und][0][target_id]' => $this->resource->nid,
+    );
+    $this->merciUpdateNode($this->bucket->nid,$edit);
+    $edit = array(
+      MERCI_BUCKET_ITEM_FIELD . '[und][1][target_id]' => $this->resource2->nid,
+    );
+    $this->merciUpdateNode($this->bucket->nid,$edit);
+
+    $this->assertText(t("@title has been updated", array('@title' => $this->bucket->title)));
 
     $this->merci_role = $this->drupalCreateRole(array(
       'view revisions',
@@ -68,22 +80,31 @@ class MerciBucketTestCase extends MerciTestCase {
     $this->drupalLogin($this->merci_user);
 
     // Create our first reservation
-    $item = $this->bucket1;
+    $item = $this->bucket;
 
     // Create a reservation for tomorrow.
     $day = date('Y-m-d',time() + 3600 * 24);
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $day,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $day,
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'merci_reservation_items[choice_1][merci_item_nid]' => $item->type,
-      'merci_reservation_items[choice_2][merci_item_nid]' => $item->type,
-      'merci_reservation_items[choice_3][merci_item_nid]' => $item->type,
+      'field_merci_reservation_date[und][0][value][date]' => $day,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $day,
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $item->nid,
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit);
+
+    $edit = array(
+      'field_merci_reservation_items[und][1][target_id]' => $item->nid,
+    );
+    $this->merciUpdateNode($first->nid,$edit);
+
+    $edit = array(
+      'field_merci_reservation_items[und][2][target_id]' => $item->nid,
+    );
+    $this->merciUpdateNode($first->nid,$edit);
+
     $this->assertText(t("You've selected too many @title", array('@title' => $item->type_name)));
   }
 
@@ -93,17 +114,17 @@ class MerciBucketTestCase extends MerciTestCase {
     $this->drupalLogin($this->merci_user);
 
     // Create our first reservation
-    $item = $this->bucket1;
+    $item = $this->bucket;
 
     // Create a reservation for tomorrow.
     $day = date('Y-m-d',time() + 3600 * 24);
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $day,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $day,
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'merci_reservation_items[choice_1][merci_item_nid]' => $item->type,
+      'field_merci_reservation_date[und][0][value][date]' => $day,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $day,
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $item->nid,
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit);
@@ -111,16 +132,24 @@ class MerciBucketTestCase extends MerciTestCase {
     $day = date('Y-m-d',time() + 3600 * 24);
     $edit = array(
       'title' => $this->randomName(),
-      'field_merci_date[und][0][value][date]' => $day,
-      'field_merci_date[und][0][value][time]' => '09:15',
-      'field_merci_date[und][0][value2][date]' => $day,
-      'field_merci_date[und][0][value2][time]' => '10:15',
-      'merci_reservation_items[choice_1][merci_item_nid]' => $item->type,
-      'merci_reservation_items[choice_2][merci_item_nid]' => $item->type,
-      'merci_reservation_items[choice_3][merci_item_nid]' => $item->type,
+      'field_merci_reservation_date[und][0][value][date]' => $day,
+      'field_merci_reservation_date[und][0][value][time]' => '09:15',
+      'field_merci_reservation_date[und][0][value2][date]' => $day,
+      'field_merci_reservation_date[und][0][value2][time]' => '10:15',
+      'field_merci_reservation_items[und][0][target_id]' => $item->nid,
     );
 
     $first = $this->merciCreateNode('merci-reservation',$edit);
+
+    $edit = array(
+      'field_merci_reservation_items[und][1][target_id]' => $item->nid,
+    );
+    $this->merciUpdateNode($first->nid,$edit);
+
+    $edit = array(
+      'field_merci_reservation_items[und][2][target_id]' => $item->nid,
+    );
+    $this->merciUpdateNode($first->nid,$edit);
     $this->assertText(t("You've selected too many"));
     $this->assertText(t("conflict with one or more existing reservations"));
   }

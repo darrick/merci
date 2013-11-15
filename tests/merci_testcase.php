@@ -35,6 +35,7 @@ class MerciTestCase extends DrupalWebTestCase {
         'merci',
         'merci_resource',
         'merci_bucket',
+        'merci_status',
         'merci_reservation',
         'entityreference',
         'multiple_selects'

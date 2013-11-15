@@ -76,7 +76,6 @@ class MerciResourceTestCase extends MerciTestCase {
       'field_merci_reservation_date[und][0][value2][date]' => $day,
       'field_merci_reservation_date[und][0][value2][time]' => '10:15',
       'field_merci_reservation_items[und][0][target_id]' => $item->nid,
- //     'field_merci_reservation_items[und][1][target_id]' => $item->nid,
     );
 
 

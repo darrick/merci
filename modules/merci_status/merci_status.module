@@ -9,6 +9,96 @@ define('MERCI_STATUS_CANCELLED', 5);
 define('MERCI_STATUS_DENIED', 6);
 define('MERCI_STATUS_NO_SHOW', 7);
 
+define('MERCI_STATUS_FIELD', 'field_merci_status');
+
+/**
+ * Add group and group content fields to new content types.
+ *
+ * @param $bundle_name
+ *   The content type name.
+ */
+function merci_status_merci_node_type_save($bundle_name) {
+  if (variable_get('merci_type_setting_' . $bundle_name, 'disabled') == MERCI_RESERVATION) {
+    merci_create_field(MERCI_STATUS_FIELD, 'node', $bundle_name);
+  }
+}
+
+/**
+ * Implements hook_merci_fields_info().
+ */
+function merci_status_merci_fields_info() {
+  $fields = array();
+
+  $fields[MERCI_STATUS_FIELD] = array(
+    'field' => array(
+      'active' => '1',
+      'cardinality' => '1',
+      'deleted' => '0',
+      'entity_types' => array(),
+      'field_name' => MERCI_STATUS_FIELD,
+      'foreign keys' => array(),
+      'indexes' => array(
+        'value' => array(
+          0 => 'value',
+        ),
+      ),
+      'locked' => '0',
+      'module' => 'list',
+      'settings' => array(
+        'allowed_values' => array(
+          MERCI_STATUS_UNCONFIRMED => 'Unconfirmed',
+          MERCI_STATUS_PENDING => 'Pending',
+          MERCI_STATUS_CHECKED_OUT => 'Checked out',
+          MERCI_STATUS_CHECKED_IN => 'Checked in',
+          MERCI_STATUS_CANCELLED => 'Canceled',
+          MERCI_STATUS_DENIED => 'Denied',
+          MERCI_STATUS_NO_SHOW => 'No show',
+        ),
+        'allowed_values_function' => '',
+      ),
+      'translatable' => '0',
+      'type' => 'list_text',
+    ),
+    'instance' => array(
+      'default_value' => array(
+        0 => array(
+          'value' => MERCI_STATUS_UNCONFIRMED,
+        ),
+      ),
+      'deleted' => '0',
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'list',
+          'settings' => array(),
+          'type' => 'list_default',
+          'weight' => 2,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+      ),
+      'label' => 'Merci Status',
+      'required' => 0,
+      'settings' => array(
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 1,
+        'module' => 'options',
+        'settings' => array(),
+        'type' => 'options_buttons',
+        'weight' => '-2',
+      ),
+    ),
+  );
+
+  return $fields;
+}
 /**
  * Implements hook_permission().
  */
@@ -28,17 +118,17 @@ function merci_status_node_access($node, $op, $account) {
 
   if (is_merci_reservation_node($node)) {
 
-    $status_field = merci_status_field();
     //users working with their own reservations access reservation
     //additional check in merci_form permission to edit confirmed reservations
     // Users without administer or manage reservations permission can only alter their own Unconfirmed Reservations.
-    if (($op == 'delete' or $op == 'update') && isset($node->{$status_field})){
-      if(user_access('create confirmed reservations') 
-        && $node->{$status_field} > MERCI_STATUS_CONFIRMED) {
+    if (($op == 'delete' or $op == 'update') && isset($node->{MERCI_STATUS_FIELD})){
+      if(user_access('create confirmed reservations')) {
+        if ($node->{MERCI_STATUS_FIELD}['und'][0]['value'] > MERCI_STATUS_CONFIRMED) {
           return NODE_ACCESS_DENY;
-        } elseif ($node->{$status_field} != MERCI_STATUS_UNCONFIRMED) {
-          return NODE_ACCESS_DENY;
-        } 
+        }
+      } elseif ($node->{MERCI_STATUS_FIELD}['und'][0]['value'] != MERCI_STATUS_UNCONFIRMED) {
+        return NODE_ACCESS_DENY;
+      } 
     }
   }
   return NODE_ACCESS_IGNORE;
@@ -90,13 +180,12 @@ function merci_status_admin_settings_submit($form, &$form_state) {
  * Callback function for updating Reservation status from VBO.
  */
 function merci_status_update($nodes) {
-  $status_field = merci_status_field();
   foreach ($nodes as $nid) {
     $node = node_load($nid);
 
     //only update if MERCI Status is Unconfirmed
-    if ($node->{$status_field} == MERCI_STATUS_UNCONFIRMED) {
-      $node->{$status_field} = MERCI_STATUS_PENDING;
+    if ($node->{MERCI_STATUS_FIELD} == MERCI_STATUS_UNCONFIRMED) {
+      $node->{MERCI_STATUS_FIELD} = MERCI_STATUS_PENDING;
       node_save($node);
     }
   }
@@ -107,17 +196,17 @@ function merci_status_update($nodes) {
  */
 function merci_confirm_reservation($nid) {
 }
+
 /*
  * Amend conflict query to only include conflicts if the reservation status is below MERCI_STATUS_CHECKED_IN
  */
 function merci_status_merci_alter_conflict_query($entity, &$query) {
-  $status_field = merci_status_field();
-  if (!property_exists($entity, $status_field)) {
+  if (!property_exists($entity, MERCI_STATUS_FIELD)) {
     return;
   }
 
   // Storage location for date field.
-  $status_field_info = field_info_field($status_field);
+  $status_field_info = field_info_field(MERCI_STATUS_FIELD);
   $status_storage      = $status_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
   $keys = array_keys($status_storage);
   $status_table        = reset($keys);
@@ -126,10 +215,6 @@ function merci_status_merci_alter_conflict_query($entity, &$query) {
   $query->join($status_table, 'status_table', 'item_table.entity_id = status_table.entity_id');
   $query->addField('status_table', $status_column, 'field_status_value');
   $query->condition($status_column, MERCI_STATUS_CHECKED_OUT, '<=');
-}
-
-function merci_status_field() {
-  return 'field_merci_status'; 
 }
 
 function merci_status_gracetime() {
@@ -180,7 +265,7 @@ function merci_status_node_validate($node, $form, &$form_state) {
           // TODO: add gracetime to startdate.
         }
 
-        $conflicts = merci_api_check_overdue($entity_type, $node, $date_field, $target_field, $item['target_id']);
+        $conflicts = merci_status_check_overdue($entity_type, $node, $date_field, $target_field, $item['target_id']);
         if (!empty($conflicts)) {
           form_set_error("field_merci_items][$delta][target_id", 
             t('%name: the item cannot be reserved at this time as it is overdue.', array('%name' => $entity_items[$item['target_id']]->title)));
@@ -195,10 +280,10 @@ function merci_status_node_validate($node, $form, &$form_state) {
  * i.e. Given a $entity of $entity_type with date field $field and entity reference $target_id ...
  * check to ensure no other entities reference the $target_id at the same time.
  */
-function merci_api_check_overdue($entity_type, $entity, $date_field, $target_field, $target_id) {
+function merci_status_check_overdue($entity_type, $entity, $date_field, $target_field, $target_id) {
 
 
-  if (!property_exists($entity, $date_field) or !property_exists($entity, $target_field)) {
+  if (!property_exists($entity, MERCI_STATUS_FIELD) or !property_exists($entity, $date_field) or !property_exists($entity, $target_field)) {
     return;
   }
   // Get entity ids and language.
@@ -241,12 +326,8 @@ function merci_api_check_overdue($entity_type, $entity, $date_field, $target_fie
   /* reservations in the past ... */
   $query->condition($date_column2, $dates['value'], '<=');
 
-  $status_field = merci_status_field();
-  if (!property_exists($entity, $status_field)) {
-    return;
-  }
   // Storage location for date field.
-  $status_field_info = field_info_field($status_field);
+  $status_field_info = field_info_field(MERCI_STATUS_FIELD);
   $status_storage      = $status_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
   $keys = array_keys($status_storage);
   $status_table        = reset($keys);
