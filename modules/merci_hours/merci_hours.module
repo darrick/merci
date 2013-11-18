@@ -1,5 +1,95 @@
 <?php
 
+define('MERCI_HOURS_FIELD', 'field_merci_hours');
+define('MERCI_HOURS', 'merci_hours');
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function merci_hours_form_node_type_form_alter(&$form, &$form_state) {
+  
+  // Node add/edit forms.
+
+  $description_items = array(
+    MERCI_HOURS => t('Use this content type to hours of operation for MERCI.'),
+  );
+  $form['merci']['merci_type_setting']['#options'][MERCI_HOURS] = t('MERCI Office Hours');
+  $form['merci']['merci_type_setting']['#description_items'] += $description_items;
+}
+
+/**
+ * Add group and group content fields to new content types.
+ *
+ * @param $bundle_name
+ *   The content type name.
+ */
+function merci_hours_merci_node_type_save($bundle_name) {
+  if (variable_get('merci_type_setting_' . $bundle_name, 'disabled') == MERCI_HOURS) {
+    merci_create_field(MERCI_HOURS_FIELD, 'node', $bundle_name);
+  }
+}
+
+function merci_hours_field_attach_validate($entity_type, $entity, &$errors) {
+  dpm($entity);
+  dpm($entity_type);
+  dpm($errors);
+}
+function merci_hours_form_alter(&$form, &$form_state, $form_id) {
+  /*
+  if (isset($form[MERCI_RESERVATION_DATE_FIELD])) {
+    dpm($form);
+    dpm($form_id);
+    $langcode = 'und';
+    //$form[MERCI_RESERVATION_DATE_FIELD][$langcode][0]['#element_validate'][] = 'merci_hours_date_validate';
+    $form['#validate'][] = 'merci_hours_date_validate';
+  }
+   */
+}
+
+function merci_hours_date_validate($form, &$form_state) {
+  dpm($form);
+  dpm($form_state);
+  form_set_error(MERCI_RESERVATION_DATE_FIELD, t('This field is required.'));
+}
+
+/**
+ * Implementation of hook_node_validate().
+ */
+function merci_hours_node_validate($node, $form, &$form_state) {
+
+  if (is_merci_reservation_node($node)) {
+
+    if (!empty($form_state['ahah_submission'])) {
+      return;
+    }
+
+    // No validation necessary on deletion.
+    if ($form_state['triggering_element']['#id'] == 'edit-delete') {
+      return;
+    }
+
+    $entity_type = 'node';
+    $merci_settings = merci_settings_load($entity_type, $node->type);
+    $target_field = $merci_settings['target_field'];
+    $date_field = $merci_settings['date_field'];
+    $langcode = $node->language;
+    $items = $node->{$target_field}[$langcode];
+
+    $errors = array();
+
+    merci_bucket_merci_validate_items($entity_type, $node, $date_field, $target_field, $items, &$errors);
+
+    if (count($errors)) {
+      foreach ($errors[$target_field][$langcode] as $delta => $error) {
+        //$errors[$target_field][$langcode][$delta][] = array(
+        foreach($error as $error_message){
+          $messages[] = $error_message['message'];
+        }
+        form_set_error("$target_field][$langcode][$delta][target_id", implode('<br>', $messages)); 
+      }
+    }
+  }
+}
 
 function merci_hours_merci_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
   $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
@@ -142,3 +232,87 @@ function merci_hours_merci_settings_form($field, $instance, &$form) {
   }
 }
 
+/**
+ * Implements hook_merci_fields_info().
+ */
+function merci_hours_merci_fields_info() {
+  $fields = array();
+
+  $fields[MERCI_HOURS_FIELD] = array(
+    'field' => array(
+      'active' => '1',
+      'cardinality' => '-1',
+      'deleted' => '0',
+      'entity_types' => array(),
+      'field_name' => MERCI_HOURS_FIELD,
+      'foreign keys' => array(),
+      'indexes' => array(),
+      'locked' => '0',
+      'module' => 'office_hours',
+      'settings' => array(
+        'cardinality' => '2',
+        'granularity' => '60',
+        'hoursformat' => '1',
+        'limitend' => '22',
+        'limitstart' => '8',
+        'valhrs' => 0,
+      ),
+      'translatable' => '0',
+      'type' => 'office_hours',
+    ),
+    'instance' => array(
+      'default_value' => NULL,
+      'deleted' => '0',
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'office_hours',
+          'settings' => array(
+            'closedformat' => 'Closed',
+            'compress' => FALSE,
+            'current_status' => array(
+              'closed_text' => 'Currently closed',
+              'open_text' => 'Currently open!',
+              'position' => 'hide',
+            ),
+            'date_first_day' => '0',
+            'daysformat' => 'long',
+            'grouped' => FALSE,
+            'hoursformat' => 0,
+            'separator_day_hours' => ': ',
+            'separator_days' => '<br />',
+            'separator_grouped_days' => ' - ',
+            'separator_hours_hours' => '-',
+            'separator_more_hours' => ', ',
+            'showclosed' => 'all',
+            'timezone_field' => '',
+          ),
+          'type' => 'office_hours',
+          'weight' => 1,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+      ),
+      'label' => 'Hours of operation',
+      'required' => 0,
+      'settings' => array(
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 0,
+        'module' => 'office_hours',
+        'settings' => array(),
+        'type' => 'office_hours',
+        'weight' => '-3',
+      ),
+    ),
+  );
+
+
+  return $fields;
+}

@@ -41,6 +41,10 @@ function merci_ctools_plugin_directory($module, $plugin) {
   if ($module == 'entityreference' || $module == 'ctools') {
     return 'plugins/' . $plugin;
   }
+  // Load the export_ui plugin.
+  if ($type =='export_ui') {
+    return 'plugins/export_ui';
+  }
 }
 
 /**

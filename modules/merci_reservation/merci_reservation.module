@@ -8,20 +8,18 @@ define('MERCI_RESERVATION', 'reservation');
 /**
  * Implementation of hook_form_alter().
  */
-function merci_reservation_form_alter(&$form, &$form_state, $form_id) {
+function merci_reservation_form_node_type_form_alter(&$form, &$form_state) {
   
   // Node add/edit forms.
 
   $description_items = array(
     MERCI_RESERVATION => t('Use this content type to create reservation types.'),
   );
-  if($form_id == 'node_type_form') {
-    $form['merci']['merci_type_setting']['#options'][MERCI_RESERVATION] = t('Reservation');
-    $form['merci']['merci_type_setting']['#description_items'] += $description_items;
-  }
+  $form['merci']['merci_type_setting']['#options'][MERCI_RESERVATION] = t('Reservation');
+  $form['merci']['merci_type_setting']['#description_items'] += $description_items;
 }
 
-function merci_reservation_merci_settings_load($entity_type, $bundle, &$settings) {
+function merci_reservation_merci_settings_load(&$settings) {
   $settings['date_field'] = MERCI_RESERVATION_DATE_FIELD;
   $settings['target_field'] = MERCI_RESERVATION_ITEM_FIELD; 
 }

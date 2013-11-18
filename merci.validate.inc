@@ -7,6 +7,18 @@ define('MERCI_DATE_FIELD_ALIAS2', 'field_merci_date_value2');
  * Developers should either call via hook_validate, hook_node_validate or hook_field_validate.
  */
 
+function merci_api_extract_item_values($entity, $target_field) {
+
+  $items = $entity->{$target_field}[LANGUAGE_NONE];
+  foreach ($items as $delta => $item) {
+    if (!$item['target_id']) {
+      unset($items[$delta]);
+    }
+  }
+  unset($items['add_more']);
+  return $items;
+}
+
 function merci_api_validate_items($entity_type, $entity, $items, &$errors){
   if (empty($entity_type)) {
     return;
@@ -21,11 +33,11 @@ function merci_api_validate_items($entity_type, $entity, $items, &$errors){
   }
 }
 
-function merci_settings_load($entity_type, $bundle) {
+function merci_settings_load() {
   $settings = array();
   foreach (module_implements('merci_settings_load') as $module) {
     $function = $module . '_merci_settings_load';
-    $function($entity_type, $bundle, &$settings);
+    $function(&$settings);
   }
   return $settings;
 }
@@ -132,6 +144,7 @@ function merci_api_check_item_conflicts($entity_type, $entity, $date_field, $tar
 function merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $target_field, $bucket_field, $target_id) {
 
   if (!$entity or !property_exists($entity, $date_field) or !property_exists($entity, $target_field)) {
+    dpm($entity);
     return;
   }
 
@@ -143,6 +156,7 @@ function merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $t
   $bucket = reset($buckets);
 
   if (!$bucket or !property_exists($bucket, $bucket_field)) {
+    dpm($bucket);
     return;
   }
 
@@ -209,10 +223,14 @@ function merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $t
     }
     // No slots for this reservation.
     if (!property_exists($bucket_reservations[$reservation_id], 'item_id')){
+      dpm($bucket_reservations);
+      dpm($item_reservations);
       return ($bucket_reservations);
     }
 
   }
+  dpm($bucket_reservations);
+  dpm($item_reservations);
   return false;
 }
 

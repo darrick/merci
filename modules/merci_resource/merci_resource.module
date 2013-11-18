@@ -6,69 +6,27 @@ define('MERCI_RESOURCE', 'resource');
 /**
  * Implementation of hook_form_alter().
  */
-function merci_resource_form_alter(&$form, &$form_state, $form_id) {
-  
+function merci_resource_form_node_type_form_alter(&$form, &$form_state) {
+
   // Node add/edit forms.
 
   $description_items = array(
     MERCI_RESOURCE => t('Use this content type to create unique items that can be reserved.'),
   );
 
-  if($form_id == 'node_type_form') {
-    $form['merci']['merci_type_setting']['#options']['resource'] = t('Resource');
-    $form['merci']['merci_type_setting']['#description_items'] += $description_items;
-  }
+  $form['merci']['merci_type_setting']['#options']['resource'] = t('Resource');
+  $form['merci']['merci_type_setting']['#description_items'] += $description_items;
 }
 
-/**
- * Implementation of hook_node_validate().
- */
-function merci_resource_node_validate($node, $form, &$form_state) {
+function merci_resource_field_attach_validate($entity_type, $entity, &$errors) {
+  if (is_merci_reservation_node($entity)) {
 
-  if (is_merci_reservation_node($node)) {
-
-    if (!empty($form_state['ahah_submission'])) {
-      return;
-    }
-
-    // No validation necessary on deletion.
-    if ($form_state['triggering_element']['#id'] == 'edit-delete') {
-      return;
-    }
-
-    // Do no validation if their errors from the main validation function.
-    if (form_get_errors()) {
-      return;
-    }
-
-    $entity_type = 'node';
-    $merci_settings = merci_settings_load($entity_type, $node->type);
+    $merci_settings = merci_settings_load();
     $target_field = $merci_settings['target_field'];
     $date_field = $merci_settings['date_field'];
-    $langcode = $node->language;
-    $items = $node->{$target_field}[$langcode];
+    $items = $entity->{$target_field}[LANGUAGE_NONE];
 
-    $errors = array();
-
-    merci_resource_merci_validate_items($entity_type, $node, $date_field, $target_field, $items, &$errors);
-
-    if (count($errors)) {
-      foreach ($errors[$target_field][$langcode] as $delta => $error) {
-        //$errors[$target_field][$langcode][$delta][] = array(
-        foreach($error as $error_message){
-          $messages[] = $error_message['message'];
-        }
-        form_set_error("$target_field][$langcode][$delta][target_id", implode('<br>', $messages)); 
-      }
-    }
-
-
-    //merci_validate_status($form, $form_state);
-    //merci_validate_merci_reservation_date($form, $form_state);
-
-    // Tests for existing items.
-    //merci_validate_empty_reservation_items($form, $form_state);
-    //merci_validate_merci_selected_items($form, $form_state);
+    merci_resource_merci_validate_items($entity_type, $entity, $date_field, $target_field, $items, &$errors);
   }
 }
 
