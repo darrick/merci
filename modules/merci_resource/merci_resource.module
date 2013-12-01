@@ -21,16 +21,20 @@ function merci_resource_form_node_type_form_alter(&$form, &$form_state) {
 function merci_resource_field_attach_validate($entity_type, $entity, &$errors) {
   if (is_merci_reservation_node($entity)) {
 
-    $merci_settings = merci_settings_load();
-    $target_field = $merci_settings['target_field'];
-    $date_field = $merci_settings['date_field'];
-    $items = $entity->{$target_field}[LANGUAGE_NONE];
+    $merci = merci_settings_load($entity_type, $entity);
+    $target_field = $merci['settings']['target_field'];
+    $date_field = $merci['settings']['date_field'];
+    $items = merci_api_extract_item_values($entity_type, $entity);
 
-    merci_resource_merci_validate_items($entity_type, $entity, $date_field, $target_field, $items, &$errors);
+    merci_resource_merci_validate_items($entity_type, $entity, $items, &$errors);
   }
 }
 
-function merci_resource_merci_validate_items($entity_type, $entity, $date_field, $target_field, $items, &$errors) {
+function merci_resource_merci_validate_items($entity_type, $entity, $items, &$errors) {
+
+  $merci = merci_settings_load($entity_type, $entity);
+  $target_field = $merci['settings']['target_field'];
+  $date_field = $merci['settings']['date_field'];
 
   foreach ($items as $delta => $item) {
     if (!$item['target_id']) {
@@ -54,7 +58,7 @@ function merci_resource_merci_validate_items($entity_type, $entity, $date_field,
     }
 
     // Check availability
-    $conflicts = merci_api_check_item_conflicts($entity_type, $entity, $date_field, $target_field, $target_id);
+    $conflicts = merci_api_check_item_conflicts($entity_type, $entity, $target_id);
     if (!empty($conflicts)) {
       $entities = entity_load($target_type, array($target_id));
       $item_entity = reset($entities);

@@ -23,8 +23,8 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
     $entity = $this->entity;
 
     //$entity_type = $this->entity_type;
-    $merci_settings = merci_settings_load($entity_type, $bundle);
-    $field_item_name = $merci_settings['target_field'];
+    $merci = merci_settings_load($entity_type, $entity);
+    $field_item_name = $merci['settings']['target_field'];
 
     $query = $this->buildEntityFieldQuery($match, $match_operator);
     if ($limit > 0) {

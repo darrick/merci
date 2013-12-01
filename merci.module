@@ -42,23 +42,11 @@ function merci_ctools_plugin_directory($module, $plugin) {
     return 'plugins/' . $plugin;
   }
   // Load the export_ui plugin.
-  if ($type =='export_ui') {
+  if ($plugin =='export_ui') {
     return 'plugins/export_ui';
   }
 }
 
-/**
- * Implements hook_ctools_plugin_type().
- */
-/*
-function merci_ctools_plugin_type() {
-  $plugins['merci'] = array(
-    'classes' => array('class'),
-  );
-  return $plugins;
-}
-
- */
 /**
  * Implements hook_permission().
  */
@@ -204,6 +192,7 @@ function merci_node_access($node, $op, $account) {
 
 
 function merci_form_node_type_form_alter(&$form, &$form_state) {
+  dpm($form);
   $node_type = $form['#node_type']->type;
 
   $form['merci'] = array(
@@ -243,6 +232,40 @@ function merci_form_node_type_form_alter(&$form, &$form_state) {
     '#after_build' => array('merci_type_setting_after_build'),
   );
 
+  $presets = merci_preset_load();
+
+  // If there are presets prompt the user to select one or create another.
+  // If no, prompt to create a preset.
+  if (!empty($presets)) {
+    foreach (merci_preset_load() as $preset => $item) {
+      $options[$preset] = $item['preset_name'];
+    }
+
+    $form['merci']['merci_preset'] = array(
+      '#title' => t('Select preset'),
+      '#type' => 'select',
+      '#default_value' => variable_get('merci_preset_' . $node_type, 'disabled'),
+      '#options' => $options,
+    );
+    $form['merci']['links'] = array(
+      '#theme' => 'links',
+      '#links' => array(
+        array(
+          'title' => t('Create new preset'),
+          'href' => 'admin/config/merci/merci/add',
+        ),
+        array(
+          'title' => t('Manage presets'),
+          'href' => 'admin/config/merci/merci',
+        ),
+      ),
+    );
+  }
+  else {
+    $form['merci']['no_preset_message'] = array(
+      '#markup' => '<div class="messages warning">' . t('No presets are available. You must to <a href="@create">create a preset</a> to proceed.', array('@create' => url('admin/config/merci/merci/add'))) . '</div>',
+    );
+  }
 }
 
 function merci_type_setting_after_build($element) {

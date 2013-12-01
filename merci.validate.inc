@@ -7,7 +7,10 @@ define('MERCI_DATE_FIELD_ALIAS2', 'field_merci_date_value2');
  * Developers should either call via hook_validate, hook_node_validate or hook_field_validate.
  */
 
-function merci_api_extract_item_values($entity, $target_field) {
+function merci_api_extract_item_values($entity_type, $entity) {
+
+  $merci = merci_settings_load($entity_type, $entity);
+  $target_field = $merci['settings']['target_field'];
 
   $items = $entity->{$target_field}[LANGUAGE_NONE];
   foreach ($items as $delta => $item) {
@@ -23,24 +26,51 @@ function merci_api_validate_items($entity_type, $entity, $items, &$errors){
   if (empty($entity_type)) {
     return;
   }
-  $merci_settings = merci_settings_load($entity_type, $entity);
-  $date_field = $merci_settings['date_field'];
-  $target_field = $merci_settings['target_field'];
 
   foreach (module_implements('merci_validate_items') as $module) {
     $function = $module . '_merci_validate_items';
-    $function($entity_type, $entity, $date_field, $target_field, $items, &$errors);
+    $function($entity_type, $entity, $items, &$errors);
   }
 }
 
-function merci_settings_load() {
-  $settings = array();
-  foreach (module_implements('merci_settings_load') as $module) {
-    $function = $module . '_merci_settings_load';
-    $function(&$settings);
+/**
+ * Load the given preset(s).
+ * @param string $machine_name
+ * @return array
+ */
+function merci_preset_load($machine_name = NULL) {
+  ctools_include('export');
+  if (isset($machine_name)) {
+    $items = ctools_export_crud_load('merci_preset', $machine_name);
+
+    // CTools returns an object, so we explictly typecast it to array before
+    // returning.
+    return $items = (array) $items;
   }
-  return $settings;
+  else {
+    $result = ctools_export_crud_load_all('merci_preset');
+    if (!empty($result)) {
+      foreach ($result as $key => $item) {
+        $items[$key] = (array) $item;
+      }
+      return $items;
+    }
+  }
 }
+
+function merci_settings_load($entity_type, $entity) {
+  $node_type = $entity->type;
+  $machine_name = variable_get('merci_preset_' . $node_type, 'disabled');
+  ctools_include('export');
+  if (isset($machine_name)) {
+    $items = ctools_export_crud_load('merci_preset', $machine_name);
+
+    // CTools returns an object, so we explictly typecast it to array before
+    // returning.
+    return $items = (array) $items;
+  }
+}
+
 
 function is_merci_reservation_node($node) {
   $type = isset($node->type) ? $node->type : $node;
@@ -62,8 +92,11 @@ function merci_api_get_item_count($target_id) {
  * i.e. Given a $entity of $entity_type with date field $field and entity reference $target_id ...
  * check to ensure no other entities reference the $target_id at the same time.
  */
-function merci_api_check_item_conflicts($entity_type, $entity, $date_field, $target_field, $target_id) {
+function merci_api_check_item_conflicts($entity_type, $entity, $target_id) {
 
+  $merci = merci_settings_load($entity_type, $entity);
+  $target_field = $merci['settings']['target_field'];
+  $date_field = $merci['settings']['date_field'];
 
   if (!$entity or !property_exists($entity, $date_field) or !property_exists($entity, $target_field)) {
     return;
@@ -135,16 +168,20 @@ function merci_api_check_item_conflicts($entity_type, $entity, $date_field, $tar
   $conditions = $query->conditions();
   foreach (module_implements('merci_alter_conflict_query') as $module) {
     $function = $module . '_merci_alter_conflict_query';
-    $function($entity, &$query);
+    $function($entity_type, $entity, &$query);
   }
   // Return any ids of conflicting reservations if any.
   return ($query->execute()->fetchAllAssoc('entity_id'));
 }
 
-function merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $target_field, $bucket_field, $target_id) {
+function merci_api_check_bucket_conflicts($entity_type, $entity, $target_id) {
+
+  $merci = merci_settings_load($entity_type, $entity);
+  $target_field = $merci['settings']['target_field'];
+  $date_field = $merci['settings']['date_field'];
+  $bucket_field = $merci['settings']['bucket_field'];
 
   if (!$entity or !property_exists($entity, $date_field) or !property_exists($entity, $target_field)) {
-    dpm($entity);
     return;
   }
 
@@ -156,7 +193,6 @@ function merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $t
   $bucket = reset($buckets);
 
   if (!$bucket or !property_exists($bucket, $bucket_field)) {
-    dpm($bucket);
     return;
   }
 
@@ -223,14 +259,10 @@ function merci_api_check_bucket_conflicts($entity_type, $entity, $date_field, $t
     }
     // No slots for this reservation.
     if (!property_exists($bucket_reservations[$reservation_id], 'item_id')){
-      dpm($bucket_reservations);
-      dpm($item_reservations);
       return ($bucket_reservations);
     }
 
   }
-  dpm($bucket_reservations);
-  dpm($item_reservations);
   return false;
 }
 

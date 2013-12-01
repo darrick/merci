@@ -2,7 +2,35 @@
 
 define('MERCI_HOURS_FIELD', 'field_merci_hours');
 define('MERCI_HOURS', 'merci_hours');
+define('MERCI_HOLIDAYS_FIELD', 'field_merci_holidays');
 
+function merci_hours_merci_settings_form_alter(&$form, &$form_state) {
+  $preset = $form_state['item'];
+  $settings = $preset->settings;
+  $fields_info = field_info_instances();
+
+  // Allow the uesr to select the name of the entityreference attached to a reservatble item.
+  $reference_fields = array('disabled' => t('Disabled'));
+
+  foreach ($fields_info as $type => $bundles) {
+    foreach ($bundles as $name => $bundle) {
+      foreach ($bundle as $field_name => $field_info) {
+        $more_info = field_info_field($field_name);
+        if ( $more_info['type'] == 'office_hours') {
+          $reference_fields[$field_name] = $name . ":" . $field_name;
+        }
+      }
+    }
+  }
+
+  $form['settings']['merci_hours_field'] = array(
+    '#type' => 'select',
+    '#title' => t('Office hours field'),
+    '#options' => $reference_fields,
+    '#default_value' => array_key_exists('merci_hours_field', $settings) ? $settings['merci_hours_field'] : NULL,
+    '#description' => t('Select the entityreference field containing bucket items.'),
+  );
+}
 /**
  * Implementation of hook_form_alter().
  */
@@ -30,71 +58,19 @@ function merci_hours_merci_node_type_save($bundle_name) {
 }
 
 function merci_hours_field_attach_validate($entity_type, $entity, &$errors) {
-  dpm($entity);
-  dpm($entity_type);
-  dpm($errors);
-}
-function merci_hours_form_alter(&$form, &$form_state, $form_id) {
-  /*
-  if (isset($form[MERCI_RESERVATION_DATE_FIELD])) {
-    dpm($form);
-    dpm($form_id);
-    $langcode = 'und';
-    //$form[MERCI_RESERVATION_DATE_FIELD][$langcode][0]['#element_validate'][] = 'merci_hours_date_validate';
-    $form['#validate'][] = 'merci_hours_date_validate';
-  }
-   */
-}
-
-function merci_hours_date_validate($form, &$form_state) {
-  dpm($form);
-  dpm($form_state);
-  form_set_error(MERCI_RESERVATION_DATE_FIELD, t('This field is required.'));
-}
-
-/**
- * Implementation of hook_node_validate().
- */
-function merci_hours_node_validate($node, $form, &$form_state) {
-
-  if (is_merci_reservation_node($node)) {
-
-    if (!empty($form_state['ahah_submission'])) {
-      return;
-    }
-
-    // No validation necessary on deletion.
-    if ($form_state['triggering_element']['#id'] == 'edit-delete') {
-      return;
-    }
-
-    $entity_type = 'node';
-    $merci_settings = merci_settings_load($entity_type, $node->type);
-    $target_field = $merci_settings['target_field'];
-    $date_field = $merci_settings['date_field'];
-    $langcode = $node->language;
-    $items = $node->{$target_field}[$langcode];
-
-    $errors = array();
-
-    merci_bucket_merci_validate_items($entity_type, $node, $date_field, $target_field, $items, &$errors);
-
-    if (count($errors)) {
-      foreach ($errors[$target_field][$langcode] as $delta => $error) {
-        //$errors[$target_field][$langcode][$delta][] = array(
-        foreach($error as $error_message){
-          $messages[] = $error_message['message'];
-        }
-        form_set_error("$target_field][$langcode][$delta][target_id", implode('<br>', $messages)); 
-      }
-    }
+  if (is_merci_reservation_node($entity)) {
+    merci_hours_merci_validate($entity_type, $entity, &$errors);
   }
 }
 
-function merci_hours_merci_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
-  $field_date_name = $field['settings']['handler_settings']['behaviors']['merci']['merci']['merci_date_field'];
 
-  if (!property_exists($entity, $field_date_name)) {
+function merci_hours_merci_validate($entity_type, $entity, &$errors){
+    $merci = merci_settings_load($entity_type, $entity);
+    $target_field = $merci['settings']['target_field'];
+    $date_field = $merci['settings']['date_field'];
+  return;
+
+  if (!property_exists($entity, $date_field)) {
     return;
   }
   foreach ($items as $delta => $item) {
@@ -161,75 +137,6 @@ function merci_hours_merci_validate($entity_type, $entity, $field, $instance, $l
   }
 
   return;
-}
-
-function merci_hours_merci_settings_form($field, $instance, &$form) {
-  /**
-   * get all date fields on the site organized by entity and bundle
-   */
-  $fields_info = field_info_instances();
-
-  /**
-   * get all date fields on the site organized by entity and bundle
-   */
-  $reference_fields = array('disabled' => t('Disabled'));
-
-  $time_fields = array('disabled' => t('Disabled'));
-  foreach ($fields_info as $type => $bundles) {
-    foreach ($bundles as $name => $bundle) {
-      foreach ($bundle as $field_name => $field_info) {
-        $more_info = field_info_field($field_name);
-        if ( $more_info['type'] == 'timefield') {
-          $time_fields[$field_name] = $field_info['label'];
-        }
-        if ( $more_info['type'] == 'entityreference') {
-          $reference_fields[$field_name] = $field_info['label'];
-        }
-      }
-    }
-  }
-
-  $settings = $field['settings']['handler_settings']['behaviors']['merci']['merci_hours'];
-  $default_value = array_key_exists('merci_time_field', $settings) ? $settings['merci_time_field'] : 'disabled';
-
-  $form['merci_hours'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Merci hours'),
-    '#collapsible' => TRUE,
-    '#collapsed' => $default_value == 'disabled' ? true : false, 
-  );
-  if (empty($time_fields)) {
-    $form['merci_hours']['merci_time_field'] = array(
-      '#markup' => t('Please add a time field to a entity to use to filter reservations.')
-    );
-  } else {
-
-
-    $form['merci_hours']['merci_time_field'] = array(
-      '#type' => 'select',
-      '#title' => t('Time field'),
-      '#options' => $time_fields,
-      '#default_value' => $default_value,
-      '#description' => t('Select the time field to use to limit reservations of this entity field.'),
-    );
-  }
-
-  $default_value = array_key_exists('merci_time_reference_field', $settings) ? $settings['merci_time_reference_field'] : 'disabled';
-  if (empty($reference_fields)) {
-    $form['merci_hours']['merci_time_reference_field'] = array(
-      '#markup' => t('Please add a entityreference field to the user entity to use to filter reservations by permission.')
-    );
-  } else {
-
-
-    $form['merci_hours']['merci_time_reference_field'] = array(
-      '#type' => 'select',
-      '#title' => t('Time reference field'),
-      '#options' => $reference_fields,
-      '#default_value' => $default_value,
-      '#description' => t('Select the entityreference field to use to limit reservations of this entity field.'),
-    );
-  }
 }
 
 /**
