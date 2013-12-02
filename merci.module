@@ -190,9 +190,8 @@ function merci_node_access($node, $op, $account) {
   }
 }
 
-
 function merci_form_node_type_form_alter(&$form, &$form_state) {
-  dpm($form);
+
   $node_type = $form['#node_type']->type;
 
   $form['merci'] = array(
@@ -203,19 +202,6 @@ function merci_form_node_type_form_alter(&$form, &$form_state) {
     '#description' => t('Specify how MERCI should treat content of this type.'),
   );
 
-  // MERCI settings.
-  /*
-  $url = array(
-    '!url' => l(t('Manage fields'), 'admin/structure/types/manage/' . str_replace('_', '-', $node_type) . '/fields'),
-  );
-  $type = og_is_group_type('node', $node_type) ? 'group' : 'omitted';
-  $disabled = $type != 'omitted';
-
-  $description = t('Set the content type to be a group, that content will be associated with, and will have group members.');
-  if ($disabled) {
-   $description .= '<br/>' . t('To unset the group definition you should delete the "Group type" field via !url.', $url);
-  }
-   */
   $options  = array(
     'disabled' => t('Disabled'),
   );
@@ -232,41 +218,8 @@ function merci_form_node_type_form_alter(&$form, &$form_state) {
     '#after_build' => array('merci_type_setting_after_build'),
   );
 
-  $presets = merci_preset_load();
-
-  // If there are presets prompt the user to select one or create another.
-  // If no, prompt to create a preset.
-  if (!empty($presets)) {
-    foreach (merci_preset_load() as $preset => $item) {
-      $options[$preset] = $item['preset_name'];
-    }
-
-    $form['merci']['merci_preset'] = array(
-      '#title' => t('Select preset'),
-      '#type' => 'select',
-      '#default_value' => variable_get('merci_preset_' . $node_type, 'disabled'),
-      '#options' => $options,
-    );
-    $form['merci']['links'] = array(
-      '#theme' => 'links',
-      '#links' => array(
-        array(
-          'title' => t('Create new preset'),
-          'href' => 'admin/config/merci/merci/add',
-        ),
-        array(
-          'title' => t('Manage presets'),
-          'href' => 'admin/config/merci/merci',
-        ),
-      ),
-    );
-  }
-  else {
-    $form['merci']['no_preset_message'] = array(
-      '#markup' => '<div class="messages warning">' . t('No presets are available. You must to <a href="@create">create a preset</a> to proceed.', array('@create' => url('admin/config/merci/merci/add'))) . '</div>',
-    );
-  }
 }
+
 
 function merci_type_setting_after_build($element) {
   foreach ($element['#description_items'] as $key => $value) {

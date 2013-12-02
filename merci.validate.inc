@@ -61,14 +61,7 @@ function merci_preset_load($machine_name = NULL) {
 function merci_settings_load($entity_type, $entity) {
   $node_type = $entity->type;
   $machine_name = variable_get('merci_preset_' . $node_type, 'disabled');
-  ctools_include('export');
-  if (isset($machine_name)) {
-    $items = ctools_export_crud_load('merci_preset', $machine_name);
-
-    // CTools returns an object, so we explictly typecast it to array before
-    // returning.
-    return $items = (array) $items;
-  }
+  return merci_preset_load($machine_name);
 }
 
 

@@ -5,11 +5,18 @@ define('MERCI_RESERVATION_DATE_FIELD', 'field_merci_reservation_date');
 define('MERCI_RESERVATION', 'reservation');
 
 
+function merci_reservation_ajax_callback($form, $form_state) {
+  return $form['merci']['merci_container'];
+}
+
 /**
  * Implementation of hook_form_alter().
  */
 function merci_reservation_form_node_type_form_alter(&$form, &$form_state) {
   
+  $node_type = $form['#node_type']->type;
+  $merci_type_setting = !empty($form_state['values']['merci_type_setting']) 
+    ? $form_state['values']['merci_type_setting'] : variable_get('merci_type_setting_' . $node_type, 'disabled');
   // Node add/edit forms.
 
   $description_items = array(
@@ -17,6 +24,53 @@ function merci_reservation_form_node_type_form_alter(&$form, &$form_state) {
   );
   $form['merci']['merci_type_setting']['#options'][MERCI_RESERVATION] = t('Reservation');
   $form['merci']['merci_type_setting']['#description_items'] += $description_items;
+  $form['merci']['merci_type_setting']['#ajax'] = array(
+    'callback' => 'merci_reservation_ajax_callback',
+    'wrapper' => 'merci-preset-div',
+  );
+
+  $form['merci']['merci_container'] = array(
+    '#type' => 'container',
+    '#id'   => 'merci-preset-div',
+  );
+  if ($merci_type_setting == MERCI_RESERVATION) {
+    $presets = merci_preset_load();
+
+    // If there are presets prompt the user to select one or create another.
+    // If no, prompt to create a preset.
+    if (!empty($presets)) {
+      foreach (merci_preset_load() as $preset => $item) {
+        $options[$preset] = $item['preset_name'];
+      }
+
+      $form['merci']['merci_container']['merci_preset'] = array(
+        '#title' => t('Select preset'),
+        '#type' => 'select',
+        '#default_value' => variable_get('merci_preset_' . $node_type, 'disabled'),
+        '#options' => $options,
+      );
+      $form['merci']['merci_container']['links'] = array(
+        '#theme' => 'links',
+        '#links' => array(
+          array(
+            'title' => t('Create new preset'),
+            'href' => 'admin/structure/merci/merci/add',
+          ),
+          array(
+            'title' => t('Manage presets'),
+            'href' => 'admin/structure/merci/merci',
+          ),
+        ),
+      );
+    }
+    else {
+      $form['merci']['merci_container']['no_preset_message'] = array(
+        '#markup' => '<div class="messages warning">' . t('No presets are available. You must to <a href="@create">create a preset</a> to proceed.', array('@create' => url('admin/structure/merci/merci/add'))) . '</div>',
+      );
+    }
+    $data = '(function ($) { $(document).ready(function() { $("input").click(function() { ($(this).val() == "reservation") ? $("#merci-preset-div").show() : $("#merci-preset-div").hide(); });}); })(jQuery);';
+    //drupal_add_js($data, array('type' => 'inline'));
+  }
 }
 
 function merci_reservation_merci_settings_load(&$settings) {
