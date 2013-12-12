@@ -1,0 +1,22 @@
+name = MerciReservationDetail
+description = Provides entity functionality as an example to use in your own development projects
+core = 7.x
+
+dependencies[] = entity
+dependencies[] = views
+
+files[] = merci_reservation_detail.admin.inc
+files[] = merci_reservation_detail_type.admin.inc
+files[] = includes/merci.inline_entity_form.inc
+files[] = views/merci_reservation_detail.views.inc
+files[] = views/merci_reservation_detail_handler_link_field.inc
+files[] = views/merci_reservation_detail_handler_delete_link_field.inc
+files[] = views/merci_reservation_detail_handler_edit_link_field.inc
+files[] = views/merci_reservation_detail_handler_merci_reservation_detail_operations_field.inc
+
+; Information added by drupal.org packaging script on 2011-07-03
+version = "7.x-1.0-alpha2"
+core = "7.x"
+project = "merci_reservation_detail"
+datestamp = "1309730820"
+

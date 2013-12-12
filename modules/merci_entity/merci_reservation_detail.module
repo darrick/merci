@@ -1,0 +1,492 @@
+<?php
+
+/**
+ * @file
+ * Module for the MerciReservationDetail Entity - a starting point to create your own Entity
+ * and associated administration interface
+ */  
+
+
+/**
+ * Implement hook_entity_info().
+ *
+ * We define two entities here - the actual entity that will hold our domain
+ * specific information and an entity that holds information about the different
+ * types of entities. See here: http://drupal.org/node/977380 for a discussion on this
+ * choice.
+ */
+function merci_reservation_detail_entity_info() {
+  $return['merci_reservation_detail'] = array(
+    'label' => t('MerciReservationDetail'),
+    // The entity class and controller class extend the classes provided by the
+    // Entity API
+    'entity class' => 'MerciReservationDetail',
+    'controller class' => 'MerciReservationDetailController',
+    'base table' => 'merci_reservation_detail',
+    'fieldable' => TRUE,
+    'entity keys' => array(
+        'id' => 'merci_reservation_detail_id',
+        'bundle' => 'type',
+    ),
+    // Bundles are defined by the merci_reservation_detail types below
+    'bundles' => array(),
+    // Bundle keys tell the FieldAPI how to extract information from the bundle objects
+    'bundle keys' => array(
+      'bundle' => 'type',
+    ),
+    'label callback' => 'entity_class_label',
+    'uri callback' => 'entity_class_uri',
+    //'creation callback' => 'merci_reservation_detail_create',
+    'access callback' => 'merci_reservation_detail_access',
+    'module' => 'merci_reservation_detail',
+    'inline entity form' => array(
+      'controller' => 'MerciReservationDetailInlineEntityFormController',
+    ),
+    // The information below is used by the MerciReservationDetailUIController (which extends the EntityDefaultUIController)
+    'admin ui' => array(
+      'path' => 'admin/content/merci_reservation_details',
+      'file' => 'merci_reservation_detail.admin.inc',
+      'controller class' => 'MerciReservationDetailUIController',
+      'menu wildcard' => '%merci_reservation_detail',
+    ),
+  );
+  // The entity that holds information about the entity types	  
+  $return['merci_reservation_detail_type'] = array(
+    'label' => t('MerciReservationDetail Type'),
+    'entity class' => 'MerciReservationDetailType',
+    'controller class' => 'MerciReservationDetailTypeController',
+    'base table' => 'merci_reservation_detail_type',
+    'fieldable' => FALSE,
+    'bundle of' => 'merci_reservation_detail',
+    'exportable' => TRUE,
+    'entity keys' => array(
+      'id' => 'id',
+      'name' => 'type',
+      'label' => 'label',
+    ),
+    'access callback' => 'merci_reservation_detail_type_access',
+    'module' => 'merci_reservation_detail',
+    // Enable the entity API's admin UI.
+    'admin ui' => array(
+      'path' => 'admin/structure/merci_reservation_detail_types',
+      'file' => 'merci_reservation_detail_type.admin.inc',
+      'controller class' => 'MerciReservationDetailTypeUIController',
+    ),
+  );
+
+  return $return;
+}
+
+
+/**
+ * Implements hook_entity_info_alter().
+ *
+ * We are adding the info about the merci_reservation_detail types via a hook to avoid a recursion
+ * issue as loading the merci_reservation_detail types requires the entity info as well.
+ *
+ * @todo This needs to be improved
+ */
+function merci_reservation_detail_entity_info_alter(&$entity_info) {
+  foreach (merci_reservation_detail_get_types() as $type => $info) {
+    $entity_info['merci_reservation_detail']['bundles'][$type] = array(
+      'label' => $info->label,
+      'admin' => array(
+        'path' => 'admin/structure/merci_reservation_detail_types/manage/%merci_reservation_detail_type',
+        'real path' => 'admin/structure/merci_reservation_detail_types/manage/' . $type,
+        'bundle argument' => 4,
+        'access arguments' => array('administer merci_reservation_detail types'),
+      ),
+    );
+  }
+}
+  
+
+/**
+ * Implements hook_permission().
+ */
+function merci_reservation_detail_permission() {
+  // We set up permisssions to manage entity types, manage all entities and the
+  // permissions for each individual entity
+  $permissions = array(
+    'administer merci_reservation_detail types' => array(
+      'title' => t('Administer merci_reservation_detail types'),
+      'description' => t('Create and delete fields for merci_reservation_detail types, and set their permissions.'),
+    ),
+    'administer merci_reservation_details' => array(
+      'title' => t('Administer merci_reservation_details'),
+      'description' => t('Edit and delete all merci_reservation_details'),
+    ),  
+  );
+  
+  //Generate permissions per merci_reservation_detail 
+  foreach (merci_reservation_detail_get_types() as $type) {
+    $type_name = check_plain($type->type);
+    $permissions += array(
+      "edit any $type_name merci_reservation_detail" => array(
+        'title' => t('%type_name: Edit any merci_reservation_detail', array('%type_name' => $type->label)),
+      ),
+      "view any $type_name merci_reservation_detail" => array(
+        'title' => t('%type_name: View any merci_reservation_detail', array('%type_name' => $type->label)),
+      ),
+    );
+  }
+  return $permissions;  
+}
+
+
+/**
+ * Determines whether the given user has access to a merci_reservation_detail.
+ *
+ * @param $op
+ *   The operation being performed. One of 'view', 'update', 'create', 'delete'
+ *   or just 'edit' (being the same as 'create' or 'update').
+ * @param $merci_reservation_detail
+ *   Optionally a merci_reservation_detail or a merci_reservation_detail type to check access for. If nothing is
+ *   given, access for all merci_reservation_details is determined.
+ * @param $account
+ *   The user to check for. Leave it to NULL to check for the global user.
+ * @return boolean
+ *   Whether access is allowed or not.
+ */
+function merci_reservation_detail_access($op, $merci_reservation_detail = NULL, $account = NULL) {
+  if (user_access('administer merci_reservation_details', $account)) {
+    return TRUE;
+  }
+  if (isset($merci_reservation_detail) && $type_name = $merci_reservation_detail->type) {
+    $op = ($op == 'view') ? 'view' : 'edit';
+    if (user_access("$op any $type_name merci_reservation_detail", $account)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+
+/**
+ * Access callback for the entity API.
+ */
+function merci_reservation_detail_type_access($op, $type = NULL, $account = NULL) {
+  return user_access('administer merci_reservation_detail types', $account);
+}
+
+
+/**
+ * Gets an array of all merci_reservation_detail types, keyed by the type name.
+ *
+ * @param $type_name
+ *   If set, the type with the given name is returned.
+ * @return MerciReservationDetailType[]
+ *   Depending whether $type isset, an array of merci_reservation_detail types or a single one.
+ */
+function merci_reservation_detail_get_types($type_name = NULL) {
+  // entity_load will get the Entity controller for our merci_reservation_detail entity and call the load
+  // function of that object - we are loading entities by name here.
+  $types = entity_load_multiple_by_name('merci_reservation_detail_type', isset($type_name) ? array($type_name) : FALSE);
+  return isset($type_name) ? reset($types) : $types;
+}
+
+
+/**
+ * Menu argument loader; Load a merci_reservation_detail type by string.
+ *
+ * @param $type
+ *   The machine-readable name of a merci_reservation_detail type to load.
+ * @return
+ *   A merci_reservation_detail type array or FALSE if $type does not exist.
+ */
+function merci_reservation_detail_type_load($type) {
+  return merci_reservation_detail_get_types($type);
+}
+
+
+/**
+ * Fetch a merci_reservation_detail object. Make sure that the wildcard you choose 
+ * in the merci_reservation_detail entity definition fits the function name here.
+ *
+ * @param $merci_reservation_detail_id
+ *   Integer specifying the merci_reservation_detail id.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset.
+ * @return
+ *   A fully-loaded $merci_reservation_detail object or FALSE if it cannot be loaded.
+ *
+ * @see merci_reservation_detail_load_multiple()
+ */
+function merci_reservation_detail_load($merci_reservation_detail_id, $reset = FALSE) {
+  $merci_reservation_details = merci_reservation_detail_load_multiple(array($merci_reservation_detail_id), array(), $reset);
+  return reset($merci_reservation_details);
+}
+
+
+/**
+ * Load multiple merci_reservation_details based on certain conditions.
+ *
+ * @param $merci_reservation_detail_ids
+ *   An array of merci_reservation_detail IDs.
+ * @param $conditions
+ *   An array of conditions to match against the {merci_reservation_detail} table.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset.
+ * @return
+ *   An array of merci_reservation_detail objects, indexed by merci_reservation_detail_id.
+ *
+ * @see entity_load()
+ * @see merci_reservation_detail_load()
+ */
+function merci_reservation_detail_load_multiple($merci_reservation_detail_ids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('merci_reservation_detail', $merci_reservation_detail_ids, $conditions, $reset);
+}
+
+
+/**
+ * Deletes a merci_reservation_detail.
+ */
+function merci_reservation_detail_delete(MerciReservationDetail $merci_reservation_detail) {
+  $merci_reservation_detail->delete();
+}
+
+
+/**
+ * Delete multiple merci_reservation_details.
+ *
+ * @param $merci_reservation_detail_ids
+ *   An array of merci_reservation_detail IDs.
+ */
+function merci_reservation_detail_delete_multiple(array $merci_reservation_detail_ids) {
+  entity_get_controller('merci_reservation_detail')->delete($merci_reservation_detail_ids);
+}
+
+
+/**
+ * Create a merci_reservation_detail object.
+ */
+function merci_reservation_detail_create($values = array()) {
+  return entity_get_controller('merci_reservation_detail')->create($values);
+}
+
+
+/**
+ * Saves a merci_reservation_detail to the database.
+ *
+ * @param $merci_reservation_detail
+ *   The merci_reservation_detail object.
+ */
+function merci_reservation_detail_save(MerciReservationDetail $merci_reservation_detail) {
+  return $merci_reservation_detail->save();
+}
+
+
+/**
+ * Saves a merci_reservation_detail type to the db.
+ */
+function merci_reservation_detail_type_save(MerciReservationDetailType $type) {
+  $type->save();
+}
+
+
+/**
+ * Deletes a merci_reservation_detail type from the db.
+ */
+function merci_reservation_detail_type_delete(MerciReservationDetailType $type) {
+  $type->delete();
+}
+
+
+/**
+ * URI callback for merci_reservation_details
+ */
+function merci_reservation_detail_uri(MerciReservationDetail $merci_reservation_detail){
+  return array(
+    'path' => 'merci_reservation_detail/' . $merci_reservation_detail->merci_reservation_detail_id,
+  );
+}
+
+
+/**
+ * Menu title callback for showing individual entities
+ */
+function merci_reservation_detail_page_title(MerciReservationDetail $merci_reservation_detail){
+  return $merci_reservation_detail->name;
+}
+
+
+/**
+ * Sets up content to show an individual merci_reservation_detail
+ * @todo - get rid of drupal_set_title();
+ */
+function merci_reservation_detail_page_view($merci_reservation_detail, $view_mode = 'full') {    
+  $controller = entity_get_controller('merci_reservation_detail');  
+  $content = $controller->view(array($merci_reservation_detail->merci_reservation_detail_id => $merci_reservation_detail));
+  drupal_set_title($merci_reservation_detail->name);
+  return $content;
+}
+
+
+/**
+ * Implements hook_views_api().
+ */
+function merci_reservation_detail_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'merci_reservation_detail') . '/views',
+  );
+}
+
+
+/**
+ * Implement hook_theme().
+ */
+function merci_reservation_detail_theme() {
+  return array(
+    'merci_reservation_detail_add_list' => array(
+      'variables' => array('content' => array()),
+      'file' => 'merci_reservation_detail.admin.inc',
+    ),
+    'merci_reservation_detail' => array(
+      'render element' => 'elements',
+      'template' => 'merci_reservation_detail',
+    ),
+   'merci_reservation_detail_sample_data' => array(
+      'variables' => array('merci_reservation_detail_sample_data', 'merci_reservation_detail' => NULL),
+      'template' => 'merci_reservation_detail-sample-data',
+    ),
+
+
+  );
+}  
+
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function merci_reservation_detail_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  // Add action link 'admin/structure/merci_reservation_details/add' on 'admin/structure/merci_reservation_details'.
+  if ($root_path == 'admin/content/merci_reservation_details') {
+    $item = menu_get_item('admin/content/merci_reservation_details/add');
+    if ($item['access']) {
+      $data['actions']['output'][] = array(
+        '#theme' => 'menu_local_action',
+        '#link' => $item,
+      );
+    }
+  }
+}
+
+
+/**
+ * The class used for merci_reservation_detail entities
+ */
+class MerciReservationDetail extends Entity {
+  
+  public function __construct($values = array()) {
+    parent::__construct($values, 'merci_reservation_detail');
+  }
+
+  protected function defaultLabel() {
+    return $this->name;
+  }
+
+  protected function defaultUri() {
+    return array('path' => 'merci_reservation_detail/' . $this->merci_reservation_detail_id);
+  }
+  
+  
+}
+
+
+/**
+ * The class used for merci_reservation_detail type entities
+ */
+class MerciReservationDetailType extends Entity {
+  
+  public $type;
+  public $label;
+  
+  public function __construct($values = array()) {
+    parent::__construct($values, 'merci_reservation_detail_type');
+  }
+  
+}
+
+
+/**
+ * The Controller for MerciReservationDetail entities
+ */
+class MerciReservationDetailController extends EntityAPIController {
+  public function __construct($entityType) {
+    parent::__construct($entityType);
+  }
+
+
+  /**
+   * Create a merci_reservation_detail - we first set up the values that are specific
+   * to our merci_reservation_detail schema but then also go through the EntityAPIController
+   * function.
+   * 
+   * @param $type
+   *   The machine-readable type of the merci_reservation_detail.
+   *
+   * @return
+   *   A merci_reservation_detail object with all default fields initialized.
+   */
+  public function create(array $values = array()) {
+    // Add values that are specific to our MerciReservationDetail
+    $values += array( 
+      'merci_reservation_detail_id' => '',
+      'is_new' => TRUE,
+      'title' => '',
+      'created' => '',
+      'changed' => '',
+      'data' => '',
+    );
+    
+    $merci_reservation_detail = parent::create($values);
+    return $merci_reservation_detail;
+  }
+  
+  /**
+   * Overriding the buldContent function to add entity specific fields
+   */
+  public function buildContent($entity, $view_mode = 'full', $langcode = NULL, $content = array()) {
+    $content = parent::buildContent($entity, $view_mode, $langcode, $content);
+    $content['merci_reservation_detail_sample_data'] =  array(
+      '#markup' => theme('merci_reservation_detail_sample_data', array('merci_reservation_detail_sample_data' => check_plain($entity->data['sample_data']), 'merci_reservation_detail' => $entity)),
+    );
+
+    return $content;
+  }
+  
+}
+
+
+/**
+ * The Controller for MerciReservationDetail entities
+ */
+class MerciReservationDetailTypeController extends EntityAPIControllerExportable {
+  public function __construct($entityType) {
+    parent::__construct($entityType);
+  }
+  
+   /**
+   * Create a merci_reservation_detail type - we first set up the values that are specific
+   * to our merci_reservation_detail type schema but then also go through the EntityAPIController
+   * function.
+   * 
+   * @param $type
+   *   The machine-readable type of the merci_reservation_detail.
+   *
+   * @return
+   *   A merci_reservation_detail type object with all default fields initialized.
+   */
+  public function create(array $values = array()) {
+    // Add values that are specific to our MerciReservationDetail
+    $values += array( 
+      'id' => '',
+      'is_new' => TRUE,
+      'data' => '',
+    );
+    $merci_reservation_detail_type = parent::create($values);
+    return $merci_reservation_detail_type;
+  }
+
+}
