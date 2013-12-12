@@ -30,6 +30,26 @@ function merci_resource_field_attach_validate($entity_type, $entity, &$errors) {
   }
 }
 
+/**
+ * Implements hook_node_access().
+ */
+function merci_resource_node_access($node, $op, $account) {
+  global $user;
+
+  $type = isset($node->type) ? $node->type : $node;
+  $uid = isset($node->uid) ? $node->uid : FALSE;
+
+  dpm(content_access_node_grants($account, $op));
+  dpm(content_access_node_access_records($node));
+  if (in_array($op, array('update', 'delete', 'create'))) {
+    if (merci_type_setting($node) != MERCI_RESOURCE) {
+      if (node_node_access($node, $op, $account) == NODE_ACCESS_IGNORE) {
+  //      return NODE_ACCESS_DENY;
+      }
+    }
+  }
+}
+
 function merci_resource_merci_validate_items($entity_type, $entity, $items, &$errors) {
 
   $merci = merci_settings_load($entity_type, $entity);

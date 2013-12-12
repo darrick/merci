@@ -22,8 +22,8 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
     $bundle = $this->instance['bundle'];
     $entity = $this->entity;
 
-    //$entity_type = $this->entity_type;
     $merci = merci_settings_load($entity_type, $entity);
+
     $field_item_name = $merci['settings']['target_field'];
 
     $query = $this->buildEntityFieldQuery($match, $match_operator);
@@ -60,5 +60,4 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
     }
     return $options;
   }
-
 }

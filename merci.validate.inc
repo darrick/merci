@@ -72,6 +72,9 @@ function is_merci_reservation_node($node) {
 
 function merci_type_setting($node) {
   $type = isset($node->type) ? $node->type : $node;
+  if (!is_string($node)) {
+    return FALSE;
+  }
   return variable_get('merci_type_setting_' . $type, 'disabled');
 }
 
