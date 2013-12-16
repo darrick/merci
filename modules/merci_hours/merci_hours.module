@@ -1,7 +1,6 @@
 <?php
 
 define('MERCI_HOURS_FIELD', 'field_merci_hours');
-define('MERCI_HOURS', 'merci_hours');
 define('MERCI_HOLIDAYS_FIELD', 'field_merci_holidays');
 
 /**
@@ -47,6 +46,11 @@ function merci_hours_menu() {
   );
   $items['merci_hours_dates/%/%/%'] = array(
     'page callback' => 'merci_hours_date_open_days_ajax',
+    'page arguments' => array(1, 2, 3),
+    'access callback' => TRUE,
+  );
+  $items['merci_hours_open/%/%'] = array(
+    'page callback' => 'merci_hours_open_hours_ajax',
     'page arguments' => array(1, 2, 3),
     'access callback' => TRUE,
   );
@@ -165,6 +169,13 @@ function merci_hours_open_days_ajax($wc, $year, $month) {
    drupal_json_output($dates);
 }
 
+/**
+ * Page callback. Returns json array for ajax calls.
+ */
+function merci_hours_open_hours_ajax($wc, $day) {
+  $hours = merci_hours_get_open_hours($wc, $day);
+   drupal_json_output($hours);
+}
 /**
  * @defgroup wc_date_field_settings Hooks to extend date field settings.
  * {@
@@ -296,6 +307,7 @@ function merci_hours_date_popup_process_alter(&$element, $form_state, $context) 
           'openDays' => merci_hours_get_open_days_in_year($element['#merci_hours']),
           'minDate' => $element['#min_date'],
           'maxDate' => $element['#max_date'],
+          'timeid' => $element['time']['#id'],
         ),
       ),
     );
@@ -306,7 +318,7 @@ function merci_hours_date_popup_process_alter(&$element, $form_state, $context) 
     // Limit selectable times based on hours open.
     $return_id = $element['time']['#id'];
 
-    $open_hours = merci_hours_get_open_hours($element['#merci_hours']);
+    $open_hours = merci_hours_get_open_hours($element['#merci_hours'],4);
 
     $element['time']['#attributes']['class'][] = 'merci-hours-timefield';
     // 2013-12-14 17:38:25
@@ -320,12 +332,14 @@ function merci_hours_date_popup_process_alter(&$element, $form_state, $context) 
       'startHour' => $open_hours['open']->format('H'),
       'startMinutes' => $open_hours['open']->format('i'),
        */
-      'minTime'   => $open_hours['open']->format('g:ia'),
-      'maxTime'   => $open_hours['close']->format('g:ia'),
+      'minTime'   => $open_hours['open'],
+      'maxTime'   => $open_hours['close'],
+      'dateid' => $element['date']['#id'],
+      'workCalendar' => $element['#merci_hours'],
     );
 
     if (empty($element['time']['#value'])) {
-      $element['time']['#value'] = $open_hours['open']->format('g:ia');
+      $element['time']['#value'] = $open_hours['open'];
     }
     $js_settings['datePopup'][$return_id] = array(
       'settings' => $settings,
@@ -523,5 +537,5 @@ function merci_hours_get_open_hours($cal = NULL, $day = NULL) {
       break;
     }
   }
-  return array('open' => $open, 'close' => $close);
+  return array('open' => $open->format('g:ia'), 'close' => $close->format('g:ia'));
 }

@@ -6,30 +6,15 @@ core = 7.x
 
 configure = admin/config/system/merci
 
-dependencies[] = list 
-dependencies[] = number 
 dependencies[] = date
 dependencies[] = date_api
 dependencies[] = date_popup
-; dependencies[] = date_timezone
-dependencies[] = views
-dependencies[] = taxonomy
-; dependencies[] = fieldgroup
-; dependencies[] = optionwidgets 
+dependencies[] = entityreference 
 
-
-
-files[] = merci.install
-files[] = merci.module
-files[] = includes/merci.admin.inc
-files[] = includes/resource.inc
-files[] = includes/bucket.inc
-files[] = includes/kit.inc
-files[] = includes/merci.field.inc
+files[] = includes/reservation.handler.inc
 files[] = tests/merci_admin.test
 files[] = tests/merci_issues.test
 files[] = tests/merci_bucket.test
 files[] = tests/merci_resource.test
 files[] = tests/merci_testcase.php
 files[] = tests/merci_user.test
-files[] = theme/merci_conflict_grid.tpl.php

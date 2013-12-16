@@ -54,58 +54,47 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
   public function settingsForm($field, $instance) {
     $form = array();
 
-    $default = isset($instance['settings']['behaviors']['merci']['preset']) ? $instance['settings']['behaviors']['merci']['preset'] : '';
+    $settings = isset($instance['settings']['behaviors']['merci']) ? $instance['settings']['behaviors']['merci'] : array();
+    /**
+     * get all date fields on the site organized by entity and bundle
+     * Use field_info_field_map() instead.
+     */
+    $fields_info = field_info_instances($instance['entity_type'], $instance['bundle']);
 
-    $presets = merci_preset_load();
+    // Allow the uesr to select the name of the entityreference attached to a reservatble item.
+    $date_fields = array('disabled' => t('Disabled'));
 
-    // If there are presets prompt the user to select one or create another.
-    // If no, prompt to create a preset.
-    if (!empty($presets)) {
-      foreach (merci_preset_load() as $preset => $item) {
-        $options[$preset] = $item['preset_name'];
+    foreach ($fields_info as $field_name => $field_info) {
+      $more_info = field_info_field($field_name);
+      if ( $more_info['type'] == 'datetime') {
+        $date_fields[$field_name] = $field_name;
       }
+    }
 
-      $form['preset'] = array(
-        '#title' => t('Select preset'),
-        '#type' => 'select',
-        '#default_value' => $default,
-        '#options' => $options,
-      );
-      $form['links'] = array(
-        '#theme' => 'links',
-        '#links' => array(
-          array(
-            'title' => t('Create new preset'),
-            'href' => 'admin/structure/merci/merci/add',
-          ),
-          array(
-            'title' => t('Manage presets'),
-            'href' => 'admin/structure/merci/merci',
-          ),
-        ),
-      );
-    }
-    else {
-      $form['no_preset_message'] = array(
-        '#markup' => '<div class="messages warning">' . t('No presets are available. You must to <a href="@create">create a preset</a> to proceed.', array('@create' => url('admin/structure/merci/merci/add'))) . '</div>',
-      );
-    }
-    $data = '(function ($) { $(document).ready(function() { $("input").click(function() { ($(this).val() == "reservation") ? $("#merci-preset-div").show() : $("#merci-preset-div").hide(); });}); })(jQuery);';
-    //drupal_add_js($data, array('type' => 'inline'));
+    $form['date_field'] = array(
+      '#type' => 'select',
+      '#title' => t('Date field'),
+      '#options' => $date_fields,
+      '#default_value' => array_key_exists('date_field', $settings) ? $settings['date_field'] : NULL,
+      '#description' => t('Select the date field to use for reservations.'),
+    );
+
     return $form;
   }
 
   public function validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
 
+    if ($entity_type == NULL) {
+      return;
+    }
     $targets = array();
     $target_type = $instance['entity_type'];
     list($entity_id,,) = entity_extract_ids($entity_type, $entity);
 
-    $preset = $instance['settings']['behaviors']['merci']['preset'];
-    $target_type = $instance['entity_type'];
-    $settings = merci_preset_load_settings($preset);
+    $settings = $instance['settings']['behaviors']['merci'];
 
     $date_field = $settings['date_field'];
+    $settings['target_field'] = $field['field_name'];
     $dates = property_exists($entity, $date_field) ? $entity->{$date_field}[LANGUAGE_NONE][0] : NULL;
 
     foreach ($items as $delta => $item) {
@@ -117,8 +106,11 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
     $targets = entity_load($target_type, $targets);
 
     foreach ($items as $delta => $item) {
+      if (empty($item['target_id'])) {
+        continue;
+      }
       $target = $targets[$item['target_id']];
-      $handler = Merci_ReservableHandler_Generic::getInstance($target_type, $target, $preset); 
+      $handler = Merci_ReservableHandler_Generic::getInstance($target_type, $target, $settings); 
       dpm($handler);
 
       // Check availability

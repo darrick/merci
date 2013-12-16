@@ -6,48 +6,6 @@
  * MERCI - Managed Equipment Reservation Checkout and Inventory
  */
 
-// Add field widget related code.
-require DRUPAL_ROOT . '/' . drupal_get_path('module', 'merci') . '/includes/merci.field.inc';
-
-/**
-  *  * Group audience field.
-  *   */
-define('MERCI_RESERVABLE_TYPE_FIELD', 'field_merci_reservable_type');
-define('MERCI_DATE_RESTRICTIONS_DENY', 'deny');
-define('MERCI_DATE_RESTRICTIONS_ALLOW', 'allow');
-define('MERCI_RESTRICTIONS_DENY', 'deny');
-define('MERCI_RESTRICTIONS_ALLOW', 'allow');
-define('MERCI_DATE_RESTRICTIONS_IGNORE', NULL);
-
-
-// Item default availability options.
-define('MERCI_AVA_F', 1);
-define('MERCI_UNA_F', 2);
-define('MERCI_AVA_T', 3);
-define('MERCI_UNA_S', 4);
-
-
-// Bucket/resource status options.
-define('MERCI_STATUS_ACTIVE', 1);
-define('MERCI_STATUS_INACTIVE', 2);
-
-// Bucket/resource sub-types.
-define('MERCI_SUB_TYPE_ITEM', 1);
-define('MERCI_SUB_TYPE_RESERVATION', 2);
-
-// Item status for reservations.
-define('MERCI_ITEM_STATUS_CANCELED', -2);
-define('MERCI_ITEM_STATUS_CHECKED_IN', -1);
-define('MERCI_ITEM_STATUS_AVAILABLE', 0);
-define('MERCI_ITEM_STATUS_RESERVED', 1);
-define('MERCI_ITEM_STATUS_CHECKED_OUT', 2);
-
-
-//module_load_include('inc', 'merci', 'includes/database');
-//module_load_include('inc', 'merci', 'includes/api');
-
-module_load_include('inc', 'merci', 'merci.validate');
-
 /**
  * Implements hook_ctools_plugin_directory().
  */
@@ -58,6 +16,35 @@ function merci_ctools_plugin_directory($module, $plugin) {
   // Load the export_ui plugin.
   if ($plugin =='export_ui') {
     return 'plugins/export_ui';
+  }
+}
+
+function merci_preset_load_settings($machine_name) {
+  $preset = merci_preset_load($machine_name);
+  return $preset['settings'];
+}
+/**
+ * Load the given preset(s).
+ * @param string $machine_name
+ * @return array
+ */
+function merci_preset_load($machine_name = NULL) {
+  ctools_include('export');
+  if (isset($machine_name)) {
+    $items = ctools_export_crud_load('merci_preset', $machine_name);
+
+    // CTools returns an object, so we explictly typecast it to array before
+    // returning.
+    return $items = (array) $items;
+  }
+  else {
+    $result = ctools_export_crud_load_all('merci_preset');
+    if (!empty($result)) {
+      foreach ($result as $key => $item) {
+        $items[$key] = (array) $item;
+      }
+      return $items;
+    }
   }
 }
 
@@ -86,16 +73,6 @@ function merci_permission() {
       'title' => t('view all reservations'),
       'description' => t('TODO Add a description for \'view all reservations\''),
     ),
-    /*
-    'create reservations outside hours of operation' => array(
-      'title' => t('create reservations outside hours of operation'),
-      'description' => t('TODO Add a description for \'create reservations outside hours of operation\''),
-    ),
-    'override max hours over closed days' => array(
-      'title' => t('override max hours over closed days'),
-      'description' => t('TODO Add a description for \'override max hours over closed days\''),
-    ),
-     */
   );
 }
 
@@ -105,56 +82,7 @@ function merci_permission() {
 function merci_menu() {
 
 
-  /*
-  $items['merci/taxonomy/%node/%/%'] = array(
-    'title' => 'JSON interface for node taxonomy',
-    'description' => 'Takes a node ID and returns taxonomy data as JSON',
-    'page callback' => 'merci_taxonomy_json',
-    'access arguments' => array('manage reservations'),
-    'page arguments' => array(2, 3, 4),
-    'file' => 'includes/menu.inc',
-    'type' => MENU_CALLBACK,
-    );
-
-
-  // Adds Manage Equipment to Admin Interfaces
-  //
-  $items['admin/merci/manage'] = array(
-    'title' => 'Manage Equipment',
-    'description' => 'Manage Equipment Reservations, Checkout and Inventory (MERCI)',
-    'position' => 'right',
-    'page callback' => 'system_admin_menu_block_page',
-    'access arguments' => array('manage reservations'),
-    'file' => 'system.admin.inc',
-    'file path' => drupal_get_path('module', 'system'),
-    'weight' => -19,
-    );
-
-  $items['admin/merci/manage/current_inventory'] = array(
-    'title' => 'Current Inventory',
-    'description' => 'Displays list',
-    'page callback' => 'theme',
-    'page arguments' => array('merci_current_inventory'),
-    'access arguments' => array('manage reservations'),
-    'type' => MENU_NORMAL_ITEM,
-    );
-
-  $items['admin/merci/manage/current_inventory/%'] = array(
-    'title' => 'Current Inventory',
-    'description' => 'Displays list',
-    'type' => MENU_CALLBACK,
-  );
-   */
   // Standard Administration settings.
-  $items['admin/config/system/merci'] = array(
-    'title' => 'MERCI Configuration',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('merci_admin_settings'),
-    'access callback' => 'user_access',
-    'access arguments' => array('administer MERCI'),
-    'description' => 'Configure system settings for MERCI.',
-    'file' => 'includes/merci.admin.inc',
-  );
   $items['admin/config/merci'] = array(
     'title' => 'MERCI',
     'description' => 'Administer MERCI modules.',
@@ -177,152 +105,8 @@ function merci_menu() {
   );
 
 
-  $items['admin/config/system/merci/edit'] = array(
-    'title' => 'Edit',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
-  );
-
   return $items;
 }
-
-/**
- * Validation callback for the widget form.
- * Adjusts the internal ids taking into account the add / remove checkboxes.
- */
-function merci_entityreference_view_widget_validate($element, &$form_state) {
-  // Show errors.
-  $form_state['triggering_element']['#limit_validation_errors'] = FALSE;
-}
-
-function merci_field_widget_entityreference_view_widget_form_alter(&$element, &$form_state, $context) {
-  dpm($element);
-  dpm($form_state);
-  dpm($context);
-  $element['#element_validate'][] = 'merci_entityreference_view_widget_validate';
-  return;
-
-  foreach ($element['add'] as $entity_id => $checkbox) {
-    $ajax = $checkbox['#ajax'];
-    unset($element['add'][$entity_id]['#ajax']);
-  //  $element['add'][$entity_id]['#ajax']['callback'] = 'merci_entityreference_view_widget_ajax_callback';
-    //$element['add'][$entity_id] = array($checkbox, $button);
-
-  }
-  // Add a css class to widget form elements for all fields of type mytype.
-  if ($context['field']['type'] == 'mytype') {
-    // Be sure not to overwrite existing attributes.
-    $element['#attributes']['class'][] = 'myclass';
-  }
-  $element['Add selected items'] = array(
-      '#type' => 'submit',
-      '#value' => t('Add'),
-      '#ajax' => $ajax,
-      '#limit_validation_errors' => FALSE,
-
-
-    );
-  dpm($element);
-}
-
-/**
- * Implements hook_node_access().
- */
-function merci_node_access($node, $op, $account) {
-  global $user;
-
-  $type = isset($node->type) ? $node->type : $node;
-  $uid = isset($node->uid) ? $node->uid : FALSE;
-
-  if (is_merci_reservation_node($node)) {
-
-    if (user_access('manage reservations')) {
-      return NODE_ACCESS_ALLOW;
-    }
-    elseif (user_access('view all reservations') && $op == 'view') {
-      return NODE_ACCESS_ALLOW;
-    }
-    elseif (user_access('create reservations') and !user_access('suspend MERCI access')) {
-      if ($uid === FALSE || $uid == $account->uid) {
-        return NODE_ACCESS_ALLOW;
-      }
-    }
-    return NODE_ACCESS_DENY;
-  }
-}
-
-function merci_form_node_type_form_alter(&$form, &$form_state) {
-
-  $node_type = $form['#node_type']->type;
-
-  $form['merci'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('MERCI'),
-    '#collapsible' => TRUE,
-    '#group' => 'additional_settings',
-    '#description' => t('Specify how MERCI should treat content of this type.'),
-  );
-
-  $options  = array(
-    'disabled' => t('Disabled'),
-  );
-
-  $description_items = array(
-    'disabled' => t('This content type cannot be reserved'),
-  );
-  $form['merci']['merci_type_setting'] = array(
-    '#type' => 'radios',
-    '#title' => t('Reservable item type'),
-    '#options' => $options,
-    '#default_value' => variable_get('merci_type_setting_' . $node_type, 'disabled'),
-    '#description_items' => $description_items,
-    '#after_build' => array('merci_type_setting_after_build'),
-  );
-
-}
-
-
-function merci_type_setting_after_build($element) {
-  foreach ($element['#description_items'] as $key => $value) {
-    $element[$key]['#description'] = $value;
-  }
-  return $element;
-}
-
-/**
- * Implementation of hook_form_alter().
- */
-function merci_form_alter(&$form, &$form_state, $form_id) {
-  
-  // Node add/edit forms.
-
-  $type = (isset($form['#bundle'])) ? $form['#bundle'] : NULL;
-
-  switch ($form_id) {
-    // Node settings form.
-
-
-    case 'node_delete_confirm':
-      $node = node_load((int) arg(1));
-      if (!merci_delete_item_validate($node)) {
-        unset($form['actions']['submit']);
-  }
-      break;
-
-    case 'node_type_delete_confirm':
-      $type = str_replace('-', '_', arg(3));
-      merci_delete_node_type_validate($form);
-      break;
-
-    case 'node_admin_content':
-      if (!isset($form['#validate'])) {
-        $form['#validate'] = array();
-    }
-      //$form['#validate'][] = 'merci_node_admin_delete_validate';
-      break;
-  }
-}
-
 
 /**
  * Implements hook_simpletest().
@@ -331,126 +115,6 @@ function merci_simpletest() {
   $dir = drupal_get_path('module', 'merci') . '/tests';
   $tests = file_scan_directory($dir, '/\.test$/');
   return array_keys($tests);
-}
-    
-    
-  
-/**
- * Validates if an item node can be deleted.
- *
- * @param $node
- *   The item node.
- * @param $single
- *   TRUE if a single item node deletion is being processed, FALSE otherwise.
- *
- * @return
- *   TRUE if the item can be deleted, FALSE otherwise.
- */
-function merci_delete_item_validate($node) {
-  // Only validate bucket/resource items.
-  if ($node->type != 'merci_reservation' && isset($node->merci_type_setting) && $node->merci_type_setting != 'disabled' && isset($node->merci_sub_type) && $node->merci_sub_type == MERCI_SUB_TYPE_ITEM) {
-    // Determine CCK table and columns the date data is stored in.
-    $field = field_info_field('field_merci_date');
-    $table           = key($field['storage']['details']['sql']['FIELD_LOAD_CURRENT']);
-    
-    // Join on nid here so that any version of the reservation that contain
-    // the item is caught.
-    // Pull any reservations that use the item in question
-    // TODO Please convert this statement to the D7 database API syntax.
-    $reservations = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {" . $table . "} ct ON ct.revision_id = n.vid INNER JOIN {merci_reservation_detail} md ON ct.revision_id = md.vid WHERE md.merci_item_nid = :merci_item_nid", array(':merci_item_nid' => $node->nid));
-    
-    $bad_reservations = array();
-    foreach ($reservations as $reservation) {
-      // Key by nid to prevent duplicate revisions from appearing.
-      $bad_reservations[$reservation->nid] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
-    }
-    
-    if (!empty($bad_reservations)) {
-      drupal_set_message(t('%title can not be deleted, because it is associated with the following reservations:', array('%title' => $node->title)) . theme('item_list', array('items' => $bad_reservations)), 'error');
-      // Lock out single deletion attempts here.
-      return FALSE;
-    }
-  }
-  
-  return TRUE;
-}
-
-/**
- * Validates saving of MERCI node types.
- */
-function merci_node_type_save_validate($form, &$form_state) {
-  $values = $form_state['values'];
-  // Only validate node types set to an inactive status.
-  if ($values['merci_type_setting'] != 'disabled' && (int) $values['merci_active_status'] == MERCI_STATUS_INACTIVE) {
-    // Determine CCK table and columns the date data is stored in.
-    $field = field_info_field('field_merci_date');
-    $table           = key($field['storage']['details']['sql']['FIELD_LOAD_CURRENT']);
-    $column_end_date = $field['storage']['details']['sql']['FIELD_LOAD_CURRENT'][$table]['value2'];
-
-    $time = gmdate('Y-m-d H:i:s');
-    $type_setting = $values['merci_type_setting'];
-
-    // Pull all active reservations that use the node type.
-    // TODO Please convert this statement to the D7 database API syntax.
-    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {" . $table . "} ct INNER JOIN {merci_reservation_detail} md ON ct.revision_id = md.vid INNER JOIN {node} ctn ON ct.revision_id = ctn.vid INNER JOIN {merci_{$type_setting}_node} m ON md.merci_placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = :type AND m.merci_sub_type = :merci_sub_type AND $column_end_date >= :end AND NOT (md.merci_item_status <= :merci_item_status)", 
-      array(
-        ':type' => $values['old_type'], 
-        ':merci_sub_type' => MERCI_SUB_TYPE_RESERVATION, 
-        ':end' => $time, 
-        ':merci_item_status' => MERCI_ITEM_STATUS_CHECKED_IN
-      )
-    );
-
-    $bad_reservations = array();
-    foreach ($reservations as $reservation) {
-      $bad_reservations[] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
-    }
-
-    if (!empty($bad_reservations)) {
-      form_set_error('merci_active_status', t('@type_setting can not be set to an inactive status until all @type_setting items are removed from the following reservations:', array('@type_setting' => $type_setting)) . theme('item_list', array('items' => $bad_reservations)));
-    }
-  }
-}
-
-/**
- * Validates deletion of node types.
- *
- * @param $type
- *   The type being deleted.
- */
-function merci_delete_node_type_validate(&$form) {
-
-  $type = $form['type']['#value'];
-  // Only validate active MERCI node types.
-  if (merci_is_merci_type($type)) {
-    //$settings = merci_load_item_settings($type);
-    $merci_type_setting = merci_type_setting($type);
-
-    // Determine CCK table and columns the date data is stored in.
-    $field = field_info_field('field_merci_date');
-    $table           = key($field['storage']['details']['sql']['FIELD_LOAD_CURRENT']);
-
-    // Join on nid here so that any version of the reservation that contain
-    // the bucket/resource is caught.
-    // TODO Please convert this statement to the D7 database API syntax.
-    $reservations = db_query("SELECT ctn.nid, ctn.title FROM {" . $table . "} ct INNER JOIN {merci_reservation_detail} md ON ct.revision_id = md.vid INNER JOIN {node} ctn ON ct.entity_id = ctn.nid INNER JOIN {merci_{$merci_type_setting}_node} m ON md.merci_placeholder_nid = m.nid INNER JOIN {node} mn ON m.vid = mn.vid  WHERE mn.type = :type AND m.merci_sub_type = :merci_sub_type ORDER BY ct.entity_id, ct.revision_id", 
-      array(
-        ':type' => $type, 
-        ':merci_sub_type' => MERCI_SUB_TYPE_RESERVATION
-       )
-     );
-
-    $bad_reservations = array();
-    foreach ($reservations as $reservation) {
-      $bad_reservations[$reservation->nid] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
-        }
-
-    if (!empty($bad_reservations)) {
-      $name = node_type_get_name($type);
-      drupal_set_message(t('@type can not be deleted because it is associated with the following reservations:', array('@type' => $name)) . theme('item_list', array('items' => $bad_reservations)), 'error');
-      unset($form['actions']['submit']);
-      }
-  }
 }
 
 /**

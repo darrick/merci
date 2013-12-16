@@ -1,6 +1,7 @@
 (function ($) {
   // Array of cached dates per calendar and month-year tuples.
   var workCalendarDates = new Array();
+  var workCalendarTimes = new Array();
 
   Drupal.behaviors.WorkCalendarDatePopup = {
     attach: function (context) {
@@ -11,6 +12,8 @@
         Drupal.settings.datePopup[this.id].settings.beforeShowDay = workCalendarCheckDate;
       });
       $('.merci-hours-timefield').each(function() {
+        wc = Drupal.settings.datePopup[this.id].settings.workCalendar;
+        workCalendarTimes[wc] = new Array();
         Drupal.settings.datePopup[this.id].settings.beforeShow = workCalendarCheckTime;
         Drupal.settings.datePopup[this.id].settings.beforeSetTime = workCalendarSetTime;
       });
@@ -18,8 +21,35 @@
   };
 
   function workCalendarCheckTime(input) {
-    console.log("check date " + this.id);
+    selector = Drupal.settings.datePopup[this.id].settings.dateid;
+    var date = $('#' + selector).val();
+
+    var date_object = new Date(date);
+    var day = date_object.getDay();//('0' + date.getDate().toString()).slice(-2);
+    var wc = Drupal.settings.datePopup[this.id].settings.workCalendar;
+    // If we don't have the month-year dates for the requested date,
+    // ask them to Drupal.
+
+    if (!(day in workCalendarTimes[wc])) {
+      workCalendarTimes[wc][day] = (function () {
+        var val = null;
+        $.ajax({
+          'async': false,
+          'global': false,
+          'url': '/merci_hours_open/' + wc + '/' + day,
+          'success': function (data) {
+            val = data;
+          }
+        });
+        return val;
+      })();
+    }
+    if (day in workCalendarTimes[wc]) {
+      return {minTime : workCalendarTimes[wc][day]['open'],
+        maxTime : workCalendarTimes[wc][day]['close']};
+    }
   }
+
   function workCalendarSetTime(oldTime, newTime, minTime, maxTime) {
     console.log("set time " + this.id);
     return newTime;
