@@ -274,36 +274,3 @@ function merci_api_check_bucket_conflicts($entity_type, $entity, $target_id) {
 }
 
 
-/*
- * |----------------------|        range 1
- * |--->                           range 2 overlap
- *  |--->                          range 2 overlap
- *                        |--->    range 2 overlap
- *                         |--->   range 2 no overlap
- */
-function merci_bucket_intersects($r1, $r2) {
-  /*
-   * Make sure r1 start date is before r2 start date.
-   */
-  if (date_create($r1->{MERCI_DATE_FIELD_ALIAS}) > date_create($r2->{MERCI_DATE_FIELD_ALIAS})) {
-    $temp = $r1;
-    $r1 = $r2;
-    $r2 = $temp;
-  }
-
-  if (date_create($r2->{MERCI_DATE_FIELD_ALIAS}) <= date_create($r1->{MERCI_DATE_FIELD_ALIAS2})) {
-    return true;
-  }
-  return false;
-
-}
-
-function merci_bucket_cmp_length($a, $b) {
-  $len_a = date_format(date_create($a->{MERCI_DATE_FIELD_ALIAS2}),'U') - date_format(date_create($a->{MERCI_DATE_FIELD_ALIAS}), 'U');  
-  $len_b = date_format(date_create($b->{MERCI_DATE_FIELD_ALIAS2}),'U') - date_format(date_create($b->{MERCI_DATE_FIELD_ALIAS}), 'U');  
-  if ($len_a == $len_b) {
-    return 0;
-  }
-  return ($len_a < $len_b) ? 1 : -1;
-}
-

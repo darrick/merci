@@ -33,6 +33,7 @@ interface Merci_ReservableHandler {
 class Merci_ReservableHandler_Generic implements Merci_ReservableHandler {
   public static function getInstance($entity_type = NULL, $entity = NULL, $preset = NULL, $target_type = NULL) {
     $merci_reservable_type = property_exists($entity, MERCI_RESERVABLE_TYPE_FIELD) ? $entity->{MERCI_RESERVABLE_TYPE_FIELD}[LANGUAGE_NONE][0]['value'] : NULL;
+    dpm($merci_reservable_type);
     if (class_exists($class_name = 'Merci_ReservableHandler_Generic_' . $merci_reservable_type)) {
       return new $class_name($entity_type, $entity, $preset);
     }

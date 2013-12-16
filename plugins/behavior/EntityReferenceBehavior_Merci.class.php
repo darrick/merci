@@ -119,6 +119,7 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
     foreach ($items as $delta => $item) {
       $target = $targets[$item['target_id']];
       $handler = Merci_ReservableHandler_Generic::getInstance($target_type, $target, $preset); 
+      dpm($handler);
 
       // Check availability
       if (!$handler->available($dates, $entity_id)) {

@@ -5,4 +5,4 @@ core = 7.x
 dependencies[] = merci 
 project = "merci"
 
-files[] = merci_bucket.module
+files[] = includes/bucket.inc 
