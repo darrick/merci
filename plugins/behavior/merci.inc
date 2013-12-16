@@ -9,5 +9,5 @@ $plugin = array(
   'title' => t('Merci'),
   'description' => t('Merci behavior.'),
   'class' => 'EntityReferenceBehavior_Merci',
-  'behavior type' => 'field',
+  'behavior type' => 'instance',
 );

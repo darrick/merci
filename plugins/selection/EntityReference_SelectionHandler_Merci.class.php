@@ -15,48 +15,41 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
    * Implements EntityReferenceHandler::getReferencableEntities().
    */
   public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
-    //$options = parent::getReferencableEntities($match, $match_operator, $limit);
-    //extract(get_object_vars($this));
     $options = array();
-    $entity_type = $this->instance['entity_type'];
-    $bundle = $this->instance['bundle'];
+    $items = array();
     $entity = $this->entity;
+    $entity_type = $this->entity_type;
+    list($entity_id,,) = entity_extract_ids($entity_type, $entity);
 
-    $merci = merci_settings_load($entity_type, $entity);
+    $preset = $this->instance['settings']['behaviors']['merci']['preset'];
+    $target_type = $this->instance['entity_type'];
+    $settings = merci_preset_load_settings($preset);
 
-    $field_item_name = $merci['settings']['target_field'];
+    $date_field = $settings['date_field'];
+    $dates = property_exists($entity, $date_field) ? $entity->{$date_field}[LANGUAGE_NONE][0] : NULL;
+
 
     $query = $this->buildEntityFieldQuery($match, $match_operator);
     if ($limit > 0) {
       $query->range(0, $limit);
     }
 
-    $results = $query->execute();
-    $items = array();
-    //$this->entity_type = $entity_type;
+    $result = $query->execute();
 
-    foreach($results[$entity_type] as $id => $target) {
-      $items[] = array('target_id' => $id);
+    if (!empty($result[$target_type])) {
+      $items = entity_load($target_type, array_keys($result[$target_type]));
     }
 
-    $errors = array();
+    foreach ($items as $target_id => $target) {
+      $handler = Merci_ReservableHandler_Generic::getInstance($target_type, $target, $preset); 
 
-    module_load_include('inc', 'merci', 'merci.validate');
-    merci_api_validate_items($entity_type, $entity, $items, &$errors);
-    //merci_api_validate_restrictions($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
-    $sort_settings = $this->field['settings']['handler_settings']['sort'];
-    $langcode = $entity ? $entity->language : LANGUAGE_NONE;
-    foreach($items as $delta => $target) {
-      if (isset($errors[$field_item_name][$langcode][$delta])) {
-        unset($results[$entity_type][$target['target_id']]);
+      // Check availability
+      if (!$handler->available($dates, $entity_id)) {
+        continue;
       }
-    }
-    if (!empty($results[$entity_type])) {
-      $entities = entity_load($entity_type, array_keys($results[$entity_type]));
-      foreach ($entities as $entity_id => $entity) {
-        list(,, $bundle) = entity_extract_ids($entity_type, $entity);
-        $options[$bundle][$entity_id] = check_plain($this->getLabel($entity));
-      }
+
+      list(,, $bundle) = entity_extract_ids($target_type, $target);
+      $options[$bundle][$target_id] = check_plain($this->getLabel($target));
     }
     return $options;
   }

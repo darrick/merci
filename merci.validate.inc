@@ -33,6 +33,10 @@ function merci_api_validate_items($entity_type, $entity, $items, &$errors){
   }
 }
 
+function merci_preset_load_settings($machine_name) {
+  $preset = merci_preset_load($machine_name);
+  return $preset['settings'];
+}
 /**
  * Load the given preset(s).
  * @param string $machine_name
@@ -72,12 +76,19 @@ function is_merci_reservation_node($node) {
 
 function merci_type_setting($node) {
   $type = isset($node->type) ? $node->type : $node;
-  if (!is_string($node)) {
+  if (!is_string($type)) {
     return FALSE;
   }
   return variable_get('merci_type_setting_' . $type, 'disabled');
 }
 
+function merci_entity_type_setting($entity_type, $entity) {
+  $bundle = $entity->type;
+  if (!is_string($bundle)) {
+    return FALSE;
+  }
+  return variable_get('merci_type_setting_' . $bundle, 'disabled');
+}
 
 
 function merci_api_get_item_count($target_id) {

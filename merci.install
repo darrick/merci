@@ -21,6 +21,21 @@ function merci_uninstall() {
    */
 }
 
+function merci_field_schema($field) {
+  $columns = array(
+    'value' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => FALSE,
+    ),
+  );
+  return array(
+    'columns' => $columns,
+    'indexes' => array(
+      'value' => array('value'),
+    ),
+  );
+}
 /**
  * Implements hook_schema().
  */

@@ -6,6 +6,20 @@
  * MERCI - Managed Equipment Reservation Checkout and Inventory
  */
 
+// Add field widget related code.
+require DRUPAL_ROOT . '/' . drupal_get_path('module', 'merci') . '/includes/merci.field.inc';
+
+/**
+  *  * Group audience field.
+  *   */
+define('MERCI_RESERVABLE_TYPE_FIELD', 'field_merci_reservable_type');
+define('MERCI_DATE_RESTRICTIONS_DENY', 'deny');
+define('MERCI_DATE_RESTRICTIONS_ALLOW', 'allow');
+define('MERCI_RESTRICTIONS_DENY', 'deny');
+define('MERCI_RESTRICTIONS_ALLOW', 'allow');
+define('MERCI_DATE_RESTRICTIONS_IGNORE', NULL);
+
+
 // Item default availability options.
 define('MERCI_AVA_F', 1);
 define('MERCI_UNA_F', 2);
@@ -132,7 +146,6 @@ function merci_menu() {
   );
    */
   // Standard Administration settings.
-  /*
   $items['admin/config/system/merci'] = array(
     'title' => 'MERCI Configuration',
     'page callback' => 'drupal_get_form',
@@ -142,7 +155,17 @@ function merci_menu() {
     'description' => 'Configure system settings for MERCI.',
     'file' => 'includes/merci.admin.inc',
   );
-   */
+  $items['admin/config/merci'] = array(
+    'title' => 'MERCI',
+    'description' => 'Administer MERCI modules.',
+    'position' => 'right',
+    'weight' => -5,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer MERCI'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+
   $items['admin/config/system/merci/settings'] = array(
     'title' => 'Settings',
     'description' => 'MERCI general settings',
@@ -163,6 +186,44 @@ function merci_menu() {
   return $items;
 }
 
+/**
+ * Validation callback for the widget form.
+ * Adjusts the internal ids taking into account the add / remove checkboxes.
+ */
+function merci_entityreference_view_widget_validate($element, &$form_state) {
+  // Show errors.
+  $form_state['triggering_element']['#limit_validation_errors'] = FALSE;
+}
+
+function merci_field_widget_entityreference_view_widget_form_alter(&$element, &$form_state, $context) {
+  dpm($element);
+  dpm($form_state);
+  dpm($context);
+  $element['#element_validate'][] = 'merci_entityreference_view_widget_validate';
+  return;
+
+  foreach ($element['add'] as $entity_id => $checkbox) {
+    $ajax = $checkbox['#ajax'];
+    unset($element['add'][$entity_id]['#ajax']);
+  //  $element['add'][$entity_id]['#ajax']['callback'] = 'merci_entityreference_view_widget_ajax_callback';
+    //$element['add'][$entity_id] = array($checkbox, $button);
+
+  }
+  // Add a css class to widget form elements for all fields of type mytype.
+  if ($context['field']['type'] == 'mytype') {
+    // Be sure not to overwrite existing attributes.
+    $element['#attributes']['class'][] = 'myclass';
+  }
+  $element['Add selected items'] = array(
+      '#type' => 'submit',
+      '#value' => t('Add'),
+      '#ajax' => $ajax,
+      '#limit_validation_errors' => FALSE,
+
+
+    );
+  dpm($element);
+}
 
 /**
  * Implements hook_node_access().
