@@ -1,6 +1,7 @@
 <?php
 
 // Reservation status options.
+
 define('MERCI_STATUS_UNCONFIRMED', 1);
 define('MERCI_STATUS_PENDING', 2);
 define('MERCI_STATUS_CHECKED_OUT', 3);
@@ -8,124 +9,66 @@ define('MERCI_STATUS_CHECKED_IN', 4);
 define('MERCI_STATUS_CANCELLED', 5);
 define('MERCI_STATUS_DENIED', 6);
 define('MERCI_STATUS_NO_SHOW', 7);
-
-define('MERCI_STATUS_FIELD', 'field_merci_status');
-
-function merci_status_merci_settings_form_alter(&$form, &$form_state) {
-  $preset = $form_state['item'];
-  $settings = $preset->settings;
-  $fields_info = field_info_instances();
-
-  // Allow the uesr to select the name of the entityreference attached to a reservatble item.
-  $reference_fields = array('disabled' => t('Disabled'));
-
-  foreach ($fields_info as $type => $bundles) {
-    foreach ($bundles as $name => $bundle) {
-      foreach ($bundle as $field_name => $field_info) {
-        $more_info = field_info_field($field_name);
-        if ( $more_info['type'] == 'list_text') {
-          $reference_fields[$field_name] = $name . ":" . $field_name;
-        }
-      }
-    }
-  }
-
-  $form['settings'][MERCI_STATUS_FIELD] = array(
-    '#type' => 'select',
-    '#title' => t('MERCI Status Field'),
-    '#options' => $reference_fields,
-    '#default_value' => array_key_exists(MERCI_STATUS_FIELD, $settings) ? $settings[MERCI_STATUS_FIELD] : NULL,
-    '#description' => t('Select the status field.'),
-  );
-}
 /**
- * Add group and group content fields to new content types.
- *
- * @param $bundle_name
- *   The content type name.
+ * Implements hook_field_widget_info().
  */
-function merci_status_merci_node_type_save($bundle_name) {
-  if (variable_get('merci_type_setting_' . $bundle_name, 'disabled') == MERCI_RESERVATION) {
-    merci_create_field(MERCI_STATUS_FIELD, 'node', $bundle_name);
-  }
-}
-
-/**
- * Implements hook_merci_fields_info().
- */
-function merci_status_merci_fields_info() {
-  $fields = array();
-
-  $fields[MERCI_STATUS_FIELD] = array(
-    'field' => array(
-      'active' => '1',
-      'cardinality' => '1',
-      'deleted' => '0',
-      'entity_types' => array(),
-      'field_name' => MERCI_STATUS_FIELD,
-      'foreign keys' => array(),
-      'indexes' => array(
-        'value' => array(
-          0 => 'value',
-        ),
-      ),
-      'locked' => '0',
-      'module' => 'list',
-      'settings' => array(
-        'allowed_values' => array(
-          MERCI_STATUS_UNCONFIRMED => 'Unconfirmed',
-          MERCI_STATUS_PENDING => 'Pending',
-          MERCI_STATUS_CHECKED_OUT => 'Checked out',
-          MERCI_STATUS_CHECKED_IN => 'Checked in',
-          MERCI_STATUS_CANCELLED => 'Canceled',
-          MERCI_STATUS_DENIED => 'Denied',
-          MERCI_STATUS_NO_SHOW => 'No show',
-        ),
-        'allowed_values_function' => '',
-      ),
-      'translatable' => '0',
-      'type' => 'list_text',
+function merci_status_field_info() {
+  $fields['merci_reservation_status'] = array(
+    'label' => t('Merci reservation status'),
+    'description' => t("Status of the reservation"),
+    'settings' => array(
+      'allowed_values' => array(),
+      'allowed_values_function' => 'merci_status_allowed_values',
     ),
-    'instance' => array(
-      'default_value' => array(
-        0 => array(
-          'value' => MERCI_STATUS_UNCONFIRMED,
-        ),
-      ),
-      'deleted' => '0',
-      'description' => '',
-      'display' => array(
-        'default' => array(
-          'label' => 'above',
-          'module' => 'list',
-          'settings' => array(),
-          'type' => 'list_default',
-          'weight' => 2,
-        ),
-        'teaser' => array(
-          'label' => 'above',
-          'settings' => array(),
-          'type' => 'hidden',
-          'weight' => 0,
-        ),
-      ),
-      'label' => 'Merci Status',
-      'required' => 0,
-      'settings' => array(
-        'user_register_form' => FALSE,
-      ),
-      'widget' => array(
-        'active' => 1,
-        'module' => 'options',
-        'settings' => array(),
-        'type' => 'options_buttons',
-        'weight' => '-2',
-      ),
-    ),
+    'default_widget' => 'options_select',
+    'default_formatter' => 'list_default',
   );
 
   return $fields;
 }
+
+function merci_status_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+  list_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
+}
+
+function merci_status_field_is_empty($item, $field) {
+  return list_field_is_empty($item, $field);
+}
+
+function merci_status_allowed_values($field, $instance, $entity_type, $entity) {
+  $options = array(
+    MERCI_STATUS_UNCONFIRMED => t('Unconfirmed'),
+    MERCI_STATUS_PENDING  => t('Pending'),
+    MERCI_STATUS_CHECKED_OUT      => t('Checked out'),
+    MERCI_STATUS_CHECKED_IN      => t('Checked in'),
+    MERCI_STATUS_CANCELLED      => t('Canceled'),
+    MERCI_STATUS_DENIED      => t('Denied'),
+    MERCI_STATUS_NO_SHOW      => t('No show'),
+  );
+  drupal_alter('merci_reservation_status_options', &$options);
+  return $options;
+}
+
+function merci_status_options_list($field, $instance, $entity_type, $entity) {
+  return merci_status_allowed_values($field, $instance, $entity_type, $entity);
+}
+
+function merci_status_field_formatter_info_alter(&$info) {
+  // Let a new field type re-use an existing formatter.
+  $info['list_default']['field types'][] = 'merci_reservation_status';
+}
+ 
+function merci_status_field_widget_info_alter(&$info) {
+  // Let a new field type re-use an existing widget.
+  $info['options_select']['field types'][] = 'merci_reservation_status';
+}
+
+function merci_status_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'entityreference') {
+    return 'plugins/' . $plugin;
+  }
+}
+
 /**
  * Implements hook_permission().
  */
@@ -143,6 +86,7 @@ function merci_status_permission() {
  */
 function merci_status_node_access($node, $op, $account) {
 
+  return NODE_ACCESS_IGNORE;
   if (is_merci_reservation_node($node)) {
 
     //users working with their own reservations access reservation
@@ -198,15 +142,10 @@ function merci_confirm_reservation($nid) {
 /*
  * Amend conflict query to only include conflicts if the reservation status is below MERCI_STATUS_CHECKED_IN
  */
-function merci_status_merci_alter_conflict_query($entity_type, $entity, &$query) {
-  $merci = merci_settings_load($entity_type, $entity);
-  $status_field = $merci['settings'][MERCI_STATUS_FIELD];
-
-  if (!property_exists($entity, $status_field)) {
-    return;
-  }
-
+function merci_status_query_merci_resource_alter(QueryAlterableInterface $query) {
   // Storage location for date field.
+  $handler = $query->getMetadata('merci_reservable_handler');
+  $status_field = $handler->settings['instance']['settings']['behaviors']['merci_status']['status_field'];
   $status_field_info = field_info_field($status_field);
   $status_storage      = $status_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
   $keys = array_keys($status_storage);
@@ -223,69 +162,18 @@ function merci_status_gracetime() {
   return $gracetime;
 }
 
-function merci_status_field_attach_validate($entity_type, $entity, &$errors) {
-  if (is_merci_reservation_node($entity)) {
-
-    $merci = merci_settings_load($entity_type, $entity);
-    $target_field = $merci['settings']['target_field'];
-    $date_field = $merci['settings']['date_field'];
-    $items = merci_api_extract_item_values($entity_type, $entity);
-
-    merci_status_merci_validate_items($entity_type, $entity, $items, &$errors);
-  }
-}
-/**
- * Implementation of hook_validate().
- */
-function merci_status_merci_validate_items($entity_type, $entity, $items, &$errors) {
-
-  $merci = merci_settings_load($entity_type, $entity);
-  $target_field = $merci['settings']['target_field'];
-
-  foreach ($items as $delta => $item) {
-    $entity_ids[] = $item['target_id'];
-  }
-
-  $entity_items = entity_load($entity_type, $entity_ids);
-
-  foreach ($items as $delta => $item) {
-    if ($item['target_id']) {
-
-      $gracetime = merci_status_gracetime();
-      if($gracetime) {
-        // TODO: add gracetime to startdate.
-      }
-
-      $conflicts = merci_status_check_overdue($entity_type, $entity, $item['target_id']);
-      if (!empty($conflicts)) {
-        // Ran out out of items to use for this reservation.
-        $errors[$target_field][LANGUAGE_NONE][$delta][] = array(
-          'error' => 'merci_item_conflict',
-          'message' => t('%name: the item cannot be reserved at this time as it is overdue.', array('%name' => $entity_items[$item['target_id']]->title)),
-        );
-      }
-    }
-  }
-}
-
 /*
  * Check if $target_id and date field are unique.
  * i.e. Given a $entity of $entity_type with date field $field and entity reference $target_id ...
  * check to ensure no other entities reference the $target_id at the same time.
  */
-function merci_status_check_overdue($entity_type, $entity, $target_id) {
+function merci_status_check_overdue($target_id, $settings, $dates, $exclude_id) {
 
-  $merci = merci_settings_load($entity_type, $entity);
-  $target_field = $merci['settings']['target_field'];
-  $date_field = $merci['settings']['date_field'];
-  $status_field = $merci['settings'][MERCI_STATUS_FIELD];
+  $target_field = $settings['target_field'];
+  $date_field = $settings['date_field'];
+  $status_field = $settings['status_field'];
 
-  if (!property_exists($entity, $status_field) or !property_exists($entity, $date_field) or !property_exists($entity, $target_field)) {
-    return;
-  }
-  // Get entity ids and language.
-  list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
-  $langcode = $entity->language ? $entity->language : LANGUAGE_NONE;
+  $langcode = LANGUAGE_NONE;
 
 
   // Storage location for date field.
@@ -296,7 +184,6 @@ function merci_status_check_overdue($entity_type, $entity, $target_id) {
   $date_column  = $date_storage[$date_table]['value'];
   $date_column2 = $date_storage[$date_table]['value2'];
 
-  $dates = $entity->{$date_field}[$langcode][0];
   // Storage location for target field.
   $item_field_info = field_info_field($target_field);
   $item_storage      = $item_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
@@ -312,8 +199,8 @@ function merci_status_check_overdue($entity_type, $entity, $target_id) {
   $query->condition($item_column, $target_id);
 
   // Ignore myself.
-  if ($entity_id) {
-    $query->condition('item_table.entity_id', $entity_id, '!=');
+  if ($exclude_id) {
+    $query->condition('item_table.entity_id', $exclude_id, '!=');
   }
 
   $query->join($date_table, 'date_table', 'item_table.entity_id = date_table.entity_id');
