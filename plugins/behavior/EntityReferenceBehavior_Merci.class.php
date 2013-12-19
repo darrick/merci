@@ -84,11 +84,13 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
 
   public function validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
 
+    dpm($instance);
+    dpm($field);
     if ($entity_type == NULL) {
       return;
     }
     $targets = array();
-    $target_type = $instance['entity_type'];
+    $target_type = $field['settings']['target_type'];//$instance['entity_type'];
     list($entity_id,,) = entity_extract_ids($entity_type, $entity);
 
     $settings = $instance['settings']['behaviors']['merci'];
@@ -105,6 +107,8 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
     }
 
     $targets = entity_load($target_type, $targets);
+    dpm($target_type);
+    dpm($targets);
 
     foreach ($items as $delta => $item) {
       if (empty($item['target_id'])) {
