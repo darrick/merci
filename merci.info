@@ -12,6 +12,7 @@ dependencies[] = date_popup
 dependencies[] = entityreference 
 
 files[] = includes/reservation.handler.inc
+files[] = includes/merci.ui.controller.inc
 files[] = tests/merci_admin.test
 files[] = tests/merci_issues.test
 files[] = tests/merci_bucket.test

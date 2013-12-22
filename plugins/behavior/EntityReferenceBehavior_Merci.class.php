@@ -79,70 +79,48 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
       '#description' => t('Select the date field to use for reservations.'),
     );
 
+    // Allow the uesr to select the name of the entityreference attached to a reservatble item.
+    $status_fields = array('disabled' => t('Disabled'));
+
+    foreach ($fields_info as $field_name => $field_info) {
+      $more_info = field_info_field($field_name);
+      if ( $more_info['type'] == 'merci_reservation_status') {
+        $status_fields[$field_name] = $field_name;
+      }
+    }
+
+    $form['status_field'] = array(
+      '#type' => 'select',
+      '#title' => t('Status field'),
+      '#options' => $status_fields,
+      '#default_value' => array_key_exists('status_field', $settings) ? $settings['status_field'] : NULL,
+      '#description' => t('Select the status field to use for reservations.'),
+    );
+
+    $form['overdue_gracetime'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Status grace time'),
+      '#description' => t('Relative gracetime a reservation can be overdue to not conflict with the reservation; valid periods are "y" for years, "m" for months, "w" for weeks, and "d" for days. For example, "+1m +7d" represents one month and seven days from today. "-1d" represents one day before today.'),
+      '#default_value' => $settings['overdue_gracetime'],
+    ); 
+
     return $form;
   }
 
   public function validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+    $target_type = $field['settings']['target_type'];
 
-    dpm($instance);
-    dpm($field);
-    if ($entity_type == NULL) {
-      return;
-    }
-    $targets = array();
-    $target_type = $field['settings']['target_type'];//$instance['entity_type'];
-    list($entity_id,,) = entity_extract_ids($entity_type, $entity);
+    $targets = array($target_type => $items);
 
-    $settings = $instance['settings']['behaviors']['merci'];
+    $context = $instance['settings']['behaviors']['merci'];
 
-    $date_field = $settings['date_field'];
-    $settings['target_field'] = $field['field_name'];
-    $settings['instance'] = $instance;
-    $dates = property_exists($entity, $date_field) ? $entity->{$date_field}[LANGUAGE_NONE][0] : NULL;
+    $context += array(
+      'target_field' => $this->field['field_name'],
+      'field' => $field,
+      'instance' => $instance,
+      'langcode' => $langcode,
+    );
 
-    foreach ($items as $delta => $item) {
-      if (!empty($item['target_id'])) {
-        $targets[] = $item['target_id'];
-      }
-    }
-
-    $targets = entity_load($target_type, $targets);
-    dpm($target_type);
-    dpm($targets);
-
-    foreach ($items as $delta => $item) {
-      if (empty($item['target_id'])) {
-        continue;
-      }
-      $target = $targets[$item['target_id']];
-      $handler = Merci_ReservableHandler_Generic::getInstance($target_type, $target, $settings); 
-      dpm($handler);
-
-      // Check availability
-      if (!$handler->available($dates, $entity_id)) {
-        $errors[$field['field_name']][$langcode][$delta][] = array(
-          'error' => 'merci',
-          'message' => t("Item is not available to reserve"),
-          'delta' => $delta,
-        );
-      }
-    }
-
-    // TODO: check too many.
-    // Check too many.
-    /*
-    $selected_count[$target_id] = isset($selected_count[$target_id]) ? $selected_count[$target_id] + 1 : 1;
-    if ( ! isset($inventory_count[$target_id])) { 
-      $inventory_count[$target_id]       = $handler->itemCount(); 
-    }
-    if ($selected_count[$target_id] > $inventory_count[$target_id]) {
-      $errors[$target_field][$langcode][$delta][] = array(
-        'error' => 'merci_item_conflict',
-        'message' => t("You've selected too many %name's.  We only have %amount in the current inventory.", 
-        array('%name' => $node->title, '%amount' => $inventory_count[$target_id])),
-      );
-      continue;
-    }
-     */
+    merci_items_validate($targets, $entity_type, $entity, $context, $errors);
   }
 }

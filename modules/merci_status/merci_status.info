@@ -8,7 +8,4 @@ configure = admin/config/system/merci
 
 dependencies[] = merci 
 
-
-
-files[] = merci_status.install
-files[] = merci_status.module
+files[] = includes/merci.status.field.inc 

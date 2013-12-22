@@ -15,19 +15,10 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
    * Implements EntityReferenceHandler::getReferencableEntities().
    */
   public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
-    $options = array();
-    $items = array();
-    $entity = $this->entity;
-    $entity_type = $this->entity_type;
-    list($entity_id,,) = entity_extract_ids($entity_type, $entity);
 
-    $preset = $this->instance['settings']['behaviors']['merci']['preset'];
-    $target_type = $this->instance['entity_type'];
-    $settings = merci_preset_load_settings($preset);
+    $instance = $this->instance;
 
-    $date_field = $settings['date_field'];
-    $dates = property_exists($entity, $date_field) ? $entity->{$date_field}[LANGUAGE_NONE][0] : NULL;
-
+    $target_type = $this->field['settings']['target_type'];
 
     $query = $this->buildEntityFieldQuery($match, $match_operator);
     if ($limit > 0) {
@@ -36,18 +27,39 @@ class EntityReference_SelectionHandler_Merci extends EntityReference_SelectionHa
 
     $result = $query->execute();
 
+    $targets = array();
     if (!empty($result[$target_type])) {
-      $items = entity_load($target_type, array_keys($result[$target_type]));
+      foreach (array_keys($result[$target_type]) as $target_id) {
+        $targets[$target_type][$target_id] = array ('target_id' => $target_id); 
+      }
     }
 
-    foreach ($items as $target_id => $target) {
-      $handler = Merci_ReservableHandler_Generic::getInstance($target_type, $target, $preset); 
+    $errors = array();
 
-      // Check availability
-      if (!$handler->available($dates, $entity_id)) {
+    $context = $instance['settings']['behaviors']['merci'];
+
+    $context += array(
+      'target_field' => $this->field['field_name'],
+      'field' => $this->field,
+      'instance' => $instance,
+      'langcode' => $this->entity->language,
+    );
+
+    merci_items_validate($targets, $this->entity_type, $this->entity, $context, &$errors);
+
+    $options = array();
+    $items = array();
+    foreach (array_keys($result[$target_type]) as $target_id) {
+        //$errors[$this->context['field']['field_name']][$this->context['langcode']][$delta][] = array(
+      if ($errors and array_key_exists($target_id, $errors[$context['field']['field_name']][$context['langcode']])) {
         continue;
       }
+      $items[] = $target_id;
+    }
+    $items = entity_load($target_type, $items);
 
+
+    foreach ($items as $target_id => $target) {
       list(,, $bundle) = entity_extract_ids($target_type, $target);
       $options[$bundle][$target_id] = check_plain($this->getLabel($target));
     }

@@ -4,92 +4,175 @@ define('MERCI_RESERVATION_ITEM_FIELD', 'field_merci_reservation_items');
 define('MERCI_RESERVATION_DATE_FIELD', 'field_merci_reservation_date');
 define('MERCI_RESERVATION', 'reservation');
 
-
-function merci_reservation_ajax_callback($form, $form_state) {
-  return $form['merci']['merci_container'];
-}
-
 /**
- * Implementation of hook_form_alter().
+ * UI controller.
  */
-function merci_reservation_form_node_type_form_alter(&$form, &$form_state) {
-  
-  $node_type = $form['#node_type']->type;
-  $merci_type_setting = !empty($form_state['values']['merci_type_setting']) 
-    ? $form_state['values']['merci_type_setting'] : variable_get('merci_type_setting_' . $node_type, 'disabled');
-  // Node add/edit forms.
+class MerciReservationTypeUIController extends EntityDefaultUIController {
 
-  $description_items = array(
-    MERCI_RESERVATION => t('Use this content type to create reservation types.'),
-  );
-  $form['merci']['merci_type_setting']['#options'][MERCI_RESERVATION] = t('Reservation');
-  $form['merci']['merci_type_setting']['#description_items'] += $description_items;
-  $form['merci']['merci_type_setting']['#ajax'] = array(
-    'callback' => 'merci_reservation_ajax_callback',
-    'wrapper' => 'merci-preset-div',
-  );
-
-  $form['merci']['merci_container'] = array(
-    '#type' => 'container',
-    '#id'   => 'merci-preset-div',
-  );
-  if ($merci_type_setting == MERCI_RESERVATION) {
-    $presets = merci_preset_load();
-
-    // If there are presets prompt the user to select one or create another.
-    // If no, prompt to create a preset.
-    if (!empty($presets)) {
-      foreach (merci_preset_load() as $preset => $item) {
-        $options[$preset] = $item['preset_name'];
-      }
-
-      $form['merci']['merci_container']['merci_preset'] = array(
-        '#title' => t('Select preset'),
-        '#type' => 'select',
-        '#default_value' => variable_get('merci_preset_' . $node_type, 'disabled'),
-        '#options' => $options,
-      );
-      $form['merci']['merci_container']['links'] = array(
-        '#theme' => 'links',
-        '#links' => array(
-          array(
-            'title' => t('Create new preset'),
-            'href' => 'admin/structure/merci/merci/add',
-          ),
-          array(
-            'title' => t('Manage presets'),
-            'href' => 'admin/structure/merci/merci',
-          ),
-        ),
-      );
-    }
-    else {
-      $form['merci']['merci_container']['no_preset_message'] = array(
-        '#markup' => '<div class="messages warning">' . t('No presets are available. You must to <a href="@create">create a preset</a> to proceed.', array('@create' => url('admin/structure/merci/merci/add'))) . '</div>',
-      );
-    }
-    $data = '(function ($) { $(document).ready(function() { $("input").click(function() { ($(this).val() == "reservation") ? $("#merci-preset-div").show() : $("#merci-preset-div").hide(); });}); })(jQuery);';
-    //drupal_add_js($data, array('type' => 'inline'));
+  /**
+   * Overrides hook_menu() defaults.
+   */
+  public function hook_menu() {
+    $items = parent::hook_menu();
+		$items[$this->path]['description'] = 'Manage merci_reservation_detail entity types, including adding
+		and removing fields and the display of fields.';
+    return $items;
   }
 }
 
-function merci_reservation_merci_settings_load(&$settings) {
-  $settings['date_field'] = MERCI_RESERVATION_DATE_FIELD;
-  $settings['target_field'] = MERCI_RESERVATION_ITEM_FIELD; 
+/**
+ * Implements hook_entity_info().
+ */
+function merci_reservation_entity_info() {
+  $entities['merci_reservation'] = array(
+    'label' => t('Merci reservation'),
+    'plural label' => t('Merci reservations'),
+    'base table' => 'merci_reservation',
+    'fieldable' => TRUE,
+    'entity class' => 'MerciReservation',
+    'controller class' => 'MerciReservationController',
+    'access callback' => 'merci_reservation_access',
+    'label callback' => 'entity_class_label',
+    'uri callback' => 'entity_class_uri',
+    'module' => 'merci_reservation',
+    'entity keys' => array(
+      'id'     => 'id',
+      'bundle' => 'type',
+      'label'  => 'label',
+      'name'   => 'name',
+    ),
+    'bundle keys' => array(
+      'bundle' => 'type',
+    ),
+    'admin ui' => array(
+      'path' => 'merci-reservations',
+      'file' => 'merci_reservation.pages.inc',
+      'controller class' => 'EntityBundleableUIController',
+      //'menu_wildcard' => '%merci_reservation',
+    ),
+    'bundles' => array(),
+    'view modes' => array(),
+  );
+  // The entity that holds information about the entity types	  
+  $entities['merci_reservation_type'] = array(
+    'label' => t('MerciReservation Type'),
+    'entity class' => 'MerciReservationType',
+    'controller class' => 'MerciReservationTypeController',
+    'base table' => 'merci_reservation_type',
+    'fieldable' => FALSE,
+    'bundle of' => 'merci_reservation',
+    'exportable' => TRUE,
+    'entity keys' => array(
+      'id'    => 'id',
+      'name'  => 'type',
+      'label' => 'label',
+    ),
+    'access callback' => 'merci_reservation_type_access',
+    'module' => 'merci_reservation',
+    // Enable the entity API's admin UI.
+    'admin ui' => array(
+      'path' => 'admin/structure/merci-reservation-types',
+      'file' => 'merci_reservation.admin.inc',
+      'controller class' => 'EntityDefaultUIController',
+      //'controller class' => 'MerciReservationTypeUIController',
+    ),
+  );
+  return $entities;
 }
 
 /**
- * Add group and group content fields to new content types.
+* Implements hook_entity_info_alter().
+*/
+function merci_reservation_entity_info_alter(&$entity_info) {
+  foreach (merci_reservation_types() as $type => $info) {
+    $entity_info['merci_reservation']['bundles'][$type] = array(
+      'label' => $info->label,
+      'admin' => array(
+        'path' => 'admin/structure/merci-reservation-types/manage/%merci_reservation_type',
+        'real path' => 'admin/structure/merci-reservation-types/manage/' . $type,
+        'bundle argument' => 4,
+        'access arguments' => array('administer merci_reservation types'),
+      ),
+    );
+  }
+}
+
+/**
+ * Menu argument loader; Load a merci_reservation_detail type by string.
  *
- * @param $bundle_name
- *   The content type name.
+ * @param $type
+ *   The machine-readable name of a merci_reservation_detail type to load.
+ * @return
+ *   A merci_reservation_detail type array or FALSE if $type does not exist.
  */
-function merci_reservation_merci_node_type_save($bundle_name) {
-  if (variable_get('merci_type_setting_' . $bundle_name, 'disabled') == MERCI_RESERVATION) {
-    merci_create_field(MERCI_RESERVATION_DATE_FIELD, 'node', $bundle_name);
-    merci_create_field(MERCI_RESERVATION_ITEM_FIELD, 'node', $bundle_name);
+function merci_reservation_type_load($type) {
+  return merci_reservation_types($type);
+}
+
+/**
+  * * List of task Types.
+  * */
+function merci_reservation_types($type_name = NULL) {
+    $types = entity_load_multiple_by_name('merci_reservation_type', isset($type_name) ? array($type_name) : FALSE);
+      return isset($type_name) ? reset($types) : $types;
+}
+
+function merci_reservation_permission() {
+  $permissions = array(
+    'administer merci_reservation types' => array(
+      'title' => t('Administer merci reservation types'),
+      'description' => t('Allows users to configure task types and their fields.'),
+      'restrict access' => TRUE,
+    ),
+    'create merci_reservation entities' => array(
+      'title' => t('Create merci reservations'),
+      'description' => t('Allows users to create merci reservations.'),
+      'restrict access' => TRUE,
+    ),
+    'view merci_reservation entities' => array(
+      'title' => t('View merci reservations'),
+      'description' => t('Allows users to view merci reservations.'),
+      'restrict access' => TRUE,
+    ),
+    'edit any merci_reservation entities' => array(
+      'title' => t('Edit any merci reservations'),
+      'description' => t('Allows users to edit any merci reservations.'),
+      'restrict access' => TRUE,
+    ),
+    'edit own merci_reservation entities' => array(
+      'title' => t('Edit own merci reservations'),
+      'description' => t('Allows users to edit own merci reservations.'),
+      'restrict access' => TRUE,
+    ),
+  );
+  return $permissions;
+}
+/**
+* Access callback for Task.
+*/
+function merci_reservation_access($op, $merci_reservation, $account = NULL, $entity_type = NULL) {
+  global $user;
+  if (!isset($account)) {
+    $account = $user;
+  }
+  switch ($op) {
+    case 'create':
+      return user_access('create merci_reservation entities', $account);
+    case 'view':
+      return user_access('view merci_reservation entities', $account);
+    case 'edit':
+      return user_access('edit any merci_reservation entities')
+          || (user_access('edit own merci_reservation entities') && ($merci_reservation->uid == $account->uid));
   }
 }
+
+/**
+ * Access callback for the entity API.
+ */
+function merci_reservation_type_access($op, $type = NULL, $account = NULL) {
+  return user_access('administer merci_reservation types', $account);
+}
+
 /**
  * Implements hook_merci_fields_info().
  */
@@ -99,160 +182,37 @@ function merci_reservation_merci_fields_info() {
   // Exported field: 'node-merci_reservation-field_merci_date'.
   $fields[MERCI_RESERVATION_DATE_FIELD] = array(
     'field' => array(
-      'active' => '1',
-      'cardinality' => '1',
-      'deleted' => '0',
-      'entity_types' => array(),
+      'entity_types' => array('merci_reservation'),
       'field_name' => MERCI_RESERVATION_DATE_FIELD,
-      'foreign keys' => array(),
-      'indexes' => array(),
-      'locked' => '0',
-      'module' => 'date',
-      'settings' => array(
-        'cache_count' => '4',
-        'cache_enabled' => 0,
-        'granularity' => array(
-          'day' => 'day',
-          'hour' => 'hour',
-          'minute' => 'minute',
-          'month' => 'month',
-          'second' => 0,
-          'year' => 'year',
-        ),
-        'timezone_db' => 'UTC',
-        'todate' => 'required',
-        'tz_handling' => 'site',
-      ),
-      'translatable' => '0',
       'type' => 'datetime',
     ),
     'instance' => array(
-      'deleted' => '0',
-      'description' => '',
-      'display' => array(
-        'default' => array(
-          'label' => 'above',
-          'module' => 'date',
-          'settings' => array(
-            'format_type' => 'long',
-            'fromto' => 'both',
-            'multiple_from' => '',
-            'multiple_number' => '',
-            'multiple_to' => '',
-          ),
-          'type' => 'date_default',
-          'weight' => 0,
-        ),
-        'teaser' => array(
-          'label' => 'above',
-          'settings' => array(),
-          'type' => 'hidden',
-          'weight' => 0,
-        ),
-      ),
       'label' => 'Merci Date',
-      'required' => 0,
-      'settings' => array(
-        'default_value' => 'now',
-        'default_value2' => 'same',
-        'default_value_code' => '',
-        'default_value_code2' => '',
-        'user_register_form' => FALSE,
-      ),
-      'widget' => array(
-        'active' => 1,
-        'module' => 'date',
-        'settings' => array(
-          'increment' => '15',
-          'input_format' => 'Y-m-d H:i:s',
-          'input_format_custom' => '',
-          'label_position' => 'above',
-          'text_parts' => array(),
-          'year_range' => '-3:+3',
-        ),
-        'type' => 'date_popup',
-        'weight' => '-4',
-      ),
+      'required' => TRUE,
+      'entity_type' => 'merci_reservation',
     ),
   );
 
   // Exported field: 'node-merci_reservation-field_merci_items'.
   $fields[MERCI_RESERVATION_ITEM_FIELD] = array(
     'field' => array(
-      'active' => '1',
       'cardinality' => '-1',
-      'deleted' => '0',
-      'entity_types' => array(),
+      'entity_types' => array('merci_reservation'),
       'field_name' => MERCI_RESERVATION_ITEM_FIELD,
-      'foreign keys' => array(
-        'node' => array(
-          'columns' => array(
-            'target_id' => 'nid',
-          ),
-          'table' => 'node',
-        ),
-      ),
-      'indexes' => array(
-        'target_id' => array(
-          0 => 'target_id',
-        ),
-      ),
-      'locked' => '0',
-      'module' => 'entityreference',
-      'settings' => array(
-        'handler' => 'base',
-        'handler_settings' => array(
-          'behaviors' => array(
-            'views-select-list' => array(
-              'status' => 0,
-            ),
-          ),
-          'sort' => array(
-            'type' => 'none',
-          ),
-          'target_bundles' => array(),
-        ),
-        'target_type' => 'node',
-      ),
-      'translatable' => '0',
       'type' => 'entityreference',
     ),
     'instance' => array(
-      'default_value' => NULL,
-      'deleted' => '0',
-      'description' => '',
-      'display' => array(
-        'default' => array(
-          'label' => 'above',
-          'module' => 'entityreference',
-          'settings' => array(
-            'link' => FALSE,
-          ),
-          'type' => 'entityreference_label',
-          'weight' => 1,
-        ),
-        'teaser' => array(
-          'label' => 'above',
-          'settings' => array(),
-          'type' => 'hidden',
-          'weight' => 0,
-        ),
-      ),
       'label' => 'Merci Items',
-      'required' => 0,
-      'settings' => array(
-        'user_register_form' => FALSE,
-      ),
-      'widget' => array(
-        'active' => 0,
-        'module' => 'multiple_selects',
-        'settings' => array(),
-        'type' => 'multiple_selects',
-        'weight' => '-3',
-      ),
+      'required' => TRUE,
     ),
   );
 
 
   return $fields;
+}
+
+function merci_reservation_merci_reservation_type_insert($entity) {
+  dpm($entity);
+  merci_create_field(MERCI_RESERVATION_DATE_FIELD, 'merci_reservation_type', $entity->type);
+  merci_create_field(MERCI_RESERVATION_ITEM_FIELD, 'merci_reservation_type', $entity->type);
 }

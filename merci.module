@@ -1,5 +1,26 @@
 <?php
 
+module_load_include('inc', 'merci', 'includes/reservation.handler');
+
+/*
+ * Validate merci items to see if they are reservable.
+ */
+function merci_items_validate($items, $entity_type, $entity, $context, &$errors) {
+  if ($entity_type == NULL) {
+    return;
+  }
+  foreach ($items as $target_type => $targets) {
+      $handler = Merci_ReservationHandler_Generic::getInstance($target_type, $targets, $entity_type, $entity, $context); 
+      $handler->validateItems($errors);
+  }
+  // Let other modules validate the entity.
+  // Avoid module_invoke_all() to let $errors be taken by reference.
+  foreach (module_implements('merci_items_validate') as $module) {
+    $function = $module . '_merci_items_validate';
+    $function($items, $entity_type, $entity, $context, $errors);
+  }
+
+}
 
 /**
  * @file
@@ -178,15 +199,15 @@ function merci_fields_info($field_name = NULL) {
 }
 
 /**
-* Implement hook_node_type_insert().
-*/
+ * Implement hook_node_type_insert().
+ */
 function merci_node_type_insert($info) {
   merci_node_type_save($info->type);
 }
 
 /**
-* Implement hook_node_type_update().
-*/
+ * Implement hook_node_type_update().
+ */
 function merci_node_type_update($info) {
   merci_node_type_save($info->type);
 }
@@ -201,3 +222,14 @@ function merci_node_type_save($bundle_name) {
   module_invoke_all('merci_node_type_save', $bundle_name);
 }
 
+/**
+ * Implement hook_theme().
+ */
+function merci_theme() {
+  return array(
+    'merci_ui_add_list' => array(
+      'variables' => array('content' => array()),
+      'file' => 'includes/merci.ui.controller.inc',
+    ),
+  );
+}

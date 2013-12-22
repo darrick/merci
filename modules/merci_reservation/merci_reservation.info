@@ -5,4 +5,8 @@ core = 7.x
 dependencies[] = merci 
 project = "merci"
 
-files[] = merci_reservation.module
+files[] = includes/entity.inc
+files[] = includes/entity.controller.inc
+files[] = includes/entity_type.inc
+files[] = merci_reservation.pages.inc
+
