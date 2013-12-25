@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Merci Feature feature.
+ */
+
+include_once 'merci_feature.features.inc';
