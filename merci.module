@@ -2,6 +2,12 @@
 
 module_load_include('inc', 'merci', 'includes/reservation.handler');
 
+function merci_check_conflicts($items, $entity_type, $entity, $context, &$errors) {
+  foreach ($items as $target_type => $targets) {
+      $handler = Merci_ReservationHandler_Generic::getInstance($target_type, $targets, $entity_type, $entity, $context); 
+      $handler->validateItems($errors);
+  }
+}
 /*
  * Validate merci items to see if they are reservable.
  */
@@ -9,10 +15,8 @@ function merci_items_validate($items, $entity_type, $entity, $context, &$errors)
   if ($entity_type == NULL) {
     return;
   }
-  foreach ($items as $target_type => $targets) {
-      $handler = Merci_ReservationHandler_Generic::getInstance($target_type, $targets, $entity_type, $entity, $context); 
-      $handler->validateItems($errors);
-  }
+
+  merci_check_conflicts($items, $entity_type, $entity, $context, $errors);
   // Let other modules validate the entity.
   // Avoid module_invoke_all() to let $errors be taken by reference.
   foreach (module_implements('merci_items_validate') as $module) {

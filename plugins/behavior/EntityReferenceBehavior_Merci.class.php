@@ -115,7 +115,7 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
     $context = $instance['settings']['behaviors']['merci'];
 
     $context += array(
-      'target_field' => $this->field['field_name'],
+      'target_field' => $field['field_name'],
       'field' => $field,
       'instance' => $instance,
       'langcode' => $langcode,
