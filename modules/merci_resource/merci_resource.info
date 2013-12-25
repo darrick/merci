@@ -1,8 +1,0 @@
-name = "MERCI Resource"
-package = MERCI
-description = "Provides for a resource item to reserve."
-core = 7.x
-dependencies[] = merci 
-project = "merci"
-
-files[] = merci_resource.module

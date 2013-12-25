@@ -1,0 +1,106 @@
+<?php
+
+/*
+ * Adds entity object to our list of available arguments for rules_forms.
+ */
+function merci_rules_events_variable_entity_load($arguments, $variable_name, $variable_info) {
+  $entity = $arguments['form_state']['values'];
+  $entity_type = array_key_exists('#entity_type', $arguments['form']) ? $arguments['form']['#entity_type'] : NULL;
+  if (empty($entity_type)) {
+    return NULL;
+  } 
+  return entity_metadata_wrapper($entity_type, (object) $entity);
+}
+
+/**
+ * Check if any of the targetted fields conflict.
+ */
+function merci_rules_condition_conflict($entity, $date_field, $target_field) {
+
+  $reservations = _merci_rules_reservation_conflict($entity, $date_field, $target_field);
+
+  if (!empty($reservations)) {
+    foreach ($entity->{$target_field}->raw() as $delta => $target_id) {
+      if (array_key_exists($target_id, $reservations)) {
+        $errors[$target_field][$delta][] = array(
+          'error' => 'merci',
+          'message' => t("Item is not available to reserve"),
+        );
+      }
+    }
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/*
+ * Load a list of target ids with conflicts.
+ */
+function merci_rules_action_unavailable_entity_list($entity, $date_field, $target_field) {
+  $reservations = _merci_rules_reservation_conflict($entity, $date_field, $target_field);
+  foreach (array_keys($reservations) as $target_id) {
+    $ids[] = $target_id;
+  }
+
+  $field_info = field_info_field($target_field);
+  $target_type = $field_info['settings']['target_type'];
+  return array('entity_object_list' => $ids);
+}
+
+
+function _merci_rules_reservation_conflict($entity, $date_field, $target_field) {
+  $cache = &drupal_static(__FUNCTION__);
+
+  $field_info = field_info_field($target_field);
+  $target_type = $field_info['settings']['target_type'];
+  if (!$cache or !array_key_exists($target_type,$cache)) {
+    $entity_type = $entity->type();
+    $targets = $entity->{$target_field}->raw();
+    $dates = $entity->{$date_field}->value();
+
+
+    $handler = Merci_ReservationHandler_Generic::getInstance($target_type, $entity, $date_field, $target_field); 
+    $handler->conflictingReservations();
+
+    $cache[$target_type] = $handler->conflictingReservations();
+  }
+
+  return $cache[$target_type];
+}
+
+function merci_rules_conflict_date_value($form, $form_state, $date_element, $item_element, $hours_element) {
+  list(,$date_field) = explode(':', $date_element);
+  list(,$item_field) = explode(':', $item_element);
+  list(,$hours_field) = explode(':', $hours_element);
+
+  $entity = $form_state['values'];
+
+  $entity = (object) $entity;
+  $entity_type = & $form['#entity_type'];
+
+  $field_info = field_info_field($item_field);
+  $target_type = $field_info['settings']['target_type'];
+  $targets = $entity->{$item_field}[LANGUAGE_NONE];
+
+  $context = array(
+    'date_field' => $date_field,
+    'target_field' => $item_field,
+    'langcode'   => LANGUAGE_NONE,
+    'status_field' => 'field_status_again',
+    'field'   => $field_info,
+  );
+
+  $ids = array();
+  foreach ($targets as $target) {
+    $ids = $target['target_id'];
+  }
+
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', $target_type)
+    ->entityCondition('entity_id', $ids, 'IN')
+    ->fieldCondition($hours_field);
+  $result = $query->execute();
+  if (isset($result[$target_type])) {
+    $items = entity_load($target_type, array_keys($result[$target_type]));
+  }
+}

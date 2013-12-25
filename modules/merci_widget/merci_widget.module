@@ -1,0 +1,89 @@
+<?php
+
+/**
+ * Implements hook_field_widget_info().
+ *
+ * Field type modules willing to use those widgets should:
+ * - Use hook_field_widget_info_alter() to append their field own types to the
+ *   list of types supported by the widgets,
+ */
+function merci_widget_field_widget_info() {
+  return array(
+    'merci_widget' => array(
+      'label' => t('Merci Widget'),
+      'field types' => array('entityreference'),
+      'settings' => array(
+        'view' => '',
+        'pass_argument' => FALSE,
+      ),
+      'behaviors' => array(
+        'multiple values' => FIELD_BEHAVIOR_CUSTOM,
+        'default value' => FIELD_BEHAVIOR_NONE,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_settings_form().
+ */
+function merci_widget_field_widget_settings_form($field, $instance) {
+  $instance['widget']['type'] = 'entityreference_view_widget';
+  return entityreference_view_widget_field_widget_settings_form($field, $instance);
+}
+/**
+ * Implements hook_field_widget_form().
+ */
+function merci_widget_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+
+  $widget_form = entityreference_view_widget_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element);
+  $widget_form['#element_validate'] = array('merci_widget_element_validate', 'entityreference_view_widget_validate');
+  return $widget_form;
+}
+
+function merci_widget_test_validate($form, &$form_state) {
+  dpm($form);
+}
+function merci_widget_element_validate_test(&$element, &$form_state) {
+  dpm($element);
+}
+/**
+ * Validation callback for the widget form.
+ * Adjusts the internal ids taking into account the add / remove checkboxes.
+ */
+function merci_widget_element_validate(&$element, &$form_state) {
+  // Show errors.
+  //$form_state['triggering_element']['#limit_validation_errors'] = FALSE;
+  //$form_state['#merci_reservation_item_field_name'] = $element['#field_name'];
+  $errors = array();
+  $field_name = $element['#field_name'];
+  $entity_type = $element['entity_type'];
+  $entity = (object) ($form_state['values']);
+  $langcode = $element['#language'];
+  $field = $form_state['field'][$element['#field_name']][$langcode]['field'];
+  $instance = $form_state['field'][$element['#field_name']][$langcode]['instance'];
+
+  $element_values = $form_state['values'][$field_name][$langcode];
+  // Then new items (marked for addition).
+  $items = array();
+  if (!empty($element_values['add'])) {
+    $add = array_filter($element_values['add']);
+    foreach ($add as $entity_id => $status) {
+      $items[] = array('target_id' => $entity_id);
+    }
+  }
+  entityreference_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors);
+  if ($errors) {
+    foreach (array_keys($errors[$field_name][$langcode]) as $delta) {
+      $element_values['add'][$items[$delta]['target_id']] = 0;
+    } 
+  }
+  form_set_value($element, $element_values, $form_state);
+}
+
+function merci_widget_field_widget_error($element, $error, $form, &$form_state) {
+  if (isset($error['delta'])) {
+    $element['#parents'][] = $error['delta'];
+  }
+  form_error($element, $error['message']);
+}

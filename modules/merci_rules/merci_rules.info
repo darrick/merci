@@ -1,0 +1,6 @@
+name = MERCI 
+description = Provides rules integration. 
+dependencies[] = merci 
+dependencies[] = rules_forms
+project = "MERCI"
+core = "7.x"
