@@ -2,6 +2,61 @@
 
 define('MERCI_DATE_FIELD_ALIAS', 'merci_date_field_value');
 define('MERCI_DATE_FIELD_ALIAS2', 'merci_date_field_value');
+
+class MerciDefaultReservationController {
+
+  protected $conflict_cache = array();
+
+  protected $entity_type, $entity, $date_field, $target_field;
+
+  public static function getInstance($entity_type, $entity, $date_field, $target_field) {
+
+    if (class_exists($class_name = 'MerciDefaultReservationController_' . $entity_type)) {
+      return new $class_name($entity_type, $entity, $date_field, $target_field);
+    }
+    else {
+      return new MerciDefaultReservationController($entity_type, $entity, $date_field, $target_field);
+    }
+  }
+
+  public function __construct($entity_type, $entity, $date_field, $target_field) {
+    $this->entity_type  = $entity_type;
+    $this->entity       = $entity;
+    $this->date_field   = $date_field;
+    $this->target_field = $target_field;
+  }
+
+  public function entity() { return $this->entity; }
+  public function date_field() { return $this->date_field; }
+  public function target_field() { return $this->target_field; }
+
+  public function conflicts() {
+    $field_info = field_info_field($this->target_field);
+    $target_type = $field_info['settings']['target_type'];
+    if (!array_key_exists($target_type, $this->conflict_cache)) {
+      $handler = MerciDefaultTargetController::getInstance($target_type, $this); 
+      $conflict_cache[$target_type] = $handler->conflicts();
+    }
+    return $conflict_cache[$target_type];
+  }
+
+  public function conflictingReservations() {
+    $conflicts = $this->conflicts(); 
+    $ids = array();
+    foreach ($conflicts as $reservations) {
+      foreach ($reservations as $reservation_id){
+        if (!in_array($reservation_id, $ids)) {
+          $ids[] = $reservation_id;
+        }
+      }
+    }
+    return $ids;
+  }
+
+  public function conflictingTargets() {
+    return array_keys($this->conflicts());
+  }
+}
 /**
  * @file
  * Abstraction of the selection logic of an entity reference field.
@@ -9,41 +64,30 @@ define('MERCI_DATE_FIELD_ALIAS2', 'merci_date_field_value');
  * Implementations that wish to provide an implementation of this should
  * register it using CTools' plugin system.
  */
-interface Merci_ReservationHandler {
-  /**
-   * Factory function: create a new instance of this handler for a given field.
-   *
-   * @param $field
-   *   A field datastructure.
-   * @return EntityReferenceHandler
-   */
-  public static function getInstance($target_type, $entity, $date_field, $target_field);
-
-  public function validateItems(&$errors);
-
-}
-
 /**
  * A null implementation of EntityReference_SelectionHandler.
  */
-class Merci_ReservationHandler_Generic implements Merci_ReservationHandler {
-  public static function getInstance($target_type = NULL, $entity, $date_field, $target_field) {
+class MerciDefaultTargetController {
 
-    if (class_exists($class_name = 'Merci_ReservationHandler_Generic_' . $target_type)) {
-      return new $class_name($target_type, $entity, $date_field, $target_field);
+  protected $target_type, $entity, $date_field, $target_field, $dates, $targets;
+
+  public static function getInstance($target_type, $controller) {
+
+    if (class_exists($class_name = 'MerciDefaultTargetController_' . $target_type)) {
+      return new $class_name($target_type, $controller);
     }
     else {
-      return new Merci_ReservationHandler_Generic($target_type, $entity, $date_field, $target_field);
+      return new MerciDefaultTargetController($target_type, $controller);
     }
   }
 
-  public function __construct($target_type, $entity, $date_field, $target_field) {
+  public function __construct($target_type, $controller) {
     $this->target_type  = $target_type;
-    $this->entity       = $entity;
-    $this->date_field   = $date_field;
-    $this->target_field = $target_field;
-    $this->dates        = $entity->{$date_field}->value(); 
-    $targets            = $entity->{$target_field}->raw(); 
+    $this->entity       = $controller->entity();
+    $this->date_field   = $controller->date_field();
+    $this->target_field = $controller->target_field();
+    $this->dates        = $this->entity->{$this->date_field}->value();
+    $targets            = $this->entity->{$this->target_field}->raw();
     foreach ($targets as $delta => $target) {
       if (!empty($target) and intval($target)) {
         $this->targets[$delta] = $target;
@@ -52,48 +96,21 @@ class Merci_ReservationHandler_Generic implements Merci_ReservationHandler {
   }
 
 
-  public function validateItems(&$errors) {
+  public function conflicts() {
+    $query = $this->buildConflictQuery();
 
-    $this->validateConflicts($errors);
-    $this->validateTooMany($errors);
-    // Let other modules validate the entity.
-    // Avoid module_invoke_all() to let $errors be taken by reference.
-    foreach (module_implements('merci_generic_items_validate') as $module) {
-      $function = $module . '_merci_generic_items_validate';
-    //  $function($this, $errors);
+    $result = $query->execute();
+    $conflicts = array();
+    foreach ($result as $record){
+      if (!array_key_exists($record->target_id, $conflicts)) {
+        $conflicts[$record->target_id] = array();
+      } 
+      $conflicts[$record->target_id] = $record->reservation_id;
     }
-
-
-    // TODO too many selected.
+    return $conflicts;
   }
 
-  public function validateTooMany(&$errors) {
-  }
-
-  public function conflictingReservations() {
-    $query = $this->buildItemReservationQuery();
-    $query->addField('item_table', 'entity_id', 'reservation_id');
-
-    $reservations = $query->execute()->fetchAllAssoc('target_id');
-    return $reservations;
-  }
-
-  public function validateConflicts(&$errors) {
-    $query = $this->buildItemReservationQuery();
-
-    $reservations = $query->execute()->fetchAllAssoc('target_id');
-
-    foreach ($this->targets as $delta => $target_id) {
-      if (array_key_exists($target_id, $reservations)) {
-        $errors[$this->target_field][$delta][] = array(
-          'error' => 'merci',
-          'message' => t("Item is not available to reserve"),
-        );
-      }
-    }
-  }
-
-  protected function buildItemReservationQuery() {
+  protected function buildConflictQuery() {
     $dates = $this->dates;
 
     $exclude_id = $this->entity->getIdentifier();
@@ -121,6 +138,7 @@ class Merci_ReservationHandler_Generic implements Merci_ReservationHandler {
     // Build the query.
     $query = db_select($item_table, 'item_table');
     $query->addField('item_table', $item_column, 'target_id');
+    $query->addField('item_table', 'entity_id', 'reservation_id');
 
     if (count($target_ids) > 1) {
       $query->condition($item_column, $target_ids, 'IN');
@@ -165,8 +183,8 @@ class Merci_ReservationHandler_Generic implements Merci_ReservationHandler {
     $query->orderBy($date_column, 'ASC');
 
     // Add a generic entity access tag to the query.
-    //$query->addTag('merci_resource');
-    //$query->addMetaData('merci_reservable_handler', $this);
+    $query->addTag('merci_resource');
+    $query->addMetaData('merci_reservable_handler', $this);
 
     return $query;
   }

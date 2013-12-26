@@ -2,3 +2,13 @@
 
 module_load_include('inc', 'merci', 'includes/reservation.handler');
 
+function merci_get_controller($entity_type, $entity, $date_field, $target_field) {
+  $controllers = &drupal_static(__FUNCTION__, array());
+  if (!isset($controllers[$entity_type])) {
+    $class = 'MerciDefaultReservationController'; 
+    if (class_exists($class)) {
+      $controllers[$entity_type] = call_user_func(array($class, 'getInstance'), $entity_type, $entity, $date_field, $target_field);
+    }
+  }
+  return $controllers[$entity_type];
+}

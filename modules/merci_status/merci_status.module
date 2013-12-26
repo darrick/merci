@@ -10,7 +10,9 @@ define('MERCI_STATUS_CANCELLED', 5);
 define('MERCI_STATUS_DENIED', 6);
 define('MERCI_STATUS_NO_SHOW', 7);
 
-module_load_include('inc', 'merci_status', 'includes/merci.status.field');
+define('MERCI_STATUS_FIELD', 'merci_status_field');
+
+
 /**
  * Implements hook_permission().
  */
@@ -23,64 +25,6 @@ function merci_status_permission() {
   );
 }
 
-/**
- * Implements hook_node_access().
- */
-function merci_status_node_access($node, $op, $account) {
-
-  return NODE_ACCESS_IGNORE;
-  if (is_merci_reservation_node($node)) {
-
-    //users working with their own reservations access reservation
-    //additional check in merci_form permission to edit confirmed reservations
-    // Users without administer or manage reservations permission can only alter their own Unconfirmed Reservations.
-    if (($op == 'delete' or $op == 'update') && isset($node->{MERCI_STATUS_FIELD})){
-      if(user_access('create confirmed reservations')) {
-        if ($node->{MERCI_STATUS_FIELD}['und'][0]['value'] > MERCI_STATUS_CONFIRMED) {
-          return NODE_ACCESS_DENY;
-        }
-      } elseif ($node->{MERCI_STATUS_FIELD}['und'][0]['value'] != MERCI_STATUS_UNCONFIRMED) {
-        return NODE_ACCESS_DENY;
-      } 
-    }
-  }
-  return NODE_ACCESS_IGNORE;
-}
-
-/**
- * Implementation of hook_node_operations().
- */
-function merci_status_node_operations($return = NULL) {
-  $operations = array(
-    'merci_status_update' => array(
-      'label' => t('Confirm Reservation(s)'),
-      'callback' => 'merci_status_update',
-    ),
-  );
-  return $operations;
-}
-
-/**
- * Callback function for updating Reservation status from VBO.
- */
-function merci_status_update($nodes) {
-  foreach ($nodes as $nid) {
-    $node = node_load($nid);
-
-    //only update if MERCI Status is Unconfirmed
-    if ($node->{MERCI_STATUS_FIELD} == MERCI_STATUS_UNCONFIRMED) {
-      $node->{MERCI_STATUS_FIELD} = MERCI_STATUS_PENDING;
-      node_save($node);
-    }
-  }
-}
-
-/**
- * Callback function for updating Reservation status.
- */
-function merci_confirm_reservation($nid) {
-}
-
 function merci_status_gracetime() {
   $gracetime = NULL;
   return $gracetime;
@@ -91,8 +35,7 @@ function merci_status_gracetime() {
  */
 function merci_status_query_merci_resource_alter(QueryAlterableInterface $query) {
   // Storage location for date field.
-  $handler = $query->getMetadata('merci_reservable_handler');
-  $status_field = $handler->context['status_field'];
+  $status_field = MERCI_STATUS_FIELD;
   $status_field_info = field_info_field($status_field);
   $status_storage      = $status_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
   $keys = array_keys($status_storage);
@@ -128,7 +71,7 @@ function merci_status_merci_generic_items_validate($handler, &$errors) {
  * i.e. Given a $entity of $entity_type with date field $field and entity reference $target_id ...
  * check to ensure no other entities reference the $target_id at the same time.
  */
-function merci_status_overdue_query($handler) {
+function merci_status_overdue_query($target_type, $entity, $date_field, $target_field) {
   $target_ids = array();
   foreach ($handler->targets as $delta => $item) {
     if ($item['target_id']) {
@@ -205,3 +148,4 @@ function merci_status_overdue_query($handler) {
   // Return any ids of conflicting reservations if any.
   return $query;
 }
+

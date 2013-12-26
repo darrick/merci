@@ -1,6 +1,5 @@
 name = MERCI 
-description = Provides rules integration. 
+package = MERCI
+description = Provides rules integration for MERCI. 
 dependencies[] = merci 
 dependencies[] = rules_forms
-project = "MERCI"
-core = "7.x"
