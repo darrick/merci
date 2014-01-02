@@ -6,16 +6,17 @@ core = 7.x
 
 configure = admin/config/system/merci
 
+dependencies[] = list 
+dependencies[] = number 
 dependencies[] = date
 dependencies[] = date_api
 dependencies[] = date_popup
-dependencies[] = entityreference 
+dependencies[] = views
+dependencies[] = entityreference
+dependencies[] = multiple_selects
+dependencies[] = entity
 
-files[] = includes/reservation.handler.inc
-files[] = includes/merci.ui.controller.inc
-files[] = tests/merci_admin.test
-files[] = tests/merci_issues.test
-files[] = tests/merci_bucket.test
-files[] = tests/merci_resource.test
-files[] = tests/merci_testcase.php
-files[] = tests/merci_user.test
+
+
+files[] = includes/reservation.handler.inc 
+

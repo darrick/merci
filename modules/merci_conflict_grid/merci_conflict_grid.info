@@ -1,0 +1,5 @@
+name = Merci Conflict Grid 
+description = Display conflict grid when item is unavailable to reserve.
+package = MERCI
+dependency[] = merci 
+core = 7.x

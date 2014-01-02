@@ -36,7 +36,6 @@ function merci_rules_action_unavailable_entity_list($entity, $date_field, $targe
 
   $controller = merci_get_controller($entity_type, $entity, $date_field, $target_field); 
   $ids =  $controller->conflictingTargets();
-  dpm($ids);
   return array('entity_object_list' => $ids);
 }
 

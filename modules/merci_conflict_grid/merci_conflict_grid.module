@@ -1,0 +1,61 @@
+<?php
+
+/**
+ * Implementation of hook_views_api().
+ */
+function merci_conflict_grid_views_api() {
+  return array(
+    'api' => 3.0,
+    'path' => drupal_get_path('module', 'merci_conflict_grid'),
+  );
+}
+
+function merci_conflict_grid_form_merci_reservation_node_form_alter(&$form, $form_state, $form_id) {
+  $form['#validate'][] = 'merci_conflict_grid_validate_items';
+}
+
+function merci_conflict_grid_validate_items($form, $form_state) {
+  $node = (object) $form_state['values'];
+
+  $entity_type  = 'node';
+
+  $entity       = entity_metadata_wrapper($entity_type, $node);
+
+  $date_field   = 'field_merci_date';
+  $target_field = 'merci_reservation_items';
+
+  $controller = merci_get_controller($entity_type, $entity, $date_field, $target_field);
+  $ids =  $controller->conflictingTargets();
+
+  if (count($ids)) {
+    $message = merci_conflict_grid_display($controller);
+    drupal_set_message($message);
+  }
+}
+
+function merci_conflict_grid_display($controller) {
+  $entity = $controller->entity();
+  $date_field = $controller->date_field();
+  $target_field = $controller->target_field();
+  $dates = $entity->{$date_field}->value();
+  $date = new DateObject($dates['value']);
+  $date = $date->format('Y-m-d');
+  $ids = $controller->conflictingTargets();
+
+  $target_view = 'reservations';
+  $display     = 'page_3';
+  $view = views_get_view($target_view);
+  $view->set_display($display);
+  $arguments = array(
+    $date,// . '-W' . date_pad(date_week($dates['value'])),
+    implode(',',$ids),
+    $entity->getIdentifier(),
+  );
+  $view->set_arguments($arguments);
+  $view->date_info->style_show_empty_times = FALSE;
+  $view->build();
+  $view->pre_execute();
+  $view->execute($display);
+  $output = $view->render();
+  return $output;
+}
