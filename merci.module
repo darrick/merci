@@ -12,7 +12,17 @@ define('MERCI_UNA_F', 2);
 define('MERCI_AVA_T', 3);
 define('MERCI_UNA_S', 4);
 
+define('MERCI_STATUS_FIELD', 'field_merci_status');
+
+define('MERCI_STATUS_UNCONFIRMED', 0);
+define('MERCI_STATUS_PENDING', 1);
+define('MERCI_STATUS_CHECKED_OUT', 2);
+define('MERCI_STATUS_CHECKED_IN', 3);
+define('MERCI_STATUS_CANCELLED', 4);
+define('MERCI_STATUS_DENIED', 5);
+define('MERCI_STATUS_NO_SHOW', 6);
 // Reservation status options.
+/*
 define('MERCI_STATUS_UNCONFIRMED', 1);
 define('MERCI_STATUS_PENDING', 2);
 define('MERCI_STATUS_CHECKED_OUT', 3);
@@ -20,7 +30,7 @@ define('MERCI_STATUS_CHECKED_IN', 4);
 define('MERCI_STATUS_CANCELLED', 5);
 define('MERCI_STATUS_DENIED', 6);
 define('MERCI_STATUS_NO_SHOW', 7);
-
+ */
 // Bucket/resource status options.
 define('MERCI_STATUS_ACTIVE', 1);
 define('MERCI_STATUS_INACTIVE', 2);
@@ -39,6 +49,7 @@ define('MERCI_ITEM_STATUS_CHECKED_OUT', 2);
 
 module_load_include('inc', 'merci', 'includes/database');
 module_load_include('inc', 'merci', 'includes/api');
+module_load_include('inc', 'merci', 'includes/merci.workflow');
 
 module_load_include('inc', 'merci', 'includes/reservation.handler');
 
@@ -183,29 +194,33 @@ function merci_node_access($node, $op, $account) {
   $uid = isset($node->uid) ? $node->uid : FALSE;
 
   if ($type == 'merci_reservation') {
-
-    if (user_access('manage reservations')) {
-      return NODE_ACCESS_ALLOW;
-    }
-    elseif (user_access('view all reservations') && $op == 'view') {
-      return NODE_ACCESS_ALLOW;
-    }
-    elseif (user_access('create reservations') and !user_access('suspend MERCI access')) {
-      //users working with their own reservations access reservation
-      //additional check in merci_form permission to edit confirmed reservations
-      // Users without administer or manage reservations permission can only alter their own Unconfirmed Reservations.
-      if (($op == 'delete' or $op == 'update') && isset($node->merci_reservation_status)
-        && $node->merci_reservation_status != MERCI_STATUS_UNCONFIRMED
-        && !user_access('create confirmed reservations')) {
-          return NODE_ACCESS_DENY;
-        }
-
-      if ($uid === FALSE || $uid == $account->uid) {
-        return NODE_ACCESS_ALLOW;
+    if ($op == 'delete' and $account->uid == $uid) {
+      $offset = variable_get('merci_workflow_state_offset', 0);
+      if ($node->{MERCI_STATUS_FIELD}['und'][0]['value'] > MERCI_STATUS_UNCONFIRMED + $offset) {
+        return NODE_ACCESS_DENY;
       }
     }
-    return NODE_ACCESS_DENY;
   }
+}
+
+function merci_field_access($op, $field, $entity_type, $entity, $account) {
+  if (!$entity 
+    or !property_exists($entity, 'type') 
+    or $entity->type != 'merci_reservation' 
+    or $op != 'edit' 
+    or !property_exists($entity, MERCI_STATUS_FIELD)
+    or ($field['field_name'] != 'field_merci_date' and $field['field_name'] != 'merci_reservation_items')
+    or user_access('manage reservations', $account)) 
+  {
+    return TRUE;
+  }
+
+  $offset = variable_get('merci_workflow_state_offset', 0);
+
+  if ($entity->{MERCI_STATUS_FIELD}['und'][0]['value'] > MERCI_STATUS_UNCONFIRMED + $offset) {
+    return FALSE;
+  }
+  return TRUE;
 }
 
 /**
@@ -316,31 +331,11 @@ function merci_form($node, &$form_state) {
 
   $form = node_content_form($node, $form_state);
 
-    
-  if (user_access('manage reservations')) {
-    $form['merci_reservation_status'] = array(
-      '#title' => t('Status'),
-      '#type' => 'radios',
-      '#options' => merci_record_status(),
-      '#default_value' => $node->merci_reservation_status,
-      '#description' => t('Finalized bookings can not have time conflicts with each other.'),
-    );
-  } 
-  else {
-    $form['merci_reservation_status'] = array(
-      '#type' => 'value',
-      '#value' => $node->merci_reservation_status,
-    );
-  }
-  $form['merci_original_reservation_status'] = array(
-    '#type' => 'value',
-    '#value' => (isset($node->merci_original_reservation_status)) ? $node->merci_original_reservation_status : $node->merci_reservation_status,
-  );
-
   // Since hook_validate is broken in 6.x, we add our own
   // custom validation here.
   // TODO check if this fixed.
-  $form['#validate'][] = 'merci_reservation_node_validate';
+  $form['#validate'][] = 'merci_validate_merci_selected_items';
+  $form['#validate'][] = 'merci_workflow_validate_items';
 
   $form['#cache'] = TRUE; // Make sure the form is cached.
   
