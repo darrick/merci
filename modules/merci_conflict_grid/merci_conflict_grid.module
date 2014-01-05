@@ -26,6 +26,7 @@ function merci_conflict_grid_validate_items($form, $form_state) {
 
   $controller = merci_get_controller($entity_type, $entity, $date_field, $target_field);
   $ids =  $controller->conflictingTargets();
+  dpm($ids);
 
   if (count($ids)) {
     $message = merci_conflict_grid_display($controller);
@@ -37,8 +38,9 @@ function merci_conflict_grid_display($controller) {
   $entity = $controller->entity();
   $date_field = $controller->date_field();
   $target_field = $controller->target_field();
-  $dates = $entity->{$date_field}->value();
-  $date = new DateObject($dates['value']);
+  $dates = $entity->{$date_field}->raw();
+  $date = new DateObject($dates['value'],'UTC');
+  $date->setTimezone(timezone_open($dates['timezone']));
   $date = $date->format('Y-m-d');
   $ids = $controller->conflictingTargets();
 

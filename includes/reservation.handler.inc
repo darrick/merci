@@ -102,6 +102,7 @@ class MerciDefaultTargetController {
     $result = $query->execute();
     $conflicts = array();
     foreach ($result as $record){
+      dpm($record);
       if (!array_key_exists($record->target_id, $conflicts)) {
         $conflicts[$record->target_id] = array();
       } 
