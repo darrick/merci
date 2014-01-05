@@ -8,7 +8,7 @@ error_reporting(-1);
  */
 
 
-function merci_validate_merci_selected_items($form, &$form_state) {
+function merci_validate_merci_selected_items_old($form, &$form_state) {
   $node = (object) $form_state['values'];
 
   $entity_type  = 'node';
@@ -762,29 +762,6 @@ function merci_node_type_status($code = NULL) {
   }
 }
 
-/**
- * Return the name of a type code.
- *
- * @param string|int $code
- *  if int, will return translated name of the code.
- *  if NULL, returns array of codes as keys, and translated strings as value
- *
- * @return string|int
- */
-function merci_item_status($code = NULL) {
-  $statuses = array(
-    MERCI_AVA_F => t('Available'),
-    MERCI_UNA_F => t('Unavailable'),
-    MERCI_AVA_T => t('Template Only'),
-    MERCI_UNA_S => t('No Longer in Inventory'),
-  );
-  if (isset($code)) {
-    return $statuses[$code];
-  }
-  else {
-    return $statuses;
-  }
-}
 
 
 function merci_item_reservation_status($code = NULL) {
@@ -1024,8 +1001,6 @@ function merci_load_item_settings($object) {
       case 'bucket':
         // TODO: move to seperate module.
         if ($item_settings['merci_sub_type'] == MERCI_SUB_TYPE_RESERVATION) {
-          unset($item_settings['merci_default_availability']);
-          unset($item_settings['merci_item_status']);
           $item_settings += merci_bucket_node_settings($vid);
         }
         break;
@@ -1036,6 +1011,7 @@ function merci_load_item_settings($object) {
         break;
     }
   }
+  return;
   return (object) ($item_settings + $content_settings);
 }
 
