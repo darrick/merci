@@ -29,7 +29,7 @@ function merci_workflow_validate_items($form, $form_state) {
 
     foreach ($targets as $delta => $target_id) {
       if (in_array($target_id, $overdue)) {
-        form_set_error("$target_field][$delta][target_id", t('%name is past due.', array('%name' => $items[$target_id]->title)));
+        form_set_error("$target_field][und][$delta][target_id", t('%name is past due.', array('%name' => $items[$target_id]->title)));
       }
     }
   } 

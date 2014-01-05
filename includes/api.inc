@@ -361,39 +361,6 @@ function merci_is_numeric_validate($form) {
     form_set_error($form['#name'], t('%title must be a number.', array('%title' => $form['#title'])));
   }
 }
-/**
- * Custom validation function to protect merci nodes from mass deletion.
- */
-function merci_node_admin_delete_validate($form, &$form_state) {
-
-  // Look only for delete op.
-  $operation = $form_state['values']['operation'];
-  if ($operation != 'delete') {
-    return;
-  }
-  // Get the checked nodes.
-  $nids = array_filter($form_state['values']['nodes']);
-
-  // Perform the check for each submitted node.
-  foreach ($nids as $nid) {
-    $node = node_load($nid);
-
-    // Check to see if any of the nodes should not be deleted.
-    if (!merci_delete_item_validate($node)) {
-      // If so, then unset the checked node so it will not be processed, and display a warning.
-      // Note that the array element has to be completely removed here in order to prevent the
-      // node from being deleted, due to the nature of the mass deletion callback.
-      unset($form_state['values']['nodes'][$nid]);
-      unset($nids[$nid]);
-    }
-  }
-
-  // If we've unset all of the nodes that were checked, then don't continue with the form processing.
-  if (!count($nids)) {
-    drupal_set_message(t('No nodes selected.'), 'error');
-    drupal_goto('admin/content/node');
-  }
-}
 
 
 function merci_validate_empty_reservation_items($form, &$form_state) {

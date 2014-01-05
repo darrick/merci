@@ -241,6 +241,7 @@ function merci_form($node, &$form_state) {
   $form['#validate'][] = 'merci_validate_merci_selected_items';
   $form['#validate'][] = 'merci_workflow_validate_items';
   $form['#validate'][] = 'merci_permissions_validate_items';
+  $form['#validate'][] = 'merci_validate_unique_items';
 
   $form['#cache'] = TRUE; // Make sure the form is cached.
 
@@ -250,6 +251,37 @@ function merci_form($node, &$form_state) {
   }
 
   return $form;
+}
+
+function merci_validate_unique_items($form, &$form_state) {
+
+  $node = (object) $form_state['values'];
+
+  $entity_type  = 'node';
+
+  $entity       = entity_metadata_wrapper($entity_type, $node);
+
+  $target_field = 'merci_reservation_items';
+  $field_info = field_info_field($target_field);
+  $target_type = $field_info['settings']['target_type'];
+
+  $ids = array();
+  foreach ($entity->{$target_field}->raw() as $delta => $target_id) {
+    if (!empty($target_id) and intval($target_id)) {
+      $ids[$delta] = $target_id;
+    }
+  }
+  $unique = array_unique($ids);
+  if (count($ids) != count($unique)) {
+    foreach ($ids as $delta => $target_id) {
+      if (!array_key_exists($delta, $unique)) {
+        $targets = entity_load($target_type, array($target_id));
+        $messages[$delta] = t('%title is overbooked.  You can only reserve one of this item.', array('%title' => $targets[$target_id]->title)); 
+        form_set_error("merci_reservation_items][und][$delta][target_id", $messages[$delta]);
+      }
+    }
+  }
+  //form_set_error('', 'error');
 }
 
 function merci_permissions_validate_items($form, &$form_state) {
@@ -280,7 +312,7 @@ function merci_permissions_validate_items($form, &$form_state) {
       $roles = $target->{MERCI_ROLE_FIELD}->raw();
       if(!count(array_intersect($roles, $user_roles))) {
         $messages[$delta] = t('User %user does not have permission to reserve %title.', array('%user' => $account->name, '%title' => $targets[$target_id]->title)); 
-        form_set_error("merci_reservation_items][$delta][target_id", $messages[$delta]);
+        form_set_error("merci_reservation_items][und][$delta][target_id", $messages[$delta]);
       }
     }
   }
@@ -313,7 +345,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
   foreach ($entity->{$target_field}->raw() as $delta => $target_id) {
     if (in_array($target_id, $ids)) {
       $messages[$delta] = t('%title is not available at this time.', array('%title' => $conflicts[$target_id]->title)); 
-      form_set_error("merci_reservation_items][$delta][target_id", $messages[$delta]);
+      form_set_error("merci_reservation_items][und][$delta][target_id", $messages[$delta]);
     }
   }
 }
@@ -494,6 +526,7 @@ function merci_views_api() {
  */
 function merci_cron() {
 
+  return;
   // 2009-05-22 20:45:00
   $time = gmdate('Y-m-j H:i:s');
 
@@ -624,6 +657,39 @@ function _merci_content_type_info($reset = FALSE) {
   return $info;
 }
 
+/**
+ * Custom validation function to protect merci nodes from mass deletion.
+ */
+function merci_node_admin_delete_validate($form, &$form_state) {
+
+  // Look only for delete op.
+  $operation = $form_state['values']['operation'];
+  if ($operation != 'delete') {
+    return;
+  }
+  // Get the checked nodes.
+  $nids = array_filter($form_state['values']['nodes']);
+
+  // Perform the check for each submitted node.
+  foreach ($nids as $nid) {
+    $node = node_load($nid);
+
+    // Check to see if any of the nodes should not be deleted.
+    if (!merci_delete_item_validate($node)) {
+      // If so, then unset the checked node so it will not be processed, and display a warning.
+      // Note that the array element has to be completely removed here in order to prevent the
+      // node from being deleted, due to the nature of the mass deletion callback.
+      unset($form_state['values']['nodes'][$nid]);
+      unset($nids[$nid]);
+    }
+  }
+
+  // If we've unset all of the nodes that were checked, then don't continue with the form processing.
+  if (!count($nids)) {
+    drupal_set_message(t('No nodes selected.'), 'error');
+    drupal_goto('admin/content/node');
+  }
+}
 
 /**
  * Validates if an item node can be deleted.
