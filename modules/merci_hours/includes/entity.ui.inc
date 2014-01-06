@@ -71,7 +71,7 @@ function merci_hours_form_submit($form, &$form_state) {
   //$merci_hours->updateWeek($form_state['values']['week_days']);
   // Save and go back.
   $merci_hours->save();
-  $form_state['redirect'] = 'admin/structure/merci-hours';
+  $form_state['redirect'] = 'admin/config/merci/merci-hours';
 }
 
 /**

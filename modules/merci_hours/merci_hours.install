@@ -51,3 +51,11 @@ function merci_hours_schema() {
 function merci_hours_uninstall() {
   variable_del('merci_hours_default');
 }
+
+/**
+ * Implements hook_enable().
+ */
+function merci__hours_enable() {
+  merci_create_field(MERCI_HOURS_FIELD, 'merci_hours', 'merci_hours');
+}
+

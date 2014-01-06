@@ -1,7 +1,8 @@
 <?php
 
-define('MERCI_HOURS_FIELD', 'field_merci_hours');
+define('MERCI_HOURS_FIELD', 'field_office_hours');
 define('MERCI_HOLIDAYS_FIELD', 'field_merci_holidays');
+module_load_include('inc', 'merci_hours', 'open_hours.element');
 
 /**
  * Implements hook_permission().
@@ -35,7 +36,7 @@ function merci_hours_permission() {
  */
 function merci_hours_menu() {
   $items = array();
-  $items['admin/config/merci/merci-hours'] = array(
+  $items['admin/config/merci/merci-hours/settings'] = array(
     'title' => 'Sitewide merci hours',
     'description' => "Site's default merci hours.",
     'page callback' => 'drupal_get_form',
@@ -43,7 +44,10 @@ function merci_hours_menu() {
     'access arguments' => array('administer MERCI'),
     'access callback' => 'user_access',
     'file' => 'merci_hours.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 5,
   );
+
   $items['merci_hours_dates/%/%/%'] = array(
     'page callback' => 'merci_hours_date_open_days_ajax',
     'page arguments' => array(1, 2, 3),
@@ -88,7 +92,7 @@ function merci_hours_entity_info() {
     'controller class' => 'EntityAPIControllerExportable',
     'exportable' => TRUE,
     'admin ui' => array(
-      'path' => 'admin/structure/merci-hours',
+      'path' => 'admin/config/merci/merci-hours',
       'file' => 'includes/entity.ui.inc',
     ),
     'access callback' => 'merci_hours_access',
@@ -108,7 +112,7 @@ function merci_hours_access($op, $entity = NULL, $account = NULL) {
     case 'delete':
       $default = variable_get('merci_hours_default', NULL);
       if ($entity->name == $default) {
-        drupal_set_message(t("This is the default merci hours and can't be deleted. Please change the default merci hours at <a href='!url'>admin/config/merci/merci-hours</a> if you want to delete this one.", array('!url' => url('admin/config/merci/merci-hours'))), 'error');
+        drupal_set_message(t("This is the default merci hours and can't be deleted. Please change the default merci hours at <a href='!url'>admin/config/merci/merci-hours/settings</a> if you want to delete this one.", array('!url' => url('admin/config/merci/merci-hours/settings'))), 'error');
           return false;
       }
       break;
@@ -157,8 +161,7 @@ function merci_hours_form_element($include_default = FALSE, $default_value = NUL
  * Implementation of hook_form_alter().
  */
 function merci_hours_form_merci_hours_form_alter(&$form, &$form_state) {
-  field_attach_form('merci_hours', $form_state['merci_hours'], $form, $form_state);
-  
+//  field_attach_form('merci_hours', $form_state['merci_hours'], $form, $form_state);
 }
 
 /**
@@ -362,15 +365,42 @@ function merci_hours_date_open_days_ajax($wc, $year, $month) {
  * Check the date is a open day in the in the work calendar.
  */
 function merci_hours_date_element_validate($element, &$form_state, $form) {
-  return;
-  if (form_get_errors()) return;
-  $value = drupal_array_get_nested_value($form_state['values'], $element['#parents']);
-  $date = new DateObject($value);
-  $valid = work_calendar_day_is_open($element['#work_calendar'], $date->format('Y'), $date->format('m'), $date->format('d'));
+  //if (form_get_errors()) return;
+
+  $cal = $element['#merci_hours'];
+  $value = $element['#value'];
+
+  $date = new DateObject(implode(' ', $value));
+  $valid = merci_hours_day_is_open($element['#merci_hours'], $date->format('Y'), $date->format('m'), $date->format('d'));
+
   if (!$valid) {
     form_error($element, t('This is a closed day in the work calendar.'));
-    return;
+  } else {
+    $day = $date->format('w');
+    $time = $date->format('H:i:s');
+    $open_hours = merci_hours_get_open_hours_for_day($cal, $day);
+    foreach ($open_hours[$day] as $hours) {
+      $open = $hours['open'];
+      $close = $hours['close'];
+      $open_hour = $open->format('H:i:s');
+      $close_hour = $close->format('H:i:s');
+      if ($time < $open_hour) {
+        form_error($element, t('We are closed until %open on %day.', array('%open' => $open->format('g:ia'), '%day' => $open->format('l'))));
+      }
+      if ($time > $close_hour) {
+        form_error($element, t('We close at %close on %day.', array('%close' => $close->format('g:ia'), '%day' => $close->format('l'))));
+      }
+    }
   }
+}
+
+/**
+  *  * Wrapper for WorkCalendar::isOpenDay().
+  *   */
+function merci_hours_day_is_open($cal = NULL, $year = NULL, $month = NULL, $day = NULL) {
+  $wc = merci_hours_instantiate($cal);
+  list($year, $month, $day) = merci_hours_complete_date($year, $month, $day);
+  return $wc->isOpenDay($year, $month, $day);
 }
 /**
  * Implements hook_merci_fields_info().
@@ -378,82 +408,22 @@ function merci_hours_date_element_validate($element, &$form_state, $form) {
 function merci_hours_merci_fields_info() {
   $fields = array();
 
+  // Exported field_base: 'field_office_hours'
   $fields[MERCI_HOURS_FIELD] = array(
     'field' => array(
-      'active' => '1',
-      'cardinality' => '-1',
-      'deleted' => '0',
-      'entity_types' => array(),
+      'cardinality' => -1,
       'field_name' => MERCI_HOURS_FIELD,
-      'foreign keys' => array(),
-      'indexes' => array(),
-      'locked' => '0',
-      'module' => 'office_hours',
-      'settings' => array(
-        'cardinality' => '2',
-        'granularity' => '60',
-        'hoursformat' => '1',
-        'limitend' => '22',
-        'limitstart' => '8',
-        'valhrs' => 0,
-      ),
-      'translatable' => '0',
-      'type' => 'office_hours',
+      'type' => 'datetime',
     ),
     'instance' => array(
-      'default_value' => NULL,
-      'deleted' => '0',
-      'description' => '',
-      'display' => array(
-        'default' => array(
-          'label' => 'above',
-          'module' => 'office_hours',
-          'settings' => array(
-            'closedformat' => 'Closed',
-            'compress' => FALSE,
-            'current_status' => array(
-              'closed_text' => 'Currently closed',
-              'open_text' => 'Currently open!',
-              'position' => 'hide',
-            ),
-            'date_first_day' => '0',
-            'daysformat' => 'long',
-            'grouped' => FALSE,
-            'hoursformat' => 0,
-            'separator_day_hours' => ': ',
-            'separator_days' => '<br />',
-            'separator_grouped_days' => ' - ',
-            'separator_hours_hours' => '-',
-            'separator_more_hours' => ', ',
-            'showclosed' => 'all',
-            'timezone_field' => '',
-          ),
-          'type' => 'office_hours',
-          'weight' => 1,
-        ),
-        'teaser' => array(
-          'label' => 'above',
-          'settings' => array(),
-          'type' => 'hidden',
-          'weight' => 0,
-        ),
-      ),
-      'label' => 'Hours of operation',
+      'label' => 'Office hours',
       'required' => 0,
-      'settings' => array(
-        'user_register_form' => FALSE,
-      ),
       'widget' => array(
-        'active' => 0,
-        'module' => 'office_hours',
-        'settings' => array(),
-        'type' => 'office_hours',
-        'weight' => '-3',
+        'module' => 'merci_hours',
+        'type' => 'merci_hours',
       ),
     ),
   );
-
-
   return $fields;
 }
 
@@ -473,8 +443,10 @@ function merci_hours_instantiate($name = NULL) {
   }
   $week_days = array();
   $weekdays = date_week_days_untranslated(); 
-  foreach ($wc->field_merci_hours_of_operation[LANGUAGE_NONE] as $hours_open) {
-    $week_days[] = $weekdays[$hours_open['day']];
+  foreach ($wc->{MERCI_HOURS_FIELD}[LANGUAGE_NONE] as $timefield) {
+    $open = new DateObject($timefield['value']);
+    $day = $open->format('w');
+    $week_days[] = $weekdays[$day];
 
   }
   $wc->updateWeek($week_days);
@@ -499,12 +471,14 @@ function merci_hours_get_open_days_in_year($cal = NULL, $year = NULL) {
   list($year,,) = merci_hours_complete_date($year);
   $dates = $wc->getOpenDays($year);
 
+  /*
   $holidays = array();
   foreach ($wc->field_merci_hours_holidays[LANGUAGE_NONE] as $holiday) {
     list($holidays[],) = explode(' ', $holiday['value']);
   }
+   */
 
-  return array_values( array_diff($dates, $holidays));
+  return array_values( $dates);
 }
 
 /**
@@ -523,19 +497,44 @@ function merci_hours_get_open_days_in_month($cal = NULL, $year = NULL, $month = 
   return array_values( array_diff($dates, $holidays));
 }
 
+function merci_hours_get_open_hours_for_day($cal, $day) {
+  $wc = merci_hours_instantiate($cal);
+   
+  $hours = array();
+  //$day = $day ? $day : $wc->field_merci_hours_of_operation[LANGUAGE_NONE][0]['day'];
+  foreach ($wc->{MERCI_HOURS_FIELD}[LANGUAGE_NONE] as $timefield) {
+    $open = new DateObject($timefield['value']);
+    if ($day == $open->format('w')) {
+      $close = new DateObject($timefield['value2']);
+      if (array_key_exists($day, $hours)) {
+        $hours[$day] = array();
+      }
+      $hours[$day][] = array(
+        'open' => $open,
+        'close' => $close,
+      );
+    }
+  }
+  return $hours;
+}
+
 function merci_hours_get_open_hours($cal = NULL, $day = NULL) {
   $wc = merci_hours_instantiate($cal);
-  $day = $day ? $day : $wc->field_merci_hours_of_operation[LANGUAGE_NONE][0]['day'];
-  foreach ($wc->field_merci_hours_of_operation[LANGUAGE_NONE] as $timefield) {
-    if ($timefield['day'] == $day) {
-      list($open_hours, $open_mins) = str_split(str_pad($timefield['starthours'],4,"0",STR_PAD_LEFT), 2);
-      list($close_hours, $close_mins) = str_split(str_pad($timefield['endhours'],4,"0",STR_PAD_LEFT), 2);
-      $open = $open_hours; 
-      $close = $close_hours;
-      $open = new DateTime($open_hours . ':' . $open_mins);
-      $close = new DateTime($close_hours . ':' . $close_mins);
+  if ($day === NULL) {
+    $open = new DateObject($wc->{MERCI_HOURS_FIELD}[LANGUAGE_NONE][0]);
+    $day = $open->format('w');
+  }
+   
+  //$day = $day ? $day : $wc->field_merci_hours_of_operation[LANGUAGE_NONE][0]['day'];
+  foreach ($wc->{MERCI_HOURS_FIELD}[LANGUAGE_NONE] as $timefield) {
+    $open = new DateObject($timefield['value']);
+    if ($day == $open->format('w')) {
+      $close = new DateObject($timefield['value2']);
       break;
     }
+  }
+  if (!isset($close)) {
+    return array('open' => '', 'close' => '');
   }
   return array('open' => $open->format('g:ia'), 'close' => $close->format('g:ia'));
 }

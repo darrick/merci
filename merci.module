@@ -48,6 +48,15 @@ function merci_get_controller($entity_type, $entity, $date_field, $target_field)
 }
 
 /**
+ * Implements hook_ctools_plugin_directory().
+ */
+function merci_ctools_plugin_directory($module, $plugin) {
+  // Load the export_ui plugin.
+  if ($plugin =='export_ui') {
+    return 'plugins/export_ui';
+  }
+}
+/**
  * Implements hook_permission().
  */
 function merci_permission() {
@@ -128,6 +137,7 @@ function merci_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  /*
   // Standard Administration settings.
   $items['admin/config/system/merci'] = array(
     'title' => 'MERCI Configuration',
@@ -138,11 +148,23 @@ function merci_menu() {
     'description' => 'Configure system settings for MERCI.',
     'file' => 'includes/merci.admin.inc',
   );
+   */
 
   $items['admin/config/system/merci/edit'] = array(
     'title' => 'Edit',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
+  );
+
+  $items['admin/config/merci'] = array(
+    'title' => 'Merci',
+    'description' => 'Administer Merci.',
+    'position' => 'right',
+    'weight' => -5,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer merci'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
   );
 
   return $items;
