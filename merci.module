@@ -306,6 +306,7 @@ function merci_check_content_type_restrictions($form, &$form_state) {
 
   $dates = $entity->{MERCI_DATE_FIELD}->raw();
 
+  $start_date = new DateObject($dates['value'], 'UTC');
   $end_date = new DateObject($dates['value2'], 'UTC');
 
   foreach ($entity->{$target_field}->raw() as $delta => $target_id) {
@@ -316,9 +317,10 @@ function merci_check_content_type_restrictions($form, &$form_state) {
 
       $max_date = new DateObject($dates['value'] . ' ' . $interval, 'UTC'); 
 
+      $context = array('form' => $form, 'form_state' => $form_state, 'target' => $target, 'start_date' => $start_date);
+      drupal_alter('merci_override_max_time', $max_date, $context);
+
       if ($max_date->format('U') < $end_date->format('U')) {
-        //$max_date->setTimezone(timezone_open($dates['timezone']));
-        $start_date = new DateObject($dates['value'], 'UTC');
         $interval = $max_date->format('U') - $start_date->format('U');
         $message = t('%title can only be reserved for up to %date.', array('%title' => $targets[$target_id]->title, '%date' => format_interval($interval))); 
         form_set_error("merci_reservation_items][und][$delta][target_id", $message);
