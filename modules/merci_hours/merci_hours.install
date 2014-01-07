@@ -55,7 +55,8 @@ function merci_hours_uninstall() {
 /**
  * Implements hook_enable().
  */
-function merci__hours_enable() {
+function merci_hours_enable() {
   merci_create_field(MERCI_HOURS_FIELD, 'merci_hours', 'merci_hours');
+  merci_create_field(MERCI_HOLIDAYS_FIELD, 'merci_hours', 'merci_hours');
 }
 

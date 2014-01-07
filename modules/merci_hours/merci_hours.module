@@ -1,7 +1,7 @@
 <?php
 
 define('MERCI_HOURS_FIELD', 'field_office_hours');
-define('MERCI_HOLIDAYS_FIELD', 'field_merci_holidays');
+define('MERCI_HOLIDAYS_FIELD', 'field_holidays');
 module_load_include('inc', 'merci_hours', 'open_hours.element');
 
 /**
@@ -324,17 +324,8 @@ function merci_hours_date_popup_process_alter(&$element, $form_state, $context) 
     $open_hours = merci_hours_get_open_hours($element['#merci_hours'],4);
 
     $element['time']['#attributes']['class'][] = 'merci-hours-timefield';
-    // 2013-12-14 17:38:25
 
     $settings = array(
-      /*
-      'minHour' => $open_hours['open']->format('H'),
-      'minMinutes' => $open_hours['open']->format('i'),
-      'maxTime' => $open_hours['close']->format('H'),
-      'maxMinutes' => $open_hours['close']->format('i'),
-      'startHour' => $open_hours['open']->format('H'),
-      'startMinutes' => $open_hours['open']->format('i'),
-       */
       'minTime'   => $open_hours['open'],
       'maxTime'   => $open_hours['close'],
       'dateid' => $element['date']['#id'],
@@ -372,9 +363,13 @@ function merci_hours_date_element_validate($element, &$form_state, $form) {
 
   $date = new DateObject(implode(' ', $value));
   $valid = merci_hours_day_is_open($element['#merci_hours'], $date->format('Y'), $date->format('m'), $date->format('d'));
+  $holiday = merci_hours_day_is_holiday($element['#merci_hours'], $date);
 
   if (!$valid) {
     form_error($element, t('This is a closed day in the work calendar.'));
+  }
+  else if ($holiday) {
+    form_error($element, t('This is a holiday in the work calendar.'));
   } else {
     $day = $date->format('w');
     $time = $date->format('H:i:s');
@@ -392,6 +387,12 @@ function merci_hours_date_element_validate($element, &$form_state, $form) {
       }
     }
   }
+}
+
+function merci_hours_day_is_holiday($cal, $date) {
+  $wc = merci_hours_instantiate($cal);
+  $holidays = $wc->getHolidayDates($date->format('Y'), $date->format('m'), $date->format('d'));
+  return count($holidays);
 }
 
 /**
@@ -414,6 +415,10 @@ function merci_hours_merci_fields_info() {
       'cardinality' => -1,
       'field_name' => MERCI_HOURS_FIELD,
       'type' => 'datetime',
+      'settings' => array(
+        'todate' => 'required',
+        'tz_handling' => 'none',
+      ),
     ),
     'instance' => array(
       'label' => 'Office hours',
@@ -422,6 +427,16 @@ function merci_hours_merci_fields_info() {
         'module' => 'merci_hours',
         'type' => 'merci_hours',
       ),
+    ),
+  );
+  $fields[MERCI_HOLIDAYS_FIELD] = array(
+    'field' => array(
+      'field_name' => MERCI_HOLIDAYS_FIELD,
+      'module' => 'viewfield',
+      'type' => 'viewfield',
+    ),
+    'instance' => array(
+      'label' => 'Holidays',
     ),
   );
   return $fields;
@@ -471,14 +486,9 @@ function merci_hours_get_open_days_in_year($cal = NULL, $year = NULL) {
   list($year,,) = merci_hours_complete_date($year);
   $dates = $wc->getOpenDays($year);
 
-  /*
-  $holidays = array();
-  foreach ($wc->field_merci_hours_holidays[LANGUAGE_NONE] as $holiday) {
-    list($holidays[],) = explode(' ', $holiday['value']);
-  }
-   */
+  $holidays = $wc->getHolidayDates($year);
 
-  return array_values( $dates);
+  return array_values( array_diff($dates, $holidays));
 }
 
 /**
@@ -489,17 +499,14 @@ function merci_hours_get_open_days_in_month($cal = NULL, $year = NULL, $month = 
   list($year, $month, ) = merci_hours_complete_date($year, $month);
   $dates = $wc->getOpenDays($year, $month);
 
-  $holidays = array();
-  foreach ($wc->field_merci_hours_holidays[LANGUAGE_NONE] as $holiday) {
-    list($holidays[],) = explode(' ', $holiday['value']);
-  }
+  $holidays = $wc->getHolidayDates($year, $month);
 
   return array_values( array_diff($dates, $holidays));
 }
 
 function merci_hours_get_open_hours_for_day($cal, $day) {
   $wc = merci_hours_instantiate($cal);
-   
+
   $hours = array();
   //$day = $day ? $day : $wc->field_merci_hours_of_operation[LANGUAGE_NONE][0]['day'];
   foreach ($wc->{MERCI_HOURS_FIELD}[LANGUAGE_NONE] as $timefield) {
@@ -524,7 +531,7 @@ function merci_hours_get_open_hours($cal = NULL, $day = NULL) {
     $open = new DateObject($wc->{MERCI_HOURS_FIELD}[LANGUAGE_NONE][0]);
     $day = $open->format('w');
   }
-   
+
   //$day = $day ? $day : $wc->field_merci_hours_of_operation[LANGUAGE_NONE][0]['day'];
   foreach ($wc->{MERCI_HOURS_FIELD}[LANGUAGE_NONE] as $timefield) {
     $open = new DateObject($timefield['value']);

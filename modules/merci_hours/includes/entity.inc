@@ -199,4 +199,27 @@ class MerciHours extends Entity {
     $week_day = self::weekDayName($date);
     return !in_array($week_day, $this->week_days);
   }
+
+  function getHolidayDates($year=NULL, $month=NULL, $day=NULL) {
+    $holidays = array();
+    $argument = $year;
+    $argument .= ($month ? '-' . $month : '');
+    $argument .= $day ? '-' . $day : '';
+
+    foreach ($this->{MERCI_HOLIDAYS_FIELD}[LANGUAGE_NONE] as $holiday) {
+      $target_view = explode('|', $holiday['vname']);
+      $view = views_get_view($target_view[0]);
+      $view->set_display($target_view[1]);
+      $arguments[0] = $argument;
+      $view->set_arguments($arguments);
+      $view->build();
+      $view->pre_execute();
+      $view->execute();
+      $field_alias = $view->argument['date_argument']->table_alias . '_' . $view->argument['date_argument']->real_field;
+      foreach ($view->result as $holiday) {
+        list($holidays[]) = explode(' ', $holiday->{$field_alias});
+      }
+    }
+    return $holidays;
+  }
 }

@@ -45,13 +45,13 @@ function merci_hours_form($form, &$form_state, $merci_hours, $op = 'edit') {
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Save work calendar'),
+    '#value' => t('Save'),
     '#weight' => 40,
   );
   if (!$merci_hours->isLocked() && $op != 'add' && $op != 'clone') {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
-      '#value' => t('Delete work calendar'),
+      '#value' => t('Delete'),
       '#weight' => 45,
       '#limit_validation_errors' => array(),
       '#submit' => array('merci_hours_form_submit_delete'),
@@ -78,6 +78,7 @@ function merci_hours_form_submit($form, &$form_state) {
  * Form API submit callback for the delete button.
  *
  * @see merci_hours_form().
+ */
 function merci_hours_form_submit_delete($form, &$form_state) {
-  $form_state['redirect'] = 'admin/structure/work-calendars/manage/' . $form_state['merci_hours']->name . '/delete';
+  $form_state['redirect'] = 'admin/config/merci/merci-hours/manage/' . $form_state['merci_hours']->name . '/delete';
 }
