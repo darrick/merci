@@ -20,4 +20,5 @@ dependencies[] = entity
 
 
 files[] = includes/reservation.handler.inc 
+files[] = includes/merci.behavior.inc 
 
