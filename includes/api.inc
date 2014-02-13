@@ -99,6 +99,10 @@ function merci_validate_merci_selected_items($form, &$form_state) {
       // Are we checking an existing item?
       $nid = isset($item['did']) ? $node->nid : NULL; 
 
+      if (merci_type_setting($type) == 'bucket') {
+        $nid = $node->nid;
+      }
+
       // Is the item available at this time?
       $count = merci_is_item_reservable($item_nid, $type, $start, $end, $nid);
       if (!$count or (empty($item_nid) and merci_type_setting($type) == 'bucket' and $count - $selected_count[$type] < 0)) {
