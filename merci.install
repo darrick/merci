@@ -84,6 +84,7 @@ function merci_uninstall() {
  * Implements hook_enable().
  */
 function merci_enable() {
+  module_load_include('inc', 'merci', 'merci.behavior');
   $workflows = _merci_default_workflows();
   module_load_include('inc', 'workflow', 'workflow.features');
   foreach ($workflows as $name => $workflow) {
@@ -673,13 +674,12 @@ function _merci_installed_instances () {
       'field_name' => 'field_merci_date',
       'label' => 'Reservation',
       'description' => '',
-      'weight' => -1,
       'required' => '1',
       'entity_type' => 'node',
       'bundle' => 'merci_reservation',
 
       'widget' => array(
-        'weight' => '-1',
+        'weight' => '1',
         'type' => 'date_popup',
         'module' => 'date',
         'description' => 'Select the start and end times for your reservation.',
@@ -730,7 +730,7 @@ function _merci_installed_instances () {
         'module' => 'multiple_selects',
         'settings' => array(),
         'type' => 'multiple_selects',
-        'weight' => '-3',
+        'weight' => '2',
       ),
     ),
     'field_merci_status' => array(
@@ -778,10 +778,8 @@ function _merci_installed_fields () {
     'field_merci_date' => array(
       'field_name' => 'field_merci_date',
       'type' => 'datetime',
-      'entity_types' => array('node'),
-
       'module' => 'date',
-      'locked' => '1',
+      'locked' => '0',
       'settings' => array(
         'repeat' => 0,
         'todate' => 'required',

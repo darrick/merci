@@ -2,7 +2,9 @@
 $plugin = array(
   'label' => t('Unique'),
   'description' => t('Only unique items.'),
-  'class' => 'MerciBehaviorUnique',
+  'handler' => array(
+    'class' => 'MerciBehaviorUnique',
+  ),
 );
 
 class MerciBehaviorUnique extends MerciBehavior {
@@ -39,7 +41,6 @@ class MerciBehaviorUnique extends MerciBehavior {
         }
       }
     }
-    //form_set_error('', 'error');
   }
 
 }

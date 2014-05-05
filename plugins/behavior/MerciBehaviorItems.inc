@@ -2,7 +2,9 @@
 $plugin = array(
   'label' => t('Item restrictions'),
   'description' => t('Limits reservations if item is available.'),
-  'class' => 'MerciBehaviorItem',
+  'handler' => array(
+    'class' => 'MerciBehaviorItems',
+  ),
 );
 
 class MerciBehaviorItems extends MerciBehavior {
@@ -10,6 +12,7 @@ class MerciBehaviorItems extends MerciBehavior {
   function validate($form, &$form_state) {
 
     $entity = $this->entity;
+    $entity_type = $entity->type();
 
     $date_field   = 'field_merci_date';
     $target_field = 'merci_reservation_items';
@@ -24,6 +27,8 @@ class MerciBehaviorItems extends MerciBehavior {
     }
 
     //TODO do not validate if status is greater then MERCI_STATUS_CHECKED_OUT.
+    dpm($entity->value());
+    dpm($entity->value(array('identifier' => TRUE)));
     $controller = merci_get_controller($entity_type, $entity, $date_field, $target_field);
     $ids =  $controller->conflictingTargets();
 

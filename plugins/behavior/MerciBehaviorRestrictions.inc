@@ -2,7 +2,9 @@
 $plugin = array(
   'label' => t('Content type restrictions'),
   'description' => t('Restrictions based on content type.'),
-  'class' => 'MerciBehaviorRestrictions',
+  'handler' => array(
+    'class' => 'MerciBehaviorRestrictions',
+  ),
 );
 
 class MerciBehaviorRestrictions extends MerciBehavior {

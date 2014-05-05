@@ -65,7 +65,8 @@ function merci_ctools_plugin_directory($module, $plugin) {
  */
 function merci_ctools_plugin_type() {
   $plugins['behavior'] = array(
-    'classes' => array('class'),
+    //'classes' => array('class'),
+    'use hooks' => FALSE,
   );
   return $plugins;
 }
@@ -78,9 +79,9 @@ function merci_get_accessible_behavior_plugins($entity_type = NULL, $entity = NU
   $plugins = array();
   foreach (ctools_get_plugins('merci', 'behavior') as $name => $plugin) {
     $handler = _merci_get_behavior_handler($name, $entity_type, $entity);
-    if ($handler->access()) {
+    //if ($handler->access()) {
       $plugins[$name] = $plugin;
-    }
+    //}
   }
   return $plugins;
 }
@@ -98,7 +99,7 @@ function _merci_get_behavior_handler($behavior, $entity_type = NULL, $entity = N
   if (!isset($object_cache[$behavior])) {
    */
     ctools_include('plugins');
-    $class = ctools_plugin_load_class('merci', 'behavior', $behavior, 'class');
+    $class = ctools_plugin_load_class('merci', 'behavior', $behavior, 'handler');
 
     $class = class_exists($class) ? $class : 'MerciBehaviorBroken';
     $object_cache[$behavior] = new $class($entity_type, $entity);
@@ -308,7 +309,6 @@ function merci_validate($node, $form, &$form_state) {
       return;
     }
   }
-  form_set_error('', 'Error');
 
 }
 
@@ -500,12 +500,14 @@ function merci_node_operations($return = NULL) {
 /**
  * Implementation of hook_views_api().
  */
+/*
 function merci_views_api() {
   return array(
     'api' => 2,
     'path' => drupal_get_path('module', 'merci'),
   );
 }
+ */
 
 /**
  * Implementation of hook_views_handlers().
@@ -914,7 +916,7 @@ function merci_add_settings_form(&$form, $form_state) {
   }
 }
 
-function merci_behavior_form_element($entity_type, $entity) {
+function merci_behavior_form_element($entity_type=NULL , $entity = NULL) {
   $behaviors = merci_get_accessible_behavior_plugins();
 
   $options = array();
@@ -1057,6 +1059,110 @@ function merci_merci_node_type_save($bundle_name) {
 }
 
 function merci_merci_fields_info() {
+  $name = "Merci Status";
+  $workflow = Workflow::loadByName($name);
+  $wid = $workflow->wid;
+  // Create the date, commercial_total, and member_total fields for the reservation.
+  $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
+  $fields[MERCI_DATE_FIELD] = array(
+    'field' => array(
+      'field_name' => MERCI_DATE_FIELD,
+      'type' => 'datetime',
+      'module' => 'date',
+      'settings' => array(
+        'repeat' => 0,
+        'todate' => 'required',
+        'granularity' => array(
+          'year' => 'year',
+          'month' => 'month',
+          'day' => 'day',
+          'hour' => 'hour',
+          'minute' => 'minute',
+        ),
+        'tz_handling' => 'site',
+        'timezone_db' => 'UTC',
+      ),
+    ),
+    'instance' => array(
+      'label' => 'Reservation',
+      'required' => '1',
+
+      'widget' => array(
+        'weight' => '1',
+        'type' => 'date_popup',
+        'module' => 'date',
+        'description' => 'Select the start and end times for your reservation.',
+        'settings' => array (
+          'input_format' => $short_date_format,
+          'increment' => '15',
+          'year_range' => '-3:+3',
+          'label_position' => 'above',
+        ),
+      ),
+      'settings' => array(
+        'default_value' => 'blank',
+        'default_value2' => 'same',
+      ),
+    ),
+  );
+  $fields[MERCI_ITEM_FIELD] = array(
+    'field' => array(
+      'cardinality' => '-1',
+      'field_name' => MERCI_ITEM_FIELD,
+      'locked' => '0',
+      'module' => 'entityreference',
+      'type' => 'entityreference',
+    ),
+    'instance' => array(
+      'label' => 'Reservation Items',
+      'required' => 1,
+      'widget' => array(
+        'module' => 'multiple_selects',
+        'type' => 'multiple_selects',
+        'weight' => '2',
+      ),
+    ),
+  );
+  $fields[MERCI_STATUS_FIELD] = array(
+    'field' => array(
+      'cardinality' => '1',
+      'field_name' => MERCI_STATUS_FIELD,
+      'module' => 'workflowfield',
+      'settings' => array(
+        'wid' => $wid,
+        'widget' => array(
+          'options' => 'select',
+        ),
+      ),
+      'type' => 'workflow',
+    ),
+    'instance' => array(
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'list',
+          'settings' => array(),
+          'type' => 'list_default',
+          'weight' => 2,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+      ),
+      'label' => 'Status',
+      'required' => 1,
+      'widget' => array(
+        'active' => 1,
+        'module' => 'options',
+        'settings' => array(),
+        'type' => 'options_select',
+        'weight' => '3',
+      ),
+    ),
+  );
   // Exported field_base: 'field_merci_item_status'
   $fields[MERCI_ITEM_STATUS_FIELD] = array(
     'field' => array(

@@ -16,6 +16,7 @@ dependencies[] = entityreference
 dependencies[] = rolereference
 dependencies[] = multiple_selects
 dependencies[] = entity
+dependencies[] = ctools 
 
 
 

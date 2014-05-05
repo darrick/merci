@@ -115,6 +115,7 @@ class MerciDefaultTargetController {
     $dates = $this->dates;
 
     $exclude_id = $this->entity->getIdentifier();
+    $entity_type = $this->entity->type;
     $target_ids = $this->targets;
 
     $target_field = $this->target_field;
@@ -146,7 +147,6 @@ class MerciDefaultTargetController {
     } else {
       $query->condition($item_column, reset($target_ids));
     }
-
     // Ignore myself.
     if ($exclude_id) {
       $query->condition('item_table.entity_id', $exclude_id, '!=');
@@ -155,6 +155,8 @@ class MerciDefaultTargetController {
     $query->join($date_table, 'date_table', 'item_table.entity_id = date_table.entity_id');
     $query->addField('date_table', $date_column, MERCI_DATE_FIELD_ALIAS);
     $query->addField('date_table', $date_column2, MERCI_DATE_FIELD_ALIAS2);
+    $query->condition('date_table.entity_type',$entity_type,'=');
+    $query->condition('date_table.deleted' , 0, '=');
 
     $query->condition( db_or()
       //  start falls within another reservation.
