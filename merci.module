@@ -690,18 +690,34 @@ function merci_type_setting_after_build($element) {
 /**
  * Implementation of hook_content_extra_fields.
  */
-function merci_content_extra_fields() {
-  $extras['merci'] = array(
-    'label' => t('MERCI Settings'),
-    'description' => t('Allows user to select Reservation status.'),
-    'weight' => 100,
-      );
-  $extras['choice_wrapper'] = array(
-    'label' => t('MERCI Choices'),
-    'description' => t('Child items included in the Reservation.'),
-    'weight' => 80,
+function merci_field_extra_fields() {
+  $extra['node']['merci_reservation'] = array(
+    'form' => array(
+      'merci_reservation_status' => array(
+        'label' => t('MERCI Settings'),
+        'description' => t('Allows user to select Reservation status.'),
+        'weight' => 100,
+      ),
+      'choice_wrapper' => array(
+        'label' => t('MERCI Choices'),
+        'description' => t('Child items included in the Reservation.'),
+        'weight' => 80,
+      )
+    ),
+    'display' => array(
+      'merci_reservation_status' => array(
+        'label' => t('MERCI Settings'),
+        'description' => t('Allows user to select Reservation status.'),
+        'weight' => 100,
+      ),
+      'choice_wrapper' => array(
+        'label' => t('MERCI Choices'),
+        'description' => t('Child items included in the Reservation.'),
+        'weight' => 80,
+      )
+    )
   );
-  return $extras;
+  return $extra;
 }
 
 /**
