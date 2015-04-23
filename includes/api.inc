@@ -290,7 +290,7 @@ function merci_validate_status($form, &$form_state) {
   $current_status = $node->merci_original_reservation_status;
   if ($current_status 
     && $current_status != $node->merci_reservation_status 
-    && time() > strtotime($node->field_merci_date[LANGUAGE_NONE][0]['value2']) 
+    && time() > strtotime($node->field_merci_date[LANGUAGE_NONE][0]['value2'] . ' UTC') 
     && !in_array((int) $node->merci_reservation_status, array(
       MERCI_STATUS_CANCELLED, 
       MERCI_STATUS_CHECKED_IN, 
