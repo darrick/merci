@@ -851,6 +851,7 @@ function merci_cron() {
 
     //after checking all of the autocheckout settings for all the child items, are they all autocheckout?
     watchdog('merci', "Setting node @reservation_nid to checked in", array('@reservation_nid' => $reservation_nid));
+    $reservation->merci_original_reservation_status = MERCI_STATUS_CHECKED_OUT;
     $reservation->merci_reservation_status = MERCI_STATUS_CHECKED_IN;
     node_save($reservation);
   }
