@@ -1,0 +1,10 @@
+name = MERCI Line Item Inline Entity Form 
+description = Provides Inline Entity Form fo MERCI line item. 
+package = MERCI 
+dependencies[] = merci_line_item
+dependencies[] = inline_entity_form 
+core = 7.x
+version = 7.x-3.0
+
+; Module includes
+files[] = includes/merci_line_item.inline_entity_form.inc

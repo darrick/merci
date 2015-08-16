@@ -1,0 +1,32 @@
+<?php
+
+
+/*
+ * Alter inline_entity_form to show add_form by default.
+ */
+function merci_barcode_field_widget_form_alter(&$element, &$form_state, $context) {
+
+  // Only alter the form if it's a inline_entity_form and the target type is a
+  // merci_line_item entity.
+
+  if ($context['instance']['widget']['type'] == 'inline_entity_form' 
+    && array_key_exists('target_type', $context['field']['settings'])
+    && $context['field']['settings']['target_type'] == 'merci_line_item') {
+
+      $module_path = drupal_get_path('module', 'merci_barcode');
+      drupal_add_js($module_path . '/js/barcode-scanner.js', array('every_page' => TRUE));
+      drupal_add_js(
+        array(
+          'commerce_barcode_scanner' => array(
+            'min_sku_length' => variable_get('merci_barcode_min_sku_length', 5),
+            'key_interval' => variable_get('merci_barcode_key_interval', 50),
+          ),
+        ),
+        array(
+          'type' => 'setting',
+        )
+      );
+
+    }
+}
+

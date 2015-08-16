@@ -1,0 +1,54 @@
+<?php
+
+define('MERCI_HOLIDAYS_FIELD', 'field_holidays');
+
+function merci_holiday_merci_dates_open_alter(&$dates, $wc, $context) {
+  $holidays = array();
+  $argument = $context['year'];
+  $argument .= ($context['month'] ? '-' . $context['month'] : '');
+  $argument .= $context['day'] ? '-' . $context['day'] : '';
+
+  if (!empty($wc->{MERCI_HOLIDAYS_FIELD})) {
+    foreach ($wc->{MERCI_HOLIDAYS_FIELD}[LANGUAGE_NONE] as $holiday) {
+      $target_view = explode('|', $holiday['vname']);
+      $view = views_get_view($target_view[0]);
+      $view->set_display($target_view[1]);
+      $arguments[0] = $argument;
+      $view->set_arguments($arguments);
+      $view->build();
+      $view->pre_execute();
+      $view->execute();
+      $field_alias = $view->argument['date_argument']->table_alias . '_' . $view->argument['date_argument']->real_field;
+      foreach ($view->result as $holiday) {
+        list($holidays[]) = explode(' ', $holiday->{$field_alias});
+      }
+    }
+  }
+  $dates = array_values( array_diff($dates, $holidays));
+}
+
+function merci_holiday_day_is_holiday($cal, $date) {
+  $wc = merci_hours_instantiate($cal);
+  $holidays = $wc->getHolidayDates($date->format('Y'), $date->format('m'), $date->format('d'));
+  return count($holidays);
+}
+
+/**
+ * Implements hook_merci_fields_info().
+ */
+function merci_holiday_merci_fields_info() {
+  $fields = array();
+
+  $fields[MERCI_HOLIDAYS_FIELD] = array(
+    'field' => array(
+      'field_name' => MERCI_HOLIDAYS_FIELD,
+      'module' => 'viewfield',
+      'type' => 'viewfield',
+    ),
+    'instance' => array(
+      'label' => 'Holidays',
+    ),
+  );
+  return $fields;
+}
+

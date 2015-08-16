@@ -1,0 +1,534 @@
+<?php
+
+define('MERCI_CHECKOUT_REFERENCE', 'field_merci_checkout');
+define('MERCI_LINE_ITEM_REFERENCE_ALIAS', 'field_merci_line_item');
+define('MERCI_FEE', 'merci_late_fee');
+
+/*
+  Set the product_id and label given the resource display.
+ */
+function merci_commerce_merci_line_item_validate($line_item, $form, &$form_state) {
+  $line_item_wrapper = entity_metadata_wrapper('merci_line_item', $line_item);
+
+  // Retreive the id for the Resource Display.  
+  // TODO: Commerce dependent move to merci_commerce.
+  $product_id = $line_item_wrapper->{MERCI_RESOURCE_REFERENCE}->getIdentifier();
+
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', MERCI_RESOURCE_DISPLAY_BUNDLE)
+    ->fieldCondition('field_crp_product_reference','product_id', $product_id);
+
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $nids = array_keys($result['node']);
+    $merci_resource_reference =  reset($nids);
+  }
+
+  $line_item_wrapper->{MERCI_RESOURCE_DISPLAY}->set($merci_resource_reference);
+  $line_item_wrapper->line_item_label->set($line_item_wrapper->{MERCI_RESOURCE_REFERENCE}->sku->value());
+}
+
+function merci_commerce_commerce_customer_profile_type_info_alter(&$profile_types) {
+  foreach ($profile_types as $key => $profile_type) {
+    $profile_types[$key]['label_callback'] = 'merci_commerce_commerce_customer_profile_default_label';
+  }
+}
+function merci_commerce_commerce_customer_profile_default_label($profile) {
+  $label = '';
+
+  // If the profile has a default address field...
+  if (!empty($profile->commerce_customer_address)) {
+    // Wrap the customer profile object for easier access to its field data.
+    $profile_wrapper = entity_metadata_wrapper('commerce_customer_profile', $profile);
+    if (isset($profile_wrapper->field_full_name)) {
+      $label = $profile_wrapper->field_full_name->value();
+    }
+  }
+
+  // Return the profile ID if we couldn't derive a label from an address field.
+  if (empty($label)) {
+    $label = $profile->profile_id;
+  }
+
+  return $label;
+}
+
+function merci_commerce_form_commerce_order_ui_order_form_alter(&$form, &$form_state, $form_id) {
+  $form['commerce_customer_billing']['#access'] = FALSE;
+  $form['commerce_customer_homeroom']['#access'] = FALSE;
+  $form['commerce_customer_organization']['#access'] = FALSE;
+  $form['customer_profile_type_ui']['#access'] = FALSE;
+
+  if (empty($form_state['line_item_add'])) {
+    $form['commerce_line_items']['und']['actions']['line_item_type'] = array(
+      '#type' => 'value',
+      '#value' => MERCI_FEE,
+    );
+  }
+  $form[MERCI_CHECKOUT_REFERENCE]['#access'] = FALSE;
+
+  $checkout_field = field_view_field($form['#entity_type'], $form['#entity'], MERCI_CHECKOUT_REFERENCE, 'default');
+  $form['checkout'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Checkout',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    'data' => array(
+      '#markup' => drupal_render($checkout_field),
+    ),
+  );
+}
+
+/**
+ * Implements hook_commerce_line_item_type_info().
+ */
+
+function merci_commerce_commerce_line_item_type_info() {
+  return array(
+    MERCI_FEE => array(
+      'name' => t('MERCI Late Fee'),
+      'product' => TRUE,
+      'description' => t('Adds a late fee for a checked out resource.'),
+      'base' => 'merci_commerce_line_item',
+    ),
+  );
+}
+
+function merci_commerce_line_item_title($line_item) {
+  $merci_line_item = entity_load_single('merci_line_item', $line_item->data['merci_line_item_id']);
+  $merci_line_item_wrapper = entity_metadata_wrapper('merci_line_item', $merci_line_item);
+  return t('!display_title (!resource_title): Quantity !quantity', array('!display_title' => $merci_line_item_wrapper->{MERCI_RESOURCE_DISPLAY}->label(), '!resource_title' => $merci_line_item_wrapper->label(), '!quantity' => (int) $line_item->quantity));
+}
+
+function merci_commerce_line_item_configuration($line_item_type) {
+  commerce_product_line_item_configuration($line_item_type);
+}
+
+function merci_commerce_line_item_options($line_item_type) {
+  return $options;
+}
+
+function merci_commerce_line_item_add_form($element, &$form_state) {
+
+  $form = array();
+
+  $query = db_select('commerce_product', 'c');
+  $query->addField('c', 'product_id', 'product_id');
+  $query->addField('c', 'title', 'title');
+  $query->condition('c.type', 'product');
+
+  $result = $query->execute();
+
+  $options = array();
+
+  foreach ($result as $record){
+    $options[$record->product_id] = $record->title;
+  }
+  $form['fee_type_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Fee type'),
+    '#description' => t('Select the type of fee to add.'),
+    '#options' => $options,
+  );
+
+  $entity = $form_state['complete form']['#entity'];
+  $entity_type = $form_state['complete form']['#entity_type'];
+
+  $entity_wrapper = entity_metadata_wrapper($entity_type, $entity);
+
+  $merci_line_items = $entity_wrapper->{MERCI_CHECKOUT_REFERENCE}->{MERCI_LINE_ITEM_REFERENCE};
+
+  $options = array();
+
+  foreach ($merci_line_items->getIterator() as $delta => $merci_line_item) {
+    $options[$merci_line_item->getIdentifier()] = t('!display_title (!resource_title)', array('!display_title' => $merci_line_item->{MERCI_RESOURCE_DISPLAY}->label(), '!resource_title' => $merci_line_item->label()));
+  }
+
+  $form['merci_line_item_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Resource'),
+    '#description' => t('Select the resource this fee applies to.'),
+    '#options' => $options,
+    '#required' => TRUE,
+  );
+  $order = $element['#entity'];
+
+  $line_item = commerce_line_item_new(MERCI_FEE, $order->order_id);
+
+  return $form;
+}
+
+function merci_commerce_line_item_add_form_submit(&$line_item, $element, &$form_state, $form) {
+
+  $product = entity_load_single('commerce_product', $element['actions']['fee_type_id']['#value']);
+  //$resource = entity_load_single('commerce_product', $element['actions']['resource_id']['#value']);
+  $merci_line_item = entity_load_single('merci_line_item', $element['actions']['merci_line_item_id']['#value']);
+
+  merci_commerce_line_item_populate($line_item, $product, $merci_line_item);
+}
+
+function merci_commerce_line_item_populate(&$line_item, $product, $merci_line_item) {
+
+  $merci_line_item_wrapper = entity_metadata_wrapper('merci_line_item', $merci_line_item);
+
+  $line_item->data['merci_line_item_id'] = $merci_line_item_wrapper->getIdentifier();
+
+  $resource_wrapper = $merci_line_item_wrapper->{MERCI_RESOURCE_DISPLAY};
+
+  switch ($product->sku) {
+    case 'late_fee':
+      $field_late_fine = $resource_wrapper->field_late_fine->value();
+      $product->commerce_price = empty($field_late_fine['amount']) ? $product->commerce_price : $resource_wrapper->value()->field_late_fine;
+      break;
+    case 'replacement_fee':
+      $field_replacement_cost = $resource_wrapper->field_replacement_cost->value();
+      $product->commerce_price = is_null($field_replacement_cost['amount']) ? $product->commerce_price : $resource_wrapper->value()->field_replacement_cost;
+      break;
+    default:
+      break;
+  }
+  commerce_product_line_item_populate($line_item, $product);
+}
+
+/**
+ * Implements hook_merci_fields_info().
+ */
+function merci_commerce_merci_fields_info() {
+  $fields = array();
+  module_load_include('inc', 'merci_commerce', 'merci_commerce.fields');
+
+  $field_bases = merci_commerce_fields();
+  $instances = merci_commerce_instances(); 
+
+  foreach ($field_bases as $field_name => $field) {
+    $fields[$field_name] = array(
+      'field' => $field,
+      'instance' => $instances[$field_name],
+    );
+  }
+  return $fields;
+}
+
+function merci_commerce_views_data_alter(&$data) {
+  foreach ($data as $table => $fields) {
+    foreach ($fields as $key => $value) {
+      if (is_array($value) and array_key_exists('filter', $value) and $value['filter']['handler'] == 'views_handler_filter_string') {
+        $data[$table][$key]['filter']['handler'] = 'merci_commerce_handler_filter_string';
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function merci_commerce_field_formatter_info() {
+  return array(
+    'merci_commerce_reference_view' => array(
+      'label' => t('Product View'),
+      'description' => t('Display the products showing checkout status.'),
+      'field types' => array('commerce_product_reference'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function merci_commerce_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $result = array();
+
+  $element['sums'] = array();
+  $element['products'] = array();
+
+  // Collect the list of line item IDs.
+  $line_item_ids = array();
+
+
+  switch ($display['type']) {
+    case 'merci_commerce_reference_view':
+      $display_tmp = $display;
+      $display_tmp['type'] = 'commerce_product_reference_sku_link';
+      $result = commerce_product_reference_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display_tmp);
+      foreach ($items as $delta => $item) {
+        $product_ids[$delta] = $item['product_id'];
+      }
+
+      // Load any current checked out line items for the product.
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'merci_line_item')
+        ->fieldCondition(MERCI_CHECKOUT_STATUS, 'value', 'checked out', '=')
+        ->fieldCondition(MERCI_RESOURCE_REFERENCE, 'target_id', $product_ids, 'IN');
+      $query_result = $query->execute();
+
+      $statuses = array();
+      if (isset($query_result['merci_line_item'])) {
+        $line_items_nids = array_keys($query_result['merci_line_item']);
+        $line_items = entity_load('merci_line_item', $line_items_nids);
+
+        foreach ($line_items as $line_item) {
+          $product_id = $line_item->{MERCI_RESOURCE_REFERENCE}['und'][0]['target_id'];
+          $status     = $line_item->{MERCI_CHECKOUT_STATUS}['und'][0]['value'];
+          $statuses[array_search($product_id, $product_ids)] = $line_item->entity_id;
+        }
+      }
+
+      $products = entity_load('commerce_product', $product_ids);
+
+      $sum = array();
+
+      foreach ($product_ids as $delta => $product_id) {
+        $markup = drupal_render($result[$delta]);
+        if (array_key_exists($delta, $statuses)) {
+          $checkout = entity_load_single('merci_reservation', $statuses[$delta]);
+          $checkout_wrapper = entity_metadata_wrapper('merci_reservation', $checkout);
+
+          $patron = $checkout_wrapper->merci_customer_billing->value();
+          $homeroom = $checkout_wrapper->merci_customer_homeroom->value();
+          $organization = $checkout_wrapper->merci_customer_organization->value();
+
+          unset ($location);
+          if ($patron) {
+            $location = $checkout_wrapper->merci_customer_billing->field_full_name->value();
+          }
+
+          if ($organization) {
+            $location = $checkout_wrapper->merci_customer_organization->field_full_name->value();
+          }
+
+          if ($homeroom) {
+            $room = $checkout_wrapper->merci_customer_homeroom->field_full_name->value();
+
+            $location = isset($location) ? $location . '-' . $room : $room;
+          }
+
+          $result[$delta] = array(
+            '#type' => 'link',
+            '#title' =>  $location,
+            '#href' => 'merci_reservation/' . $statuses[$delta] . '/edit',
+          );
+          $result[$delta] = $markup . ' (' . drupal_render($result[$delta]) . ')';
+          if (!array_key_exists('Checked out', $sum)) {
+            $sum['Checked out'] = 1;
+          } else {
+            $sum['Checked out']++;
+          }
+        }
+        else {
+          $product = $products[$product_ids[$delta]];
+          $product_wrapper = entity_metadata_wrapper('commerce_product', $product);
+
+          $status = $product_wrapper->merci_resource_status->value();
+          if (empty($status)) {
+            $status = 'available';
+          }
+          if (!array_key_exists($status, $sum)) {
+            $sum[$status] = 1;
+          } else {
+            $sum[$status]++;
+          }
+
+          if ($status != 'available') {
+            $result[$delta] = $markup . ' (' . ucfirst($status) . ')' ;
+          } else {
+            $result[$delta] = $markup;
+          }
+        }
+      }
+
+      foreach ($sum as $key => $value) {
+        $element['sums'][$key] = ucfirst($key) . ': ' . $value;
+      }
+      $element['sums'] = array(
+        '#markup' => implode(', ', $element['sums']),
+      );
+      $element['products'] = array(
+        '#markup' => implode('<br> ', $result),
+      );
+      break;
+  }
+
+  return $element;
+}
+/*
+function merci_commerce_inline_entity_form_entity_form_alter(&$form, &$form_state) {
+  $checkbox = drupal_array_get_nested_value($form_state, array('complete form', 'field_non_inventory_item', 'und', '#value'));
+  if ($checkbox) {
+    $form['#ief_element_submit'] = array('merci_commerce_inline_entity_form_entity_form_submit');
+  }
+}
+
+
+/**
+ * Submits an entity form.
+ *
+ * Note that at this point the entity is not yet saved, since the user might
+ * still decide to cancel the parent form.
+ *
+ * @param $entity_form
+ *  The form of the entity being managed inline.
+ * @param $form_state
+ *   The form state of the parent form.
+ */
+/*
+function merci_commerce_inline_entity_form_entity_form_submit($entity_form, &$form_state) {
+
+
+  $checkbox = drupal_array_get_nested_value($form_state, array('complete form', 'field_non_inventory_item', 'und', '#value'));
+  if ($checkbox) {
+    $quantity = drupal_array_get_nested_value($form_state, array('complete form', 'field_non_inventory_item', 'inventory_quantity', '#value'));
+    $ief_id = $entity_form['#ief_id'];
+    $instance = $form_state['inline_entity_form'][$ief_id]['instance'];
+    // Instantiate the controller and validate the form.
+    $controller = inline_entity_form_get_controller($instance);
+    $controller->entityFormSubmit($entity_form, $form_state);
+    inline_entity_form_cleanup_entity_form_state($entity_form, $form_state);
+
+    $weight = 0;
+    if (!empty($form_state['inline_entity_form'][$ief_id]['entities'])) {
+      $weight = max(array_keys($form_state['inline_entity_form'][$ief_id]['entities'])) + 1;
+    }
+    $delta = $quantity + $weight;
+    $parent_entity = $entity_form['#entity'];
+
+    while ($weight < $delta) {
+      if ($entity_form['#op'] == 'add') {
+        // Determine the correct weight of the new element.
+        // Add the entity to form state, mark it for saving, and close the form.
+        $entity = clone $parent_entity;
+        $entity->sku = $entity->sku . '-' . $weight;
+        $form_state['inline_entity_form'][$ief_id]['entities'][] = array(
+          'entity' => $entity,
+          'weight' => $weight,
+          'form' => NULL,
+          'needs_save' => TRUE,
+        );
+        $weight++;
+      }
+      else {
+        $delta = $entity_form['#ief_row_delta'];
+        $form_state['inline_entity_form'][$ief_id]['entities'][$delta]['entity'] = $entity_form['#entity'];
+        $form_state['inline_entity_form'][$ief_id]['entities'][$delta]['needs_save'] = TRUE;
+      }
+      $quantity--;
+    }
+  }
+  else {
+  }
+}
+
+function merci_commerce_form_reservable_product_display_node_form_alter(&$form, &$form_state, $form_id) {
+  $form['field_non_inventory_item']['inventory_quantity'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Inventory quantity'),
+    '#description' => t('Enter the quantity of non-inventory to generate.  Also enter the details of at least one item below to use as defaults for the items.'),
+    '#states' => array(
+      // Hide the settings when the cancel notify checkbox is disabled.
+      'visible' => array(
+        ':input[name="field_non_inventory_item[und]"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+}
+/**
+*  * implements hook query alter to force profiles not to be cloned. 
+*   * @param QueryAlterableInterface $query
+*    */
+/*
+function merci_commerce_query_commerce_order_commerce_customer_profile_can_delete_alter(QueryAlterableInterface $query) {
+  $query->condition('bundle', '-1');
+}
+
+/**
+ * Implements hook_commerce_customer_profile_can_delete().
+ */
+/*
+function merci_commerce_commerce_customer_profile_can_delete($profile) {
+  // Look for any non-cart order with a reference field targeting the profile.
+  foreach (commerce_info_fields('commerce_customer_profile_reference') as $field_name => $field) {
+    // Use EntityFieldQuery to look for orders referencing this customer profile
+    // and do not allow the delete to occur if one exists.
+    $query = new EntityFieldQuery();
+
+    $query
+      ->entityCondition('entity_type', 'commerce_order', '=')
+      ->fieldCondition($field_name, 'profile_id', $profile->profile_id, '=')
+      ->count();
+
+    // Add a condition on the order status if there are cart order statuses.
+    $statuses = array_keys(commerce_order_statuses(array('cart' => TRUE)));
+
+    if (!empty($statuses)) {
+      $query->propertyCondition('status', $statuses, 'NOT IN');
+    }
+
+    // If the profile includes an order context property, we know this was added
+    // by the Order module as an order ID to skip in the deletion query.
+    if (!empty($profile->entity_context['entity_id']) && $profile->entity_context['entity_type'] == 'commerce_order') {
+      $query->propertyCondition('order_id', $profile->entity_context['entity_id'], '!=');
+    }
+
+    if ($query->execute() > 0) {
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
+function merci_commerce_form_commerce_order_ui_order_form_alter(&$form, &$form_state, $form_id) {
+  $lang = 'und';
+  $form['field_reserved_items'][$lang]['actions']['bundle'] = array(
+    '#type' => 'value',
+    '#value' => 'merci_product',
+  );
+
+
+  $address = &$form['commerce_customer_billing']['und']['profiles'][0]['commerce_customer_address']['und'][0];
+  $group = $form['#groups']['group_patron'];
+  $form['#groups']['group_patron']->format_settings['instance_settings']['description'] = $address['#address']['name_line'];
+  //$form['#groups']['group_patron']['description'] = $address['#address']['name_line']; 
+
+  if (!user_access('edit any commerce_customer_profile entity')) {
+    $address = &$form['commerce_customer_billing']['und']['profiles'][0]['commerce_customer_address']['und'][0];
+    foreach (array('street_block', 'locality_block', 'country') as $field_name) {
+      foreach (element_children($address[$field_name]) as $name) {
+        $address[$field_name][$name]['#disabled'] = TRUE;
+      }
+    }
+  }
+
+  $form['actions']['submit']['#submit'][] = 'merci_commerce_order_form_submit'; 
+
+}
+
+
+function merci_commerce_field_widget_commerce_line_item_manager_form_alter(&$element, &$form_state, $context) {
+
+  // Fix the autocomplete path so it will limit the autocomplete based on product type.
+  if (array_key_exists('product_sku', $element['actions'])) {
+    $element['actions']['product_sku']['#autocomplete_path'] = 'commerce_product/autocomplete/commerce_line_item/commerce_product/product'; 
+  }
+
+}
+
+/**
+ * Submit callback for commerce_order_order_form().
+ */
+/*
+function merci_commerce_order_form_submit($form, &$form_state) {
+  // Merge changes into the order object in the form state so it is accessible
+  // by field handlers.
+  $order = $form_state['commerce_order'];
+  // Ensure the attached line items are associated with the order if they do not
+  // have an order_id set yet.
+  foreach (entity_metadata_wrapper('commerce_order', $order)->field_reserved_items as $delta => $line_item_wrapper) {
+    if ($line_item_wrapper->order_id->value() == 0) {
+      $line_item_wrapper->order_id = $order->order_id;
+      commerce_line_item_save($line_item_wrapper->value());
+    }
+  }
+}
+*/

@@ -1,0 +1,12 @@
+name = "MERCI Inventory"
+package = MERCI
+description = "Entity to hold inventory on resources."
+core = 7.x
+version = 7.x-3.0
+dependencies[] = merci_core
+project = "merci"
+
+files[] = views/handlers/views_handler_field_last_inventory_timestamp.inc
+files[] = views/handlers/views_handler_field_mis_last_updated.inc
+files[] = views/handlers/views_handler_filter_mis_last_updated.inc
+files[] = views/handlers/views_handler_sort_mis_last_updated.inc

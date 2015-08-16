@@ -1,0 +1,19 @@
+name = "MERCI Reservation"
+package = MERCI
+description = "Provides for a reservation node."
+core = 7.x
+project = "merci"
+
+dependencies[] = merci_line_item
+
+files[] = includes/entity.inc
+files[] = includes/entity.controller.inc
+files[] = includes/entity_type.inc
+files[] = includes/entity.ui.inc
+files[] = includes/entity_type.ui.inc
+files[] = merci_reservation.pages.inc
+files[] = includes/views/handlers/merci_reservation_handler_field_operations.inc
+files[] = includes/views/handlers/merci_reservation_handler_field_title.inc
+files[] = includes/views/handlers/merci_reservation_handler_field_current_checkout.inc
+files[] = includes/views/handlers/merci_reservation_handler_field_order_link.inc
+

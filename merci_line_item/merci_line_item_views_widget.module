@@ -1,0 +1,188 @@
+<?php
+
+/**
+ * @file
+ * Defines the core MERCI line item entity and API functions interact with
+ * line items.
+ */
+
+/**
+ * Implements hook_field_widget_info_alter().
+ *
+ * A list of settings needed by Merci Line Item IEF module for widgets.
+ */
+function merci_line_item_views_widget_field_widget_info_alter(&$info) {
+
+  $info['inline_entity_form']['settings'] += array(
+    'view' => '',
+    'pass_argument' => '',
+    'close_modal' => '',
+    'allow_duplicates' => FALSE,
+    'rendered_entity' => FALSE,
+    'view_mode' => FALSE,
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function merci_line_item_views_widget_form_field_ui_field_edit_form_alter(&$form, $form_state) {
+  if (empty($form['#field']['locked']) && isset($form['#instance']['widget']['settings']['merci_line_item_ief']) && $form['#instance']['widget']['type'] == 'inline_entity_form') {
+
+    $instance = $form['#instance'];
+    $widget = & $instance['widget'];
+
+    $widget['type'] = 'entityreference_view_widget';
+
+    $form['instance']['widget']['settings'] += entityreference_view_widget_field_widget_settings_form($field, $instance); 
+  }
+}
+
+/*
+ * Alter inline_entity_form to show add_form by default.
+ */
+function merci_line_item_views_widget_field_widget_form_alter(&$element, &$form_state, $context) {
+
+  if (array_key_exists('#field_name', $element) and $element['#field_name'] == 'merci_line_item_reference') {
+
+    // Add the 'add more' button.
+    $form = $context['form'];
+    $field = $context['field'];
+    $instance = $context['instance'];
+    $langcode = $context['langcode'];
+    $items = $context['items'];
+    $delta = $context['delta'];
+    $view_element = entityreference_view_widget_field_widget_form($form, $form_state, $field, $instance, $langcode, $items, $delta, $element);
+    $element['add_more'] = $view_element['add_more'];
+    $element['add_more']['#weight'] = 100;
+    $element['add_more']['#value'] = 'Select resources';
+    $element['add_form']['quantity']['#attributes'] = array('class' => array('element-hidden'));
+    $element['add_form']['quantity']['#type'] = 'hidden';
+
+    // Add hidden value for js to add the selected entities.
+    $element['add_form']['selected_entity_ids'] = array(
+      '#type' => 'hidden',
+      '#default_value' => '',
+    );
+
+    // Add our JS.
+    $module_path = drupal_get_path('module', 'merci_line_item_views_widget');
+    drupal_add_js($module_path . '/merci_line_item_views_widget.js');
+
+    // Add hidden button used to reserve selected entities.
+    $wrapper = 'inline-entity-form-' . $element['#ief_id'];
+    $element['add_form']['add_selected_entity_ids'] = array(
+      '#type' => 'submit',
+      '#value' => t('Add Selected Entities'),
+      '#ajax' => array(
+        'callback' => 'inline_entity_form_get_element',
+        'wrapper' => $wrapper,
+      ),
+      '#weight' => 100,
+      '#submit' => array('merci_line_item_views_widget_form_submit'),
+      '#attributes' => array('class' => array('element-hidden')),
+      '#name' => 'merci_add_selected_entity_ids',
+    );
+    $element['add_form']['#element_validate'][] = 'merci_line_item_views_widget_form_validate';
+
+    // Remove edit button for already added entities.
+    $ief_id = $element['#ief_id'];
+    $entity_type = $form_state['inline_entity_form'][$ief_id]['settings']['entity_type'];
+    $form_state['existing_ids'] = array();
+    foreach(element_children($element['entities']) as $key) {
+      unset($element['entities'][$key]['actions']['ief_entity_edit']);
+      $entity = $form_state['inline_entity_form'][$ief_id]['entities'][$key]['entity'];
+      $form_state['existing_ids'][] = entity_metadata_wrapper($entity_type, $entity)->{MERCI_RESOURCE_REFERENCE}->getIdentifier();
+    }
+  }
+}
+
+/**
+ * Validates an entity form.
+ *
+ * @param $entity_form
+ *  The form of the entity being managed inline.
+ * @param $form_state
+ *   The form state of the parent form.
+ */
+function merci_line_item_views_widget_form_validate(&$entity_form, &$form_state) {
+  $parents = array_reverse($form_state['triggering_element']['#array_parents']);
+  if ($parents[0] == 'add_selected_entity_ids') {
+    $line_item_values = drupal_array_get_nested_value($form_state['values'], $entity_form['#parents']);
+
+    $selected_ids = explode(',', $line_item_values['selected_entity_ids']);
+    $default_entity = NULL;
+    $existing_parents = $entity_form['#parents'];
+    array_splice($existing_parents, -1);
+    $existing_line_items = drupal_array_get_nested_value($form_state['complete form'], $existing_parents);
+    $offset = count(element_children($existing_line_items['entities']));
+
+    foreach ($selected_ids as $index => $entity_id) {
+      $key = $offset + $index;
+      form_set_value(array('#parents' => array_merge($entity_form['#parents'], array('merci_resource_reference','und',0,'target_id'))), $entity_id, $form_state);
+      $entity_form['#entity'] = $default_entity ? clone $default_entity : $entity_form['#entity'];
+      $entity_form['#ief_row_delta'] = $key;
+      $ief_id = $entity_form['#ief_id'];
+      $instance = $form_state['inline_entity_form'][$ief_id]['instance'];
+
+      // Instantiate the controller and validate the form.
+      $controller = inline_entity_form_get_controller($instance);
+      $errors = $controller->entityFormValidate($entity_form, $form_state);
+      if (form_get_errors()) {
+        $form_state['rebuild'] = TRUE;
+        continue;
+      }
+      $delta = $entity_form['#ief_row_delta'];
+      $form_state['inline_entity_form'][$ief_id]['entities'][$delta]['entity'] = $entity_form['#entity'];
+      $form_state['inline_entity_form'][$ief_id]['entities'][$delta]['needs_save'] = TRUE;
+      $default_entity = $entity_form['#entity'];
+    }
+  }
+}
+
+/**
+ * Submits an entity form.
+ *
+ * Note that at this point the entity is not yet saved, since the user might
+ * still decide to cancel the parent form.
+ *
+ * @param $entity_form
+ *  The form of the entity being managed inline.
+ * @param $form_state
+ *   The form state of the parent form.
+ */
+function merci_line_item_views_widget_form_submit($form, &$form_state) {
+  $parents = array_reverse($form_state['triggering_element']['#array_parents']);
+  if ($parents[0] == 'add_selected_entity_ids') {
+    $form_state['rebuild'] = TRUE;
+  }
+}
+
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function merci_line_item_views_widget_form_views_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_state['input']['_triggering_element_name'] == 'add_more_merci-line-item-reference') {
+    $form['actions_ervw']['ervw_submit']['#attributes'] = array('class' => array('ctools-close-modal')); 
+    unset($form['actions_ervw']['ervw_submit']['#ajax']);
+  }
+}
+
+/**
+ * implement hook_entityreference_view_widget_views_arguments_alter(&$arguments, &$form_state)
+ *
+ * Filter out already chosen resources.
+ */
+
+function merci_line_item_views_widget_entityreference_view_widget_views_arguments_alter(&$arguments, &$form_state) {
+  $settings = $form_state['triggering_element']['#ervw_settings'];
+
+  if ($settings['element'] == 'merci_line_item_reference') {
+
+    if (count($form_state['existing_ids'])) {
+      $arguments[0] = implode('+', $form_state['existing_ids']);
+    }
+  }
+}
+

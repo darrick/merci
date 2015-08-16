@@ -1,0 +1,59 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function merci_restrictions_schema() {
+  $schema = array();
+  $schema['merci_restrictions'] = array(
+    'description' => 'Stores merci restrictions.',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique ID.',
+      ),
+      'type' => array(
+        'description' => 'The {merci_reservation_type}.type of this merci_reservation.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'title' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The {taxonomy_term_data}.tid of the term.',
+      ),
+    ) + entity_exportable_schema_fields(),
+
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function merci_restrictions_uninstall() {
+  variable_del('merci_restrictions_default');
+  // Delete any field instance attached to a line item type.
+  merci_core_delete_instances('merci_restrictions');
+
+  // Delete any line item reference fields.
+  merci_core_delete_fields('merci_restrictions');
+}
+
+/**
+ * Implements hook_enable().
+ */
+function merci_restrictions_enable() {
+  merci_core_create_field(MERCI_ALLOWED_ROLES, 'merci_restrictions', 'merci_restrictions');
+  merci_core_create_field(MERCI_CHECKOUT_MAX_LENGTH, 'merci_restrictions', 'merci_restrictions');
+  merci_core_create_field(MERCI_CHECKOUT_OFFSITE, 'merci_restrictions', 'merci_restrictions');
+}
+

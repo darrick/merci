@@ -1,0 +1,13 @@
+name = "MERCI Restrictions"
+package = MERCI
+description = "Entity to hold restrictions on resources."
+core = 7.x
+version = 7.x-3.0
+dependencies[] = merci_core
+dependencies[] = merci_permissions
+project = "merci"
+
+files[] = includes/merci_restriction.inline_enity_form.inc
+files[] = includes/entity.ui.inc
+files[] = includes/entity.inc
+files[] = merci_restrictions.pages.inc

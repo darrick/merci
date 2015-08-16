@@ -1,0 +1,9 @@
+name = "MERCI Holidays"
+package = MERCI
+description = "Do not allow reservations on holidays."
+core = 7.x
+version = 7.x-3.0
+dependencies[] = merci_hours
+dependencies[] = viewfield 
+project = "merci"
+

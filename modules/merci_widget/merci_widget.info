@@ -1,7 +1,0 @@
-name = Merci Widget 
-description = Adding a possibility to use multiple select fields rather than a multiselect field.
-package = Fields
-dependency[] = merci
-dependency[] = entityreference_view_widget 
-
-core = 7.x

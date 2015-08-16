@@ -1,0 +1,113 @@
+<?php
+
+define('MERCI_ALLOWED_ROLES', 'field_allowed_roles');
+define('MERCI_OVERRIDE_PERMISSIONS', 'merci_override_permissions');
+
+function merci_permissions_permission() {
+  $permissions = array(
+    'merci permissions allowed role' => array(
+      'title' => t('Include role as option for allowed roles field'),
+      'description' => t('Include role as options for allowed roles field.'),
+      'restrict access' => TRUE,
+    ),
+    'override merci permissions' => array(
+      'title' => t('Allow overriding MERCI Permissions'),
+      'description' => t('Allow overriding MERCI Permissions.'),
+      'restrict access' => TRUE,
+    ),
+  );
+
+  return $permissions;
+}
+
+function merci_permissions_allowed_values() {
+  return user_roles(TRUE, 'merci permissions allowed role');
+}
+
+/**
+ * Implements hook_rules_action_info() on behalf of the user module.
+ */
+function merci_permissions_rules_action_info() {
+  $defaults = array(
+   'parameter' => array(
+      'roles_required' => array(
+        'type' => 'list<text>',
+        'label' => t('Required roles'),
+        'save' => FALSE,
+      ),
+      'roles_user' => array(
+        'type' => 'list<text>',
+        'label' => t('User roles'),
+        'save' => FALSE,
+      ),
+      'errors' => array(
+        'type' => 'struct',
+        'label' => t('Errors'),
+        'save' => FALSE,
+      ),
+    ),
+    'group' => t('MERCI'),
+  );
+  $actions['merci_permissions_conflicts'] = $defaults + array(
+    'label' => t('Validate MERCI permissions'),
+    'base' => 'merci_permissions_rules_line_item_validate',
+  );
+  return $actions;
+}
+
+function merci_permissions_rules_line_item_validate($roles_required, $roles_user, $errors)
+{
+  if (empty($roles_user)) {
+    $error = $errors->offsetExists(MERCI_RESOURCE_REFERENCE) ? $errors->offsetGet(MERCI_RESOURCE_REFERENCE) : array();
+    $error[] = t('Patron does not have any roles assigned.');
+    $errors->offsetSet(MERCI_RESOURCE_REFERENCE, $error);
+  }
+
+  $suspended_id = array_search('Suspended', merci_permissions_allowed_values());
+
+  if (in_array($suspended_id, $roles_user)) {
+    $error = $errors->offsetExists(MERCI_RESOURCE_REFERENCE) ? $errors->offsetGet(MERCI_RESOURCE_REFERENCE) : array();
+    $error[] = t('Patron is suspended from checking out resources.');
+    $errors->offsetSet(MERCI_RESOURCE_REFERENCE, $error);
+  }
+  
+  foreach ($roles_required as $id => $role) {
+    if (empty($role)) {
+      unset($roles_required[$id]);
+    }
+  }
+
+  if (empty($roles_required)) {
+    $error = $errors->offsetExists(MERCI_RESOURCE_REFERENCE) ? $errors->offsetGet(MERCI_RESOURCE_REFERENCE) : array();
+    $error[] = t('No roles are allowed to checkout this item.');
+    $errors->offsetSet(MERCI_RESOURCE_REFERENCE, $error);
+  } else {
+    $roles = array_intersect($roles_user, $roles_required);
+    if (empty($roles)) {
+      $role_titles = merci_permissions_allowed_values();
+      $error = $errors->offsetExists(MERCI_RESOURCE_REFERENCE) ? $errors->offsetGet(MERCI_RESOURCE_REFERENCE) : array();
+      $error[] = t('User does not have the following roles to checkout this item: %roles', array('%roles' => implode(', ', array_intersect_key($role_titles, array_flip($roles_required)))));
+      $errors->offsetSet(MERCI_RESOURCE_REFERENCE, $error);
+    }
+  }
+
+}
+
+/**
+ * Implements hook_merci_fields_info().
+ */
+function merci_permissions_merci_fields_info() {
+  $fields = array();
+  module_load_include('inc', 'merci_permissions', 'merci_permissions_fields');
+
+  $field_bases = merci_permissions_fields();
+  $instances = merci_permissions_instances(); 
+
+  foreach ($field_bases as $field_name => $field) {
+    $fields[$field_name] = array(
+      'field' => $field,
+      'instance' => $instances[$field_name],
+    );
+  }
+  return $fields;
+}

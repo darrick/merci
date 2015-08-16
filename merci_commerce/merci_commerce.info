@@ -1,0 +1,6 @@
+name = MERCI Commerce 
+description = MERCI integration with Commerce. 
+package = MERCI 
+core = 7.x
+version = 7.x-3.0
+files[] = handlers/merci_commerce_handler_filter_string.inc

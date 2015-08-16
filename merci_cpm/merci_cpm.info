@@ -1,0 +1,7 @@
+name = MERCI Commerce Profile Manager 
+description = MERCI integration with Commerce Profile Manager. 
+package = MERCI 
+core = 7.x
+version = 7.x-3.0
+
+dependencies[] = customer_profile_type_ui 

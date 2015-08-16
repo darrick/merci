@@ -1,0 +1,14 @@
+name = "MERCI Hours"
+package = MERCI
+description = "Validate reservations based on Hours of operation."
+core = 7.x
+version = 7.x-3.0
+dependencies[] = merci_core
+dependencies[] = date 
+dependencies[] = date_api
+dependencies[] = date_popup
+dependencies[] = viewfield 
+project = "merci"
+
+files[] = includes/entity.inc
+files[] = includes/entity.ui.inc

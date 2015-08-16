@@ -1,0 +1,186 @@
+<?php
+
+/*
+ * Implements hook_menu()
+ */
+function merci_cpm_menu(){
+  // path with autocomplete function for addresses 
+  $items['address/autocomplete'] = array(
+    'title' => 'Autocomplete for addresses',
+    'page callback' => '_merci_cpm_autocomplete',
+    'access arguments' => array('use address autocomplete'),  //or whatever permission makes sense
+    'type' => MENU_CALLBACK
+  );
+  return $items;
+}
+
+/*
+ * Implements hook_permision()
+ */
+function merci_cpm_permission() {
+  return array(
+    'use address autocomplete' => array(
+      'title' => t('Use address autocomplete'),
+      'description' => t('Allow autocomplete of addresses via the commerce_profile_manager field widget.'),
+    ),
+  );
+}
+/*
+ * Callback for autocomplete.
+ */
+function _merci_cpm_autocomplete($bundle, $string) {
+
+  // TODO don't hard code.
+  $address_table = 'field_data_field_full_name';
+  $search_field = 'field_full_name_value';
+  $profile_table = 'commerce_customer_profile';
+
+  $matches = array();
+  $query = db_select($address_table, 'f');
+  $query->addField('f', $search_field, 'name');
+  $query->condition($search_field, '%' . db_like($string) . '%', 'LIKE');
+  $query->condition('bundle', $bundle);
+  $query->join($profile_table, 'p', 'p.profile_id = f.entity_id');
+  $query->addField('p', 'profile_id');
+  $result = $query->execute();
+  // save the query to matches
+  foreach ($result as $row) {
+    $matches[$row->name . " [$row->profile_id]"] = check_plain($row->name);
+  }
+  $matches_erp = array();
+
+  // Allow multiple types of autocomplete
+  switch($bundle) {
+    case 'billing':
+      $matches_erp = _evergreen_erp_autocomplete($string);
+      break;
+    case 'organization':
+      $matches_erp = _evergreen_erp_budget_autocomplete($string);
+      break;
+  }
+  //Merge in results
+  if (!empty($matches)) {
+    $matches = array_merge($matches, $matches_erp);
+  } else {
+    $matches = $matches_erp;
+  }
+  // Return the result to the form in json
+  drupal_json_output($matches);
+}
+
+function merci_cpm_validate($element, &$form_state, $form) {
+  // Populate the from with the selected profile.
+  if (array_key_exists('autocomplete_profile_id', $form_state)) {
+    $value[] = array('profile_id' => $form_state['autocomplete_profile_id']);
+    // Set the profile_id form_state value and wipe out any entered addressfield data.
+    form_set_value($element, $value, $form_state);
+    unset($form_state['input'][$element['#field_name']]);
+    unset($form_state['addressfield']);
+    unset($form_state['autocomplete_profile_id']);
+  } else {
+    // Validate direct input.
+    // But only if the profile type is enabled.
+    unset($form_state['triggering_element']['#limit_validation_errors']);
+    if (!empty($form_state['triggering_element']) && (in_array('customer_profile_ui_checkboxes', $form_state['triggering_element']['#parents'], TRUE))) {
+      form_set_value($element, array(), $form_state);
+    } else {
+      commerce_customer_profile_manager_validate($element, $form_state, $form);
+    }
+    //if (!empty($form_state['values']['customer_profile_ui_checkboxes'][$element['#field_name']])) {
+    //  override_commerce_customer_profile_manager_validate($element, $form_state, $form);
+    //}
+  }
+}
+
+/*
+ * Strips out profile_id from name addressfield.
+ */
+function merci_cpm_autocomplete_validate($element, &$form_state, $form) {
+
+  // Look in banner first.  regexp looks for /\[(A[0-9]+)\]$/ which would also be caught by below. 
+  evergreen_erp_autocomplete_validate($element, $form_state, $form);
+
+  // autocomplete_profile_id will not be set if this isn't banner autocomplete.
+  if (!array_key_exists('autocomplete_profile_id', $form_state) or empty($form_state['autocomplete_profile_id'])) {
+    $name = drupal_array_get_nested_value($form_state['values'], $element['#parents']);
+    $matches = array();
+
+    // This preg_match() looks for the last pattern like [33334] and if found
+    // extracts the numeric portion.
+    $result = preg_match('/\[([0-9]+)\]$/', $name, $matches);
+    if ($result > 0) {
+      $form_state['autocomplete_profile_id'] = $matches[$result];
+    }
+  }
+}
+
+/*
+ * Implements hook_field_widget_WIDGET_TYPE_form_alter.
+ *
+ * Adds autocomplete for full name line of addressfield
+ *
+ * Adds ajax to update address from existing profile when name is selected form autocomplete select list.
+ *
+ */
+function merci_cpm_field_widget_commerce_customer_profile_type_ui_manager_form_alter(&$element, &$form_state, $context) {
+
+  $langcode = $context['langcode'];
+
+  if (user_access('use address autocomplete') and $element['#entity_type'] == 'merci_reservation') {
+    foreach (element_children($element['profiles']) as $key) {
+      $child = &$element['profiles'][$key];
+
+      // Add our wrapper.
+      $child['#prefix'] = '<div id="merci-cpm-wrapper-' . $key . '">';
+      $child['#suffix'] = '</div>';
+      if (array_key_exists('#parents', $child)) {
+        unset($child['#parents']);
+      }
+
+      $lookup_field = array(
+        '#type' => 'textfield',
+        '#title' => 'Lookup',
+        '#autocomplete_path' => 'address/autocomplete/' . $child['#bundle'],
+        '#ajax' => array(
+          'callback' => 'merci_cpm_update_name',
+          'wrapper' => 'merci-cpm-wrapper-' . $key,
+        ),
+        '#element_validate' => array('merci_cpm_autocomplete_validate'),
+        '#weight' => -100,
+      );
+
+
+      // Add autocomplete and ajax for billing name field.
+      /*
+      $name_line = &$child['field_full_name'][$langcode][0]['value'];
+      $name_line['#autocomplete_path'] = 'address/autocomplete/' . $child['#bundle']; 
+      $name_line['#ajax'] = array(
+        'callback' => 'merci_cpm_update_name',
+        'wrapper' => 'merci-cpm-wrapper-' . $key,
+      );
+      $name_line['#element_validate'] = array('merci_cpm_autocomplete_validate');
+       */
+      if (!commerce_customer_ui_customer_profile_add_any_access()) {
+        foreach (element_children($child) as $key2) {
+          //if (!in_array($key2, array('field_full_name', 'remove'))) {
+            $child[$key2]['#access'] = FALSE;
+          //} 
+        }
+        if (isset($child['#entity'])) {
+          $element['profiles'][$key]['entity_view'] = entity_view('commerce_customer_profile', array($child['#entity']));
+        }
+      }
+      $child['name_lookup_field'] = $lookup_field;
+    }
+    $element['#element_validate'] = array('merci_cpm_validate');
+  }
+}
+
+/*
+ * AJAX Callback for commerce_customer_profile
+ */
+function merci_cpm_update_name($form, &$form_state) {
+  // Container is five up from the triggering element.
+  $parents = array_slice($form_state['triggering_element']['#array_parents'], 0, -1);
+  return drupal_array_get_nested_value($form, $parents);
+}

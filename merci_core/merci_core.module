@@ -1,0 +1,502 @@
+<?php
+
+define('MERCI_ADMIN_PATH', 'admin/merci');
+define('MERCI_ADMIN_CONFIG_PATH', MERCI_ADMIN_PATH . '/config');
+/**
+ * Implements hook_permission().
+ */
+function merci_core_permission() {
+  $permissions = array(
+    'administer MERCI' => array(
+      'title' => t('Administer MERCI'),
+      'description' => t('View and configure fields attached to module defined line item types.'),
+      'restrict access' => TRUE,
+    ),
+  );
+
+  return $permissions;
+}
+/**
+ * Implementation of hook_rules_event_info().
+ * @ingroup rules
+ */
+function merci_core_rules_event_info() {
+  $defaults = array(
+    'group' => t('MERCI'),
+    'module' => 'merci_core',
+  );
+  return array(
+    'merci_validate' => $defaults + array(
+      'label' => t('When validating a new MERCI reservation line item'),
+      'variables' => array(
+        'line_item' => array('type' => 'entity', 'label' => t('line item')),
+        'reservation' => array('type' => 'entity', 'label' => t('Parent entity')),
+        'errors' => array('type' => 'struct', 'label' => t('errors')),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function merci_core_menu() {
+
+  $items[MERCI_ADMIN_PATH] = array(
+    'title' => 'Merci',
+    'description' => 'Administer MERCI.',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
+    'weight' => -7,
+  );
+  $items[MERCI_ADMIN_CONFIG_PATH] = array(
+    'title' => 'Configuration',
+    'description' => 'Configure settings for MERCI.',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 50,
+    'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
+  );
+
+  return $items;
+}
+
+
+function merci_get_controller($target_type, $context) {
+  $controllers = &drupal_static(__FUNCTION__, array());
+  module_load_include('inc', 'merci_core', 'reservation.handler');
+  if (!isset($controllers[$target_type])) {
+    $class = 'MerciDefaultController';
+    if (class_exists($class)) {
+      $controllers[$target_type] = call_user_func(array($class, 'getInstance'), $target_type, $context);
+    }
+  }
+  return $controllers[$target_type];
+}
+
+function merci_core_line_item_validate(&$line_item, $element, &$form_state, $form)
+{
+
+  $errors = array();
+  $error_wrapper = new EntityMetadataArrayObject($errors);
+
+  $line_item_wrapper = entity_metadata_wrapper('merci_line_item', $line_item);
+  rules_invoke_event('merci_validate', $line_item_wrapper, $error_wrapper);
+  $errors = $error_wrapper->getArray();
+  return $errors[0];
+}
+
+function merci_core_get_restrictions($product_id) {
+  $field_name = 'field_restrictions';
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'reservable_product_display')
+    ->fieldCondition('field_crp_product_reference','product_id', $product_id);
+
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $nids = array_keys($result['node']);
+    $nodes = entity_load('node', $nids);
+    $node = reset($nodes);
+    $langcode = 'und';
+    $tid = $node->{'field_resource_type'}[$langcode][0]['tid'];
+    $term = taxonomy_term_load($tid);
+    if (!empty($term->{$field_name})) {
+      return $term->{$field_name}[$langcode];
+    }
+  }
+}
+
+function merci_core_get_product_display($product_id) {
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'reservable_product_display')
+    ->fieldCondition('field_crp_product_reference','product_id', $product_id);
+
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $nids = array_keys($result['node']);
+    $nodes = entity_load('node', $nids);
+    return reset($nodes);
+  }
+}
+function merci_core_get_roles_required($product_id) {
+  $field_name = 'field_roles_required';
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'reservable_product_display')
+    ->fieldCondition('field_crp_product_reference','product_id', $product_id);
+
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $nids = array_keys($result['node']);
+    $nodes = entity_load('node', $nids);
+    $node = reset($nodes);
+    $langcode = 'und';
+    $tid = $node->{'field_resource_type'}[$langcode][0]['tid'];
+    $terms = taxonomy_get_parents_all($tid);
+    foreach ($terms as $tid => $term) {
+      if (!empty($term->{$field_name})) {
+        return $term->{$field_name}[$langcode];
+      }
+    }
+  }
+  return array();
+}
+/*
+function merci_core_merci_core_checkout_page_info_alter(&$pages) {
+}
+
+function merci_core_merci_core_line_item_summary_link_info_alter(&$links) {
+  // Alter the weight of the checkout link to display before the view cart link.
+  if (!empty($links['checkout'])) {
+    $links['checkout']['title'] = "Reserve items";
+  }
+}
+ */
+
+/**
+ * Create an organic groups field in a bundle.
+ *
+ * @param $field_name
+ *   The field name
+ * @param $entity_type
+ *   The entity type
+ * @param $bundle
+ *   The bundle name.
+ */
+function merci_core_create_field($field_name, $entity_type, $bundle) {
+  if ($merci_field = merci_core_fields_info($field_name)) {
+    $field = field_info_field($field_name);
+    if (empty($field)) {
+      $field = field_create_field($merci_field['field']);
+    }
+
+    $instance = field_info_instance($entity_type, $field_name, $bundle);
+    if (empty($instance)) {
+      $instance = $merci_field['instance'];
+      $instance += array(
+        'field_name' => $field_name,
+        'bundle' => $bundle,
+        'entity_type' => $entity_type,
+      );
+
+      field_create_instance($instance);
+    }
+  }
+}
+
+/**
+ * Get all the modules fields that can be assigned to fieldable enteties.
+ */
+function merci_core_fields_info($field_name = NULL) {
+  $return = &drupal_static(__FUNCTION__, array());
+
+  if (empty($return)) {
+    foreach (module_implements('merci_fields_info') as $module) {
+      if ($fields = module_invoke($module, 'merci_fields_info')) {
+        foreach ($fields as $key => $field) {
+          // Add default values.
+          $field += array(
+            'entity type' => array(),
+            'disable on node translate' => TRUE,
+          );
+
+          // Add the module information.
+          $return[$key] = array_merge($field, array('module' => $module));
+        }
+      }
+    }
+
+    // Allow other modules to alter the field info.
+    drupal_alter('merci_fields_info', $return);
+  }
+
+  return empty($field_name) ? $return : $return[$field_name];
+}
+
+function merci_core_import_items() {
+  $row = 0;
+  $items = array();
+  $entity_info = entity_get_info('node');
+  $language_key = $entity_info['entity keys']['language'];
+  $manf_vid = taxonomy_vocabulary_machine_name_load('manufacturer');
+  $ass_vid = taxonomy_vocabulary_machine_name_load('reservable_product_accessories');
+  $resource_vid = taxonomy_vocabulary_machine_name_load('resource_type');
+  if (($handle = fopen(DRUPAL_ROOT . '/' . drupal_get_path('module', 'merci_core') . "/items.csv", "r")) !== FALSE) {
+    while (($data = fgetcsv($handle)) !== FALSE) {
+      $items[] = $data;
+      $row++;
+      if($row == 1) {
+        continue;
+      }
+
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', 'reservable_product_display')
+        ->propertyCondition('title', $data[20]);
+      $result = $query->execute();
+      if (isset($result['node'])) {
+        $nids = array_keys($result['node']);
+        $items = entity_load('node', $nids);
+        $display = reset($items);
+      }
+      else {
+      // Gepty($display)) {
+        $display = entity_create('node', array($language_key => 'und', 'type' => 'reservable_product_display', 'title' => $data[20]));
+      }
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'merci_core_product')
+        ->entityCondition('bundle', 'reservable_product')
+        ->propertyCondition('sku', $data[0]);
+      $result = $query->execute();
+      if (isset($result['merci_core_product'])) {
+        $nids = array_keys($result['merci_core_product']);
+        $items = entity_load('merci_core_product', $nids);
+        $product = reset($items);
+      }
+      else {
+        $product = entity_create('merci_core_product', array('type' => 'reservable_product', 'sku' => $data[0], 'title' => $data[20]));
+      }
+
+      $display_wrapper = entity_metadata_wrapper('node', $display);
+      $product_wrapper = entity_metadata_wrapper('merci_core_product', $product);
+      $product_wrapper->merci_core_price = merci_core_price_field_data_auto_creation();
+      $product_wrapper->save();
+      $display_wrapper->field_crp_product_reference[] = $product_wrapper->product_id->value();
+      $display_wrapper->field_model = $data[3];
+      $term = taxonomy_get_term_by_name($data[2]);
+      $tids = array();
+      if (empty($term) and !empty($data[2])) {
+        $term = array(
+          'vid' => $manf_vid->vid,
+          'name' => $data[2],
+        );
+        taxonomy_term_save((object)$term);
+        $term = taxonomy_get_term_by_name($data[2]);
+      }
+      if (!empty($term)) {
+        $tids = array_keys($term);
+        $display_wrapper->field_manufacturer->set(end($tids));
+      }
+
+      $ass = explode(',', $data[6]);
+
+      $tids = array();
+      foreach ($ass as $name) {
+        $terms = taxonomy_get_term_by_name($name);
+        if (empty($terms)) {
+          $term = array(
+            'vid' => $ass_vid->vid,
+            'name' => $name,
+          );
+          taxonomy_term_save((object)$term);
+          $terms = taxonomy_get_term_by_name($name);
+        }
+        $tid = array_keys($terms);
+        if (end($tid)) {
+          $tids[] = end($tid);
+        }
+      }
+      if (!empty($tids)) {
+        $display_wrapper->field_associated_components->set($tids);;
+      }
+
+      $ass = explode(' -- ', $data[33]);
+
+      $tids = array();
+      foreach ($ass as $name) {
+        $terms = taxonomy_get_term_by_name($name);
+        if (empty($terms)) {
+          $term = array(
+            'vid' => $resource_vid->vid,
+            'name' => $name,
+          );
+          if (end($tids)) {
+            $term['parent'] = end($tids);
+          }
+          taxonomy_term_save((object)$term);
+          $terms = taxonomy_get_term_by_name($name);
+        }
+        $tid = array_keys($terms);
+        if (end($tid)) {
+          $tids[] = end($tid);
+        }
+      }
+      if (!empty($tids)) {
+        $display_wrapper->field_resource_type->set(end($tids));;
+      }
+      $display_wrapper->save();
+
+    }
+    fclose($handle);
+  }
+}
+/**
+ * Finds all fields of a particular field type.
+ *
+ * @param $field_type
+ *   The type of field to search for.
+ * @param $entity_type
+ *   Optional entity type to restrict the search to.
+ *
+ * @return
+ *   An array of the matching fields keyed by the field name.
+ */
+function merci_core_info_fields($field_type, $entity_type = NULL) {
+  $fields = array();
+
+  // Loop through the fields looking for any fields of the specified type.
+  foreach (field_info_field_map() as $field_name => $field_stub) {
+    if ($field_stub['type'] == $field_type) {
+      // Add this field to the return array if no entity type was specified or
+      // if the specified type exists in the field's bundles array.
+      if (empty($entity_type) || in_array($entity_type, array_keys($field_stub['bundles']))) {
+        $field = field_info_field($field_name);
+        $fields[$field_name] = $field;
+      }
+    }
+  }
+
+  return $fields;
+}
+
+/**
+ * Attempts to directly activate a field that was disabled due to its module
+ * being disabled.
+ *
+ * The normal API function for updating fields, field_update_field(), will not
+ * work on disabled fields. As a workaround, this function directly updates the
+ * database, but it is up to the caller to clear the cache.
+ *
+ * @param $field_name
+ *   The name of the field to activate.
+ *
+ * @return
+ *   Boolean indicating whether or not the field was activated.
+ */
+function merci_core_activate_field($field_name) {
+  // Set it to active via a query because field_update_field() does
+  // not work on inactive fields.
+  $updated = db_update('field_config')
+    ->fields(array('active' => 1))
+    ->condition('field_name', $field_name, '=')
+    ->condition('deleted', 0, '=')
+    ->execute();
+
+  return !empty($updated) ? TRUE : FALSE;
+}
+/**
+ * Enables and deletes fields of the specified type.
+ *
+ * @param $type
+ *   The type of fields to enable and delete.
+ *
+ * @see merci_core_delete_field()
+ */
+function merci_core_delete_fields($type) {
+  // Read the fields for any active or inactive field of the specified type.
+  foreach (field_read_fields(array('type' => $type), array('include_inactive' => TRUE)) as $field_name => $field) {
+    merci_core_delete_field($field_name);
+  }
+}
+
+/**
+ * Enables and deletes the specified field.
+ *
+ * The normal API function for deleting fields, field_delete_field(), will not
+ * work on disabled fields. As a workaround, this function first activates the
+ * fields of the specified type and then deletes them.
+ *
+ * @param $field_name
+ *   The name of the field to enable and delete.
+ */
+function merci_core_delete_field($field_name) {
+  // In case the field is inactive, first activate it and clear the field cache.
+  if (merci_core_activate_field($field_name)) {
+    field_cache_clear();
+  }
+
+  // Delete the field.
+  field_delete_field($field_name);
+}
+
+/**
+ * Deletes any field instance attached to entities of the specified type,
+ * regardless of whether or not the field is active.
+ *
+ * @param $entity_type
+ *   The type of entity whose fields should be deleted.
+ * @param $bundle
+ *   Optionally limit instance deletion to a specific bundle of the specified
+ *   entity type.
+ */
+function merci_core_delete_instances($entity_type, $bundle = NULL) {
+  // Prepare a parameters array to load the specified instances.
+  $params = array(
+    'entity_type' => $entity_type,
+  );
+
+  if (!empty($bundle)) {
+    $params['bundle'] = $bundle;
+    // Delete this bundle's field bundle settings.
+    variable_del('field_bundle_settings_' . $entity_type . '__' . $bundle);
+  }
+  else {
+    // Delete all field bundle settings for this entity type.
+    db_delete('variable')
+      ->condition('name', db_like('field_bundle_settings_' . $entity_type . '__') . '%', 'LIKE')
+      ->execute();
+  }
+
+  // Read and delete the matching field instances.
+  foreach (field_read_instances($params, array('include_inactive' => TRUE)) as $instance) {
+    merci_core_delete_instance($instance);
+  }
+}
+
+/**
+ * Deletes the specified instance and handles field cleanup manually in case the
+ * instance is of a disabled field.
+ *
+ * @param $instance
+ *   The field instance info array to be deleted.
+ */
+function merci_core_delete_instance($instance) {
+
+  if (empty($instance)) {
+    return;
+  }
+  // First activate the instance's field if necessary.
+  $field_name = $instance['field_name'];
+  $activated = merci_core_activate_field($field_name);
+
+  // Clear the field cache if we just activated the field.
+  if ($activated) {
+    field_cache_clear();
+  }
+
+  // Then delete the instance.
+  field_delete_instance($instance, FALSE);
+
+  // Now check to see if there are any other instances of the field left.
+  $field = field_info_field($field_name);
+
+  if (count($field['bundles']) == 0) {
+    field_delete_field($field_name);
+  }
+  elseif ($activated) {
+    // If there are remaining instances but the field was originally disabled,
+    // disabled it again now.
+    $field['active'] = 0;
+    field_update_field($field);
+  }
+}
+

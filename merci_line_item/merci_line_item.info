@@ -1,0 +1,30 @@
+name = MERCI Line Item 
+description = MERCI line item for creating checkouts/reservations. 
+package = MERCI 
+dependencies[] = merci_core
+dependencies[] = date_popup 
+dependencies[] = date 
+dependencies[] = taxonomy 
+dependencies[] = list 
+dependencies[] = entityreference 
+core = 7.x
+version = 7.x-3.0
+
+; Module includes
+files[] = includes/entity.inc
+files[] = includes/entity.ui.inc
+files[] = includes/entity.controller.inc
+files[] = includes/entity_type.inc
+files[] = includes/entity_type.ui.inc
+files[] = includes/entity_type.controller.inc
+
+; Views handlers
+files[] = includes/views/handlers/merci_line_item_handler_area_line_item_summary.inc
+files[] = includes/views/handlers/merci_line_item_handler_argument_line_item_line_item_id.inc
+files[] = includes/views/handlers/merci_line_item_handler_field_line_item_title.inc
+files[] = includes/views/handlers/merci_line_item_handler_field_line_item_type.inc
+files[] = includes/views/handlers/merci_line_item_handler_filter_line_item_type.inc
+files[] = includes/views/handlers/merci_line_item_handler_field_edit_quantity.inc
+files[] = includes/views/handlers/merci_line_item_handler_field_edit_delete.inc
+files[] = includes/views/handlers/merci_line_item_handler_field_number_reserved.inc
+files[] = includes/views/handlers/merci_line_item_handler_filter_number_reserved.inc

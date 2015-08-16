@@ -1,5 +1,0 @@
-name = Merci Selects
-description = Adding a possibility to use multiple select fields rather than a multiselect field.
-package = Fields
-dependency[] = options
-core = 7.x

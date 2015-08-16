@@ -1,5 +1,0 @@
-name = MERCI 
-package = MERCI
-description = Provides rules integration for MERCI. 
-dependencies[] = merci 
-dependencies[] = rules_forms

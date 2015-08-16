@@ -1,0 +1,116 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function merci_inventory_schema() {
+  $schema = array();
+  $schema['merci_inventory'] = array(
+    'description' => 'Stores merci inventory.',
+    'fields' => array(
+      'inventory_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique ID.',
+      ),
+      'entity_id' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The entity_id which is being inventoried.',
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => "The {users}.uid of the associated user.",
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the entity was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'location_id' => array(
+        'description' => 'The id of the commerce_customer_profile.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+    ) + entity_exportable_schema_fields(),
+
+    'primary key' => array('inventory_id'),
+  );
+
+  $schema['merci_inventory_statistics'] = array(
+    'description' => 'Maintains statistics of merci_inventory.',
+    'fields' => array(
+      'entity_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The entity_id for which the statistics are compiled.',
+      ),
+      'inventory_id' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The {merci_inventory}.inventory_id of the last inventory.',
+      ),
+      'last_inventory_timestamp' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The Unix timestamp of the last inventory, from {merci_inventory}.changed.',
+      ),
+      'last_inventory_uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The user ID of the latest author to inventory, from {merci_inventory}.uid.',
+      ),
+      'inventory_count' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The total number of inventories on this node.',
+      ),
+    ),
+    'primary key' => array('entity_id'),
+    'indexes' => array(
+      'last_inventory_timestamp' => array('last_inventory_timestamp'),
+      'inventory_count' => array('inventory_count'),
+      'last_inventory_uid' => array('last_inventory_uid'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function merci_inventory_uninstall() {
+  // Bypass entity_load() as we cannot use it here.
+  $types = db_select('merci_inventory', 'et')
+    ->fields('et')
+    ->execute()
+    ->fetchAllAssoc('id');
+
+  foreach ($types as $id => $type) {
+    field_attach_delete_bundle('merci_inventory', $id);
+  }
+}
+
+/**
+ * Implements hook_enable().
+ */
+function merci_inventory_enable() {
+//  merci_core_create_field(MERCI_HOURS_FIELD, 'merci_inventory', 'merci_inventory');
+//  merci_core_create_field(MERCI_HOLIDAYS_FIELD, 'merci_inventory', 'merci_inventory');
+}
+

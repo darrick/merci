@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * Implements hook_migrate_api().
+ */
+function merci_migrate_migrate_api() {
+  $api = array(
+    'api' => 2,
+    'field handlers' => array(
+      'DateMigrateFieldHandler',
+    ),
+    'groups' => array(
+      'merci' => array(
+        'title' => t('MERCI Migrations'),
+      ),
+    ),
+    'migrations' => array(
+      'MerciItem' => array(
+        'class_name' => 'MerciItemMigration',
+        'group_name' => 'merci',
+      ),
+      'MerciItemDisplay' => array(
+        'class_name' => 'MerciItemDisplayMigration',
+        'group_name' => 'merci',
+      ),
+      'MerciItemRestrictions' => array(
+        'class_name' => 'MerciItemRestrictionsMigration',
+        'group_name' => 'merci',
+      ),
+      'MerciTaxonomy' => array(
+        'class_name' => 'MerciTaxonomyMigration',
+        'group_name' => 'merci',
+      ),
+      'MerciTaxonomyRestrictions' => array(
+        'class_name' => 'MerciTaxonomyRestrictionsMigration',
+        'group_name' => 'merci',
+      ),
+      'MerciLineItem' => array(
+        'class_name' => 'MerciLineItemMigration',
+        'group_name' => 'merci',
+      ),
+      'MerciReservation' => array(
+        'class_name' => 'MerciReservationMigration',
+        'group_name' => 'merci',
+      ),
+    ),
+  );
+  return $api;
+}

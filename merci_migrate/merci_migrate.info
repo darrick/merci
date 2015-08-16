@@ -1,0 +1,14 @@
+name = MERCI Migrate 
+description = Migrate from MERCI 7.x-2.x to MERCI 7.x-3.x. 
+package = MERCI 
+core = 7.x
+version = 7.x-3.0
+
+dependencies[] = migrate
+
+files[] = merci_items.inc
+files[] = merci_restrictions.inc
+files[] = merci_taxonomy.inc
+files[] = merci_item_display.inc
+files[] = merci_line_item.inc
+files[] = merci_reservation.inc

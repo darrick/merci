@@ -1,0 +1,21 @@
+<?php
+
+
+/**
+ * Implements hook_uninstall().
+ */
+function merci_holiday_uninstall() {
+
+  // TODO: remove MERCI_HOLIDAYS_FIELD
+  // Delete any field instance attached to a line item type.
+  // merci_core_delete_instances('merci_hours');
+
+}
+
+/**
+ * Implements hook_enable().
+ */
+function merci_holiday_enable() {
+  merci_core_create_field(MERCI_HOLIDAYS_FIELD, 'merci_hours', 'merci_hours');
+}
+

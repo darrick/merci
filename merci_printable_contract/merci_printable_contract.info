@@ -1,0 +1,16 @@
+name = MERCI Printable Contract
+package = MERCI
+description = "Adds a printable contract option to MERCI Reservations."
+
+core = 7.x
+version = 7.x-3.0
+
+dependencies[] = merci_core
+dependencies[] = token 
+
+
+configure = admin/config/merci/contract
+
+files[] = merci-printable-contract.tpl.php
+files[] = merci_printable_contract.module
+

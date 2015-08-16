@@ -1,0 +1,47 @@
+<?php
+
+function dma_merci_entityreference_view_widget_views_arguments_alter(&$arguments, &$form_state) {
+  $settings = $form_state['triggering_element']['#ervw_settings'];
+
+  if ($settings['element'] == 'og_group_ref') {
+
+    $wrapper = entity_metadata_wrapper($form_state['entity_type'], $form_state[$form_state['entity_type']]);
+    $account = $wrapper->field_owner->value();
+    $groups = og_get_groups_by_user($account);
+    $group_keys = array_keys($groups['node']);
+    if (!empty($settings['pass_argument']) && !empty($form_state['ervw_ids'][$settings['index']])) {
+      $group_keys = array_diff($group_keys, $form_state['ervw_ids'][$settings['index']]);
+    }
+    $arguments[0] = implode('+', $group_keys);
+  }
+
+  if ($settings['element'] == 'merci_line_item_reference') {
+
+    $wrapper = entity_metadata_wrapper($form_state['entity_type'], $form_state[$form_state['entity_type']]);
+    $roles = $wrapper->field_owner->roles->value();
+    if (!array_key_exists(0, $arguments)) {
+      $arguments[0] = 0;
+    }
+    $arguments[1] = implode('+', $roles);
+  }
+}
+
+
+function dma_merci_form_merci_reservation_edit_checkout_form_alter(&$form, &$form_state, $form_id) {
+  if (empty($form['field_operator']['und'][0]['target_id']['#default_value'])) {
+    global $user;
+    $form['field_operator']['und'][0]['target_id']['#default_value'] = $user->name . ' (' . $user->uid . ')';
+  }
+
+  if (empty($form['field_owner']['und'][0]['target_id']['#default_value'])) {
+    global $user;
+    $form['field_owner']['und'][0]['target_id']['#default_value'] = $user->name . ' (' . $user->uid . ')';
+  }
+
+  if (!user_access('edit any merci_reservation entities')) {
+    $form['field_owner']['#attributes']['class'][] = 'element-hidden';
+  }
+
+  $form['field_operator']['#attributes']['class'][] = 'element-hidden';
+
+}

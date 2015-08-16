@@ -1,0 +1,6 @@
+name = MERCI Core 
+description = MERCI core functionality for MERCI. 
+package = MERCI 
+core = 7.x
+version = 7.x-3.0
+

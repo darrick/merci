@@ -1,0 +1,7 @@
+name = MERCI Line Item 
+description = MERCI line item for creating checkouts/reservations. 
+package = MERCI 
+dependencies[] = merci_line_item
+core = 7.x
+version = 7.x-3.0
+

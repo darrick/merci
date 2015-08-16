@@ -1,0 +1,4 @@
+name = DMA site tweaks for MERCI 
+description = Tweek MERCI for DMA. 
+package = MERCI 
+core = 7.x

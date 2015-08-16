@@ -1,0 +1,8 @@
+fieldset.merci-hours-field {
+  padding: 0;
+  vertical-align: middle;
+}
+
+.merci-hours-field select, .merci-hours-field div, .merci-hours-field .form-item {
+  vertical-align: middle !important;
+}

@@ -1,0 +1,9 @@
+name = "MERCI Hours Quickset"
+package = MERCI
+description = "Allows users to quickly set date (i.e. End of week, End of month, etc.)"
+core = 7.x
+version = 7.x-3.0
+dependencies[] = merci_hours
+dependencies[] = list
+project = "merci"
+

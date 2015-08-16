@@ -1,0 +1,29 @@
+<?php
+
+/**
+ * @file
+ * Provides the user interface for managing Line Item types.
+ */
+
+/**
+ * Implements hook_entity_info_alter().
+ *
+ * Expose the admin UI for line item fields.
+ */
+function merci_line_item_ui_entity_info_alter(&$entity_info) {
+  $entity_info['merci_line_item']['admin ui'] = array(
+    'path' => 'merci_line_item',
+    'file' => 'merci_line_item_ui.pages.inc',
+    'controller class' => 'MerciLineItemUIController',
+  );
+}
+
+/**
+ *  * Implements hook_views_api().
+ *   */
+function merci_line_item_ui_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'merci_line_item_ui') . '/includes/views',
+  );
+}

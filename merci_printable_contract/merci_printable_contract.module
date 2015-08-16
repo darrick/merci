@@ -1,0 +1,132 @@
+<?php
+
+/**
+ * @file
+ * merci_printable_contract functions
+ */
+
+/* Windows does not have the money_format function in php.*/
+if (!function_exists('money_format')) {
+  module_load_include('inc', 'merci_printable_contract', 'money_format');
+}
+/**
+ * Implements hook_menu().
+ */
+function merci_printable_contract_menu() {
+
+  $admin = array('administer MERCI');
+
+  $items['merci_reservation/%merci_reservation/contract'] = array(
+    'title' => 'Contract',
+    'description' => 'Takes a order object and returns a printable contract',
+    'page arguments' => array(1),
+    'page callback' => 'merci_printable_contract',
+    'access callback' => 'merci_printable_contract_content_access',
+    'access arguments' => array(1, 'manage reservations'),
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+
+
+  );
+
+  // Standard Administration settings.
+  $items['admin/merci/config/contract'] = array(
+    'title' => 'Printable Contract',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('merci_printable_contract_admin_settings'),
+    'access callback' => 'user_access',
+    'access arguments' => $admin,
+    'description' => 'Configure settings for MERCI\'s Printable Contract.',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+
+  return $items;
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/order/1354
+ */
+function merci_printable_contract_content_access($order, $perm) {
+  return TRUE;
+  return (user_access($perm));
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/order/1354
+ */
+function merci_printable_contract_theme() {
+
+  return array(
+    'merci_printable_contract' => array(
+      'template' => 'merci-printable-contract',
+      'variables' => array('order' => NULL),
+    ),
+  );
+}
+
+/**
+ * Builds the admininstration settings form.
+ */
+function merci_printable_contract_admin_settings($form, &$form_state) {
+
+  $form['merci_contract_header'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Contract header'),
+    '#rows' => 10,
+    // TODO: this doesn't seem to work...
+    '#cols' => 5,
+    '#default_value' => variable_get('merci_contract_header', ''),
+    '#description' => t('Header portion of printable contract.  Allows HTML.'),
+  );
+
+  $form['merci_contract_boilerplate'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Contract boilerplate'),
+    '#rows' => 10,
+    // TODO: this doesn't seem to work...
+    '#cols' => 5,
+    '#default_value' => variable_get('merci_contract_boilerplate', ''),
+    '#description' => t('Legalese that makes the contract legally binding.'),
+  );
+
+  $form['merci_contract_footer'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Contract footer'),
+    '#rows' => 10,
+    // TODO: this doesn't seem to work...
+    '#cols' => 5,
+    '#default_value' => variable_get('merci_contract_footer', ''),
+    '#description' => t('Footer portion of printable contract. Normally includes signature lines. HTML allowed.'),
+  );
+
+  if (module_exists('token')) {
+    $form['token_help'] = array(
+      '#title' => t('Replacement patterns'),
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+
+    $output = '<div>';
+    $output .= '<dt>' . t('List of the currently available tokens on this site') . '</dt>';
+    $output .= '<dd>' . theme('token_tree', array('token_types' => array('merci_reservation'), 'click_insert' => TRUE, 'show_restricted' => TRUE)) . '</dd>';
+    $output .= '</div>';
+    // TODO Please change this theme call to use an associative array for the $variables parameter.
+    $form['token_help']['help'] = array(
+      //'#value' => theme('token_help', 'commerce_order'),
+      '#type' => 'markup',
+      '#markup' => $output,
+    );
+  }
+
+  return system_settings_form($form);
+}
+
+function merci_printable_contract($checkout) {
+
+  print theme('merci_printable_contract', array('checkout' => $checkout));
+
+}

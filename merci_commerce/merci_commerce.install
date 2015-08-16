@@ -1,0 +1,10 @@
+<?php
+
+/**
+ * Implements hook_enable().
+ */
+function merci_commerce_enable() {
+
+     commerce_line_item_configure_line_item_fields(array('merci_commerce'));
+
+}

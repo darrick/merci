@@ -1,0 +1,9 @@
+name = MERCI Line Item UI
+description = Exposes a default UI for MERCI Line Items through line item type forms and default Views.
+package = MERCI 
+dependencies[] = merci_line_item
+core = 7.x
+configure = admin/merci/config/line-items
+
+; Views handlers
+files[] = includes/views/handlers/merci_line_item_ui_handler_field_operations.inc

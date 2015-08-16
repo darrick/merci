@@ -1,0 +1,240 @@
+<?php
+
+/**
+ * Implements hook_field_info_alter().
+ *
+ * Extends instance settings of date fields with work calendar defaults.
+ */
+function merci_hours_quickset_field_info_alter(&$info) {
+  $settings = array(
+    'merci_hours' => array(
+      'set_merci_date_enabled' => FALSE,
+      'quickset_options' => array(),
+      'quickset_fields' => array(),
+    ),
+  );
+  $fields = array('datetime');
+  foreach ($fields as $field) {
+    $info[$field]['instance_settings'] += $settings;
+  }
+}
+
+/**
+ * Implements hook_date_field_instance_settings_form_alter().
+ *
+ * Adds elements to instance settings form of date fields to configure
+ * work calendar settings.
+ */
+function merci_hours_quickset_date_field_instance_settings_form_alter(&$form, $context) {
+
+  $settings = $context['instance']['settings'];
+  $instances = field_info_instances('merci_hours', 'merci_hours');
+  $options = array();
+  $default_options = $settings['merci_hours']['quickset_fields'];
+  foreach ($instances as $field_name => $value) {
+    $field_info = field_info_field($field_name);
+    $type = $field_info['type'];
+    if ($type == 'datetime' && $field_name != 'field_office_hours') {
+      $options[$field_name] = $value['label'];
+    }
+  }
+  $form['merci_hours']['set_merci_date_enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Add buttons to set end date based on default hours.'),
+    '#description' => 'i.e. End of day, End of week, etc.',
+    '#default_value' => $settings['merci_hours']['set_merci_date_enabled'],
+  );
+  $form['merci_hours']['quickset_options'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Additional Quickset options'),
+    '#description' => 'i.e. +1 week, +1 month: format of label|format (One Week|+1 week) see http://php.net/manual/en/datetime.formats.relative.php',
+    '#default_value' => list_allowed_values_string($settings['merci_hours']['quickset_options']),
+    '#element_validate' => array('merci_hours_quickset_options_setting_validate'),
+  );
+  $form['merci_hours']['quickset_fields'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Use MERCI hour fields to quickly set end dates.'),
+    '#options' => $options,
+    '#default_value' => $default_options,
+    '#element_validate' => array('merci_hours_quickset_fields_setting_validate'),
+  );
+}
+
+function merci_hours_quickset_merci_hours_presave($entity) {
+  cache_clear_all('merci_quickset_field_options:', 'cache', TRUE);
+}
+
+function merci_hours_quickset_fields_setting_validate($element, &$form_state) {
+  cache_clear_all('merci_quickset_field_options:', 'cache', TRUE);
+}
+
+function merci_hours_quickset_options_setting_validate($element, &$form_state) {
+  $values = list_extract_allowed_values($element['#value'], 'merci_quickset_options', false);
+  if (!is_array($values)) {
+    form_error($element, t('Allowed values list: invalid input.'));
+  }
+  else {
+    // Check that keys are valid for the field type.
+    foreach ($values as $key => $value) {
+      if (strtotime($key) === false) {
+        form_error($element, t('Quickset options: %value is not a relative format.', array('%value' => $key)));
+      }
+    }
+    form_set_value($element, $values, $form_state);
+  }
+}
+
+function merci_hours_quickset_field_options($context) {
+
+  $field_name   = $context['instance']['field_name'];
+  $entity_type  = $context['instance']['entity_type'];
+  $bundle       = $context['instance']['bundle'];
+
+  if ($cached = cache_get("merci_quickset_field_options:$field_name:$entity_type:$bundle")) {
+    return $cached->data;
+  }
+
+  $options  = array();
+  $settings = $context['instance']['settings']['merci_hours'];
+  $wc       = merci_hours_instantiate($settings['id']);
+  $wrapper  = entity_metadata_wrapper('merci_hours', $wc);
+
+  foreach ($settings['quickset_fields'] as $field_name) {
+    $field_info = field_info_instance('merci_hours', $field_name, 'merci_hours');
+    $value = $wrapper->{$field_name}->value();
+    $options[$value] = $field_info['label'];
+  }
+
+  cache_set("merci_quickset_field_options:$field_name:$entity_type:$bundle", $options);
+  
+  return $options;
+}
+
+ /**
+   * - * Implements hook_field_widget_form_alter().
+   * - *
+   * - * For date fields with work calendar settings,
+   * - * pass the configuration into the (date_combo) element.
+   * - *
+   * - * We are copying settings from instance settings to leaf form
+   * - * elements in cascade, since we are implementing direct integration
+   * - * with form api via #merci_hours property.
+   * - *
+   * - * @see hook_date_combo_process_alter()
+   * - */
+function merci_hours_quickset_field_widget_form_alter(&$element, &$form_state, $context) {
+  if (!array_key_exists('merci_hours', $context['instance']['settings'])) {
+    return;
+  }
+
+  $settings = $context['instance']['settings']['merci_hours'];
+  if (array_key_exists('set_merci_date_enabled', $settings) && $settings['set_merci_date_enabled']) {
+    // Build a parents array for this element's values in the form.
+    $parents = array_merge($element['#field_parents'], array($element['#field_name'], $element['#language']));
+    $ief_id = sha1(implode('-', $parents));
+    $element['#element_validate'][] = 'merci_hours_quickset_date_element_set_validate';
+    $element['#prefix'] = '<div id="merci-date-wrapper-' . $ief_id . '">';
+    //$element['#prefix'] = '<div id="merci-date-wrapper" class="container-inline">';
+    $element['#suffix'] = '</div>';
+
+    $options = array(
+      'end_of_day' => 'End of day',
+      'end_of_week' => 'End of week',
+      'custom' => 'Custom',
+    );
+
+    $options += $settings['quickset_options'];
+
+    $options += merci_hours_quickset_field_options($context);
+
+    $element['actions']['set_merci_date'] = array(
+      '#type' => 'select',
+      '#title' => 'Set end to ...',
+      '#options' => $options, 
+      '#default_value' => 'custom',
+      '#ajax' => array(
+        'callback' => 'merci_hours_quickset_date_element_refresh',
+        'wrapper' => 'merci-date-wrapper-' . $ief_id,
+      ),
+    );
+  }
+}
+
+/**
+ * Validate callback for date form elements with #work_calendar.
+ *
+ * Check the date is a open day in the in the work calendar.
+ */
+function merci_hours_quickset_date_element_set_validate($element, &$form_state, $form) {
+  $parent = end($form_state['triggering_element']['#parents']);
+  if ($parent != 'set_merci_date') {
+    return;
+  }
+
+  $value = $element['#value'];
+
+  $merci_hours = variable_get('merci_hours_default', '');
+
+  $end_date = new DateObject(implode($value['value2']));
+
+  switch ($form_state['triggering_element']['#value']) {
+    case 'end_of_day':
+      $start_date = new DateObject(implode($value['value']));
+      $day = $start_date->format('w');
+      $hours = merci_hours_get_open_hours_by_day($merci_hours, $day);
+
+      $close = '';
+      if (array_key_exists($day, $hours)) {
+        foreach ($hours[$day] as $hour) {
+          $end = $hour['close']->format('g:ia');
+          $close = $end > $close ? $end : $close;
+        }
+      }
+      $value['value2']['date'] = $start_date->format('m/d/Y', TRUE);
+      $value['value2']['time'] = $close ? $close : $value['value2']['time'];;
+      break;
+    case 'end_of_week':
+      $hours = merci_hours_get_open_hours_by_day($merci_hours);
+      if ($hours) {
+        $end_of_week_hours = array_pop(array_pop($hours));
+        $close = $end_of_week_hours['close'];
+        $end_of_week = new DateObject($close->format('l g:ia'));
+        $value['value2']['date'] = $end_of_week->format('m/d/Y', TRUE);
+        $value['value2']['time'] = $end_of_week->format('g:ia');
+      }
+      break;
+    default:
+      if(preg_match('/sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat|weekday|weekdays|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|next|last|previous|this|next|last|previous|this|sec|second|min|minute|hour|day|fortnight|forthnight|month|year|week/', $form_state['triggering_element']['#value']) ) {
+        $start_date = new DateObject(implode($value['value']));
+        $end_date = $start_date->modify($form_state['triggering_element']['#value']);
+        $value['value2']['time'] = $end_date->format('g:ia', TRUE);
+      } else {
+        $end_date = new DateObject($form_state['triggering_element']['#value']);
+      }
+      $value['value2']['date'] = $end_date->format('m/d/Y', TRUE);
+      break;
+  }
+  // Modify end date to hours of operation.
+  $end_date = new DateObject(implode($value['value2']));
+  $modify_date = new DateObject(implode($value['value2']));
+  $hours = merci_hours_get_open_hours_by_day($merci_hours);
+  while (!array_key_exists($modify_date->format('w'), $hours)) {
+    $modify_date = $modify_date->modify("+1 day");
+  }
+  if ($modify_date != $end_date) {
+    drupal_set_message(t('End day was modified to the next day open'));
+  }
+  $value['value2']['date'] = $modify_date->format('m/d/Y', TRUE);
+
+  drupal_array_set_nested_value($form_state['input'], $element['#parents'], $value);
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Returns the line item manager element for display via AJAX.
+ */
+function merci_hours_quickset_date_element_refresh($form, $form_state) {
+  $parents = array_slice($form_state['triggering_element']['#array_parents'], 0, -2);
+  return drupal_array_get_nested_value($form, $parents);
+}
+

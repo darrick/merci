@@ -1,0 +1,187 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function merci_line_item_schema() {
+  $schema = array();
+
+  $schema['merci_line_item'] = array(
+    'description' => 'The base table for line items.',
+    'fields' => array(
+      'line_item_id' => array(
+        'description' => 'The primary identifier for a line item.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'The module defined type of this line item.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'description' => 'The unique ID of the order the line item belongs to.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      /*
+      'entity_type' => array(
+        'description' => 'The unique ID of the order the line item belongs to.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+       */
+      'line_item_label' => array(
+        'description' => 'The merchant defined label for a line item.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'quantity' => array(
+        'type' => 'numeric',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0,
+        'precision' => 10,
+        'scale' => 2,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the line item was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the line item was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data.',
+      ),
+    ),
+    'primary key' => array('line_item_id'),
+    'indexes' => array(
+      'entity_id' => array('entity_id'),
+      'line_item_type' => array('type'),
+    ),
+  );
+
+  $schema['merci_line_item_type'] = array(
+    'description' => 'Stores information about defined merci_line_item types.',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique merci_line_item type identifier.',
+      ),
+      'type' => array(
+        'description' => 'The machine-readable name of this merci_line_item type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'description' => 'The human-readable name of this merci_line_item type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'add_form_submit_value' => array(
+        'description' => 'The value of the button used to add items on the orders page.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'medium',
+      ),
+      'callbacks' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data related to this merci_line_item type.',
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'The weight of this merci_line_item type in relation to others.',
+      ),
+      'data' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data related to this merci_line_item type.',
+      ),
+    ) + entity_exportable_schema_fields(),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'type' => array('type'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_field_schema().
+ */
+function merci_line_item_field_schema($field) {
+  if ($field['type'] == 'merci_line_item_reference') {
+    return array(
+      'columns' => array(
+        'line_item_id' => array(
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => FALSE,
+        ),
+      ),
+      'indexes' => array(
+        'line_item_id' => array('line_item_id'),
+      ),
+      'foreign keys' => array(
+        'line_item_id' => array(
+          'table' => 'merci_line_item',
+          'columns' => array('line_item_id' => 'line_item_id'),
+        ),
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function merci_line_item_uninstall() {
+
+  foreach (db_query('SELECT type FROM {merci_line_item_type}')  as $record) {
+    field_attach_delete_bundle('merci_line_item', $record->type);
+  }
+  $limit = variable_get('field_purge_batch_size', 10);
+  $limit = 100;
+  field_purge_batch($limit);
+  field_purge_batch($limit);
+  /*
+  module_load_include('module', 'merci_core');
+
+  // Delete any field instance attached to a line item type.
+  merci_core_delete_instances('merci_line_item');
+
+  // Delete any line item reference fields.
+  merci_core_delete_field('merci_line_item_reference');
+   */
+}
+
+

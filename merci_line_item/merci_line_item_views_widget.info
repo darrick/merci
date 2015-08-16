@@ -1,0 +1,8 @@
+name = MERCI Line Item Entity Reference Views Form 
+description = Provides Entity Reference Views  Form fo MERCI line item. 
+package = MERCI 
+dependencies[] = merci_line_item
+dependencies[] = entityreference_view_widget 
+core = 7.x
+version = 7.x-3.0
+

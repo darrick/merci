@@ -1,0 +1,115 @@
+diff --git a/merci.module b/merci.module
+index ff73334..31cc944 100644
+--- a/merci.module
++++ b/merci.module
+@@ -306,6 +306,7 @@ function merci_check_content_type_restrictions($form, &$form_state) {
+ 
+   $dates = $entity->{MERCI_DATE_FIELD}->raw();
+ 
++  $start_date = new DateObject($dates['value'], 'UTC');
+   $end_date = new DateObject($dates['value2'], 'UTC');
+ 
+   foreach ($entity->{$target_field}->raw() as $delta => $target_id) {
+@@ -316,9 +317,10 @@ function merci_check_content_type_restrictions($form, &$form_state) {
+ 
+       $max_date = new DateObject($dates['value'] . ' ' . $interval, 'UTC'); 
+ 
++      $context = array('form' => $form, 'form_state' => $form_state, 'target' => $target, 'start_date' => $start_date);
++      drupal_alter('merci_override_max_time', $max_date, $context);
++
+       if ($max_date->format('U') < $end_date->format('U')) {
+-        //$max_date->setTimezone(timezone_open($dates['timezone']));
+-        $start_date = new DateObject($dates['value'], 'UTC');
+         $interval = $max_date->format('U') - $start_date->format('U');
+         $message = t('%title can only be reserved for up to %date.', array('%title' => $targets[$target_id]->title, '%date' => format_interval($interval))); 
+         form_set_error("merci_reservation_items][und][$delta][target_id", $message);
+diff --git a/modules/merci_hours/merci_hours.module b/modules/merci_hours/merci_hours.module
+index 77acd09..5efb341 100644
+--- a/modules/merci_hours/merci_hours.module
++++ b/modules/merci_hours/merci_hours.module
+@@ -360,33 +360,65 @@ function merci_hours_date_element_validate($element, &$form_state, $form) {
+ 
+   $cal = $element['#merci_hours'];
+   $value = $element['#value'];
+-
+   $date = new DateObject(implode(' ', $value));
+-  $valid = merci_hours_day_is_open($element['#merci_hours'], $date->format('Y'), $date->format('m'), $date->format('d'));
+-  $holiday = merci_hours_day_is_holiday($element['#merci_hours'], $date);
++
++  $valid = merci_hours_day_is_open($cal, $date->format('Y'), $date->format('m'), $date->format('d'));
++  $holiday = merci_hours_day_is_holiday($cal, $date);
++  $open  = merci_hours_time_is_open($cal, $date->format('d'), $date->format('H:i:s'));
+ 
+   if (!$valid) {
+     form_error($element, t('This is a closed day in the work calendar.'));
+-  }
+-  else if ($holiday) {
++  } else if ($holiday) {
+     form_error($element, t('This is a holiday in the work calendar.'));
+-  } else {
+-    $day = $date->format('w');
+-    $time = $date->format('H:i:s');
+-    $open_hours = merci_hours_get_open_hours_for_day($cal, $day);
+-    foreach ($open_hours[$day] as $hours) {
+-      $open = $hours['open'];
+-      $close = $hours['close'];
+-      $open_hour = $open->format('H:i:s');
+-      $close_hour = $close->format('H:i:s');
+-      if ($time < $open_hour) {
+-        form_error($element, t('We are closed until %open on %day.', array('%open' => $open->format('g:ia'), '%day' => $open->format('l'))));
+-      }
+-      if ($time > $close_hour) {
+-        form_error($element, t('We close at %close on %day.', array('%close' => $close->format('g:ia'), '%day' => $close->format('l'))));
+-      }
++  } else if (!$open) {
++    form_error($element, t('We are closed during this time.'));
++  }
++}
++
++function merci_hours_time_is_open($cal, $day, $time) {
++
++  $open_hours = merci_hours_get_open_hours_for_day($cal, $day);
++
++  foreach ($open_hours[$day] as $hours) {
++    $open = $hours['open'];
++    $close = $hours['close'];
++    $open_hour = $open->format('H:i:s');
++    $close_hour = $close->format('H:i:s');
++    if ($time >= $open_hour and $time <= $close_hour) {
++      return TRUE;
+     }
+   }
++  return FALSE;
++}
++
++function merci_hours_merci_override_max_time_alter(&$max_date, $context) {
++  $target = $context['target'];
++  $form   = $context['form'];
++  $start_date = $context['start_date'];
++
++  $override = $target->{MERCI_ALLOW_OVERNIGHT_FIELD}->value();
++  $date = clone $max_date;
++  $date_element = $form[MERCI_DATE_FIELD][LANGUAGE_NONE][0];
++  $cal = $date_element['#merci_hours'];
++  $date->setTimezone(timezone_open($date_element['#date_timezone']));
++  if ($override) {
++    $valid = merci_hours_day_is_open($cal, $date->format('Y'), $date->format('m'), $date->format('d'));
++    $holiday = merci_hours_day_is_holiday($cal, $date);
++    $open  = merci_hours_time_is_open($cal, $date->format('d'), $date->format('H:i:s'));
++
++    $wc = merci_hours_instantiate($cal);
++    $start = $date->format('Y-m-d H:i:s');
++    $end   = new DateObject($start . ' +7 days'); 
++    $dates = $wc->getOpenDaysInPeriod($start, $end->format('Y-m-d H:i:s'));
++    if (!$valid or $holiday or !$open) {
++      $next_open = (!$valid or $holiday) ? new DateObject($dates[0]) : new DateObject($dates[1]);
++      $open_hours = merci_hours_get_open_hours_for_day($cal, $next_open->format('w'));
++      $new_max_date = new DateObject($next_open->format('Y-m-d') . ' ' . $open_hours[$next_open->format('w')][0]['open']->format('H:i:s') . ' + 1 hours');
++      // Extend to next open day.
++      $new_max_date->setTimezone(timezone_open('UTC'));
++      $max_date = $new_max_date;
++    } 
++  }
+ }
+ 
+ function merci_hours_day_is_holiday($cal, $date) {

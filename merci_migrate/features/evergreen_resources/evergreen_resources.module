@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Evergreen Resources feature.
+ */
+
+include_once 'evergreen_resources.features.inc';

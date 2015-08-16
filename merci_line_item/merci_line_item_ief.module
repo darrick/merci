@@ -1,0 +1,307 @@
+<?php
+
+/**
+ * @file
+ * Defines the core MERCI line item entity and API functions interact with
+ * line items.
+ */
+
+
+/**
+* implements hook_entity_info_alter().
+*/
+function merci_line_item_ief_entity_info_alter(&$entity_info) {
+  $entity_info['merci_line_item']['inline entity form'] = array(
+    'controller' => 'MerciLineItemInlineEntityFormController'
+  );
+}
+
+/**
+ * Implements hook_field_widget_info_alter().
+ *
+ * A list of settings needed by Merci Line Item IEF module for widgets.
+ */
+function merci_line_item_ief_field_widget_info_alter(&$info) {
+
+  // Add option to show add_form by default.
+  $info['inline_entity_form']['settings']['merci_line_item_ief'] = 0;
+  $info['inline_entity_form']['settings']['merci_add_form_fields'] = array();
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function merci_line_item_ief_form_field_ui_field_edit_form_alter(&$form, $form_state) {
+  if (empty($form['#field']['locked']) && isset($form['#instance']['widget']['settings']['merci_line_item_ief']) && $form['#instance']['widget']['type'] == 'inline_entity_form') {
+    $form['instance']['widget']['settings']['merci_line_item_ief'] = array(
+      '#type' => 'select',
+      '#title' => t('Show add form by default?'),
+      '#options' => array(
+        0 => t('Do not apply'),
+        1 => t('Apply'),
+      ),
+      '#default_value' => $form['#instance']['widget']['settings']['merci_line_item_ief'],
+      '#empty_option' => t('No preference'),
+      '#empty_value' => '',
+    );
+    /*
+     * Allow option to select which fields are editable on the add form.
+     */
+    $options = array(
+      'default' => FALSE,
+      'deleted' => FALSE,
+      'language' => NULL,
+    );
+    $entity_type = $form['#field']['settings']['target_type'];
+    $bundle      = $form['#field']['settings']['handler_settings']['target_bundles'][$entity_type];
+    $instances = _field_invoke_get_instances($entity_type, $bundle, $options);
+    $form['instance']['widget']['settings']['merci_add_form_fields']['#tree'] = TRUE;
+    foreach ($instances as $field_name => $instance) {
+
+      $form['instance']['widget']['settings']['merci_add_form_fields'][$field_name] = array(
+        '#title' => $instance['label'],
+        '#type' => 'checkbox',
+        '#default_value' => isset($form['#instance']['widget']['settings']['merci_add_form_fields'][$field_name]) and $form['#instance']['widget']['settings']['merci_add_form_fields'][$field_name] == 1 ? TRUE : FALSE,
+      );
+    }
+  }
+}
+
+/*
+ * Alter inline_entity_form to show add_form by default.
+ */
+function merci_line_item_ief_field_widget_form_alter(&$element, &$form_state, $context) {
+
+  // Only alter the form if it's a inline_entity_form and the target type is a
+  // merci_line)_item entity.
+
+  if (isset($context['instance']['widget']['settings']['merci_line_item_ief']) and $context['instance']['widget']['settings']['merci_line_item_ief'] == 1 && $context['instance']['widget']['type'] == 'inline_entity_form') {
+    // Rebuild child elements.
+    $entities = $element['entities'];
+    unset($element['entities']);
+    unset($element['actions']);
+
+    // Determine the wrapper ID for the entire element.
+    $wrapper = 'inline-entity-form-' . $element['#ief_id'];
+    $element['add_form']['#type'] = 'fieldset';
+    $element['add_form']['save_merci_line_item'] = array(
+      '#type' => 'submit',
+      '#value' => !empty($line_item_type['add_form_submit_value']) ? $line_item_type['add_form_submit_value'] : t('Checkout new item'),
+      '#ajax' => array(
+        'callback' => 'inline_entity_form_get_element',
+        'wrapper' => $wrapper,
+      ),
+      '#weight' => 100,
+      '#submit' => array('merci_line_item_ief_entity_form_submit'),
+    );
+    $element['add_form']['#element_validate'] = array('merci_line_item_ief_entity_form_validate');
+    $element['add_form']['#ief_id'] = $element['#ief_id'];
+    $element['add_form']['#op'] = 'add';
+
+    // Build a parents array for this element's values in the form.
+    $parents = array_merge($element['#field_parents'], array($element['#field_name'], $element['#language']));
+    $element['add_form']['#parents'] = array_merge($parents, array('add_form'));
+    $context['entities'] = $entities;
+    $element['add_form'] += merci_line_item_ief_add_form($element['add_form'], $form_state, $context);
+    $element['add_form'][MERCI_RESOURCE_REFERENCE]['und'][0]['target_id']['#ajax'] = array(
+      'callback' => 'inline_entity_form_get_element',
+      'wrapper' => $wrapper,
+      'event' => 'submit',
+      'keypress' => TRUE,
+      'trigger_as' => array(
+        'name' => 'merci_line_item_reference][und][add_form][save_merci_line_item',
+      ),
+    );
+    $element['add_form']['#weight'] = -100;
+    $element['entities'] = $entities;
+
+
+  }
+}
+
+/*
+ * As add form shows by default remove required values as quite often the parent form will be submitted.
+ */
+function merci_line_item_ief_element_required(&$element, $required = FALSE) {
+
+  foreach (element_children($element) as $child) {
+    merci_line_item_ief_element_required($element[$child], $required);
+  }
+
+  if (array_key_exists('#required', $element)) {
+    $element['#required'] = $required;
+  }
+
+}
+
+function merci_line_item_ief_add_form($form, &$form_state, $context) {
+
+  $entity_type = 'merci_line_item';
+  $target_bundles = array_keys($context['field']['settings']['handler_settings']['target_bundles']);
+  $bundle = reset($target_bundles);
+
+  $default_values = array(
+    'type' => $bundle,
+  );
+
+  $entity = array_key_exists('#entity', $form) ? $form['#entity'] : entity_create($entity_type, $default_values);
+
+  // TODO refactor this.
+  $options = array(
+    'default' => FALSE,
+    'deleted' => FALSE,
+    'language' => NULL,
+  );
+  $instances = _field_invoke_get_instances($entity_type, $bundle, $options);
+
+  // Only display fields according to the 'add_form' display type.
+  foreach ($instances as $field_name => $instance) {
+    field_attach_form('merci_line_item', $entity, $form, $form_state, NULL, array('field_name' => $field_name));
+    if ($context['instance']['widget']['settings']['merci_add_form_fields'][$field_name] == 0) {
+      $form[$instance['field_name']]['#access'] = FALSE;
+    }
+  }
+
+  // Set required elements to false for the add form.
+  merci_line_item_ief_element_required($form);
+
+  $form['quantity'] = array(
+    '#type' => 'textfield',
+    '#datatype' => 'integer',
+    '#title' => t('Quantity'),
+    '#description' => t('The quantity of line items.'),
+    '#default_value' => (int) $entity->quantity,
+    '#size' => 4,
+    '#maxlength' => max(4, strlen($entity->quantity)),
+    '#required' => TRUE,
+    '#weight' => -5,
+    '#fieldset' => 'line_item_details',
+  );
+
+  // Set the default date to the last added checked out item.
+  $children = array_intersect_key($context['entities'], array_flip(element_children($context['entities'])));
+  if ($children) {
+    $child = array_pop($children);
+    $form[MERCI_CHECKOUT_DATES][$context['langcode']][0]['#default_value'] = $child['#entity']->{MERCI_CHECKOUT_DATES}[$context['langcode']][0];
+  }
+
+  drupal_add_css(drupal_get_path('module', 'merci_line_item_ief') . '/merci_line_item_ief.css');
+
+  return $form;
+}
+
+/**
+ * Validates an entity form.
+ *
+ * @param $entity_form
+ *  The form of the entity being managed inline.
+ * @param $form_state
+ *   The form state of the parent form.
+ */
+function merci_line_item_ief_entity_form_validate(&$entity_form, &$form_state) {
+  $parents = array_reverse($form_state['triggering_element']['#array_parents']);
+  if ($parents[0] == 'save_merci_line_item' or $parents[0] == 'target_id') {
+    $line_item_values = drupal_array_get_nested_value($form_state['values'], $entity_form['#parents']);
+    if (empty($line_item_values[MERCI_RESOURCE_REFERENCE]['und'][0]['target_id'])) {
+      $parents_path = implode('][', $entity_form[MERCI_RESOURCE_REFERENCE]['#parents']);
+      form_set_error($parents_path, 'Resource field required');
+      return;
+    }
+    $existing_parents = $entity_form['#parents'];
+    array_splice($existing_parents, -1);
+    
+    // Check to see if the same resource is being added at the same time is
+    // already added.
+    //
+    // If it is increment the number of resources reserved.  
+    // Conflict checking will be done later.
+    $existing_line_items = drupal_array_get_nested_value($form_state['complete form'], $existing_parents);
+    foreach (element_children($existing_line_items['entities']) as $key) {
+      $existing = $existing_line_items['entities'][$key]['#entity'];
+      if ($existing->{MERCI_CHECKOUT_DATES}['und'][0]['value'] == $line_item_values[MERCI_CHECKOUT_DATES]['und'][0]['value'] &&
+      $existing->{MERCI_CHECKOUT_DATES}['und'][0]['value2'] == $line_item_values[MERCI_CHECKOUT_DATES]['und'][0]['value2'] &&
+      $existing->{MERCI_RESOURCE_REFERENCE}['und'][0]['target_id'] == $line_item_values[MERCI_RESOURCE_REFERENCE]['und'][0]['target_id']) {
+        drupal_set_message("Dupe found adding resource to existing line item.");
+
+        $entity_form['#entity'] = clone $existing;
+        $entity_form['#entity']->quantity = $existing->quantity + $line_item_values['quantity'];
+        $entity_form['#ief_row_delta'] = $key;
+        drupal_array_set_nested_value($form_state['values'], $entity_form['#parents'], (array) $entity_form['#entity']);
+        unset($entity_form['#op']);
+      } 
+    }
+
+    $ief_id = $entity_form['#ief_id'];
+    $instance = $form_state['inline_entity_form'][$ief_id]['instance'];
+
+    // Instantiate the controller and validate the form.
+    $controller = inline_entity_form_get_controller($instance);
+    $errors = $controller->entityFormValidate($entity_form, $form_state);
+    if (form_get_errors()) {
+      $form_state['rebuild'] = TRUE;
+    }
+  }
+}
+
+/**
+ * Submits an entity form.
+ *
+ * Note that at this point the entity is not yet saved, since the user might
+ * still decide to cancel the parent form.
+ *
+ * @param $entity_form
+ *  The form of the entity being managed inline.
+ * @param $form_state
+ *   The form state of the parent form.
+ */
+function merci_line_item_ief_entity_form_submit($form, &$form_state) {
+  $parents = array_reverse($form_state['triggering_element']['#array_parents']);
+  if ($parents[0] == 'save_merci_line_item' or $parents[0] == 'target_id') {
+    $array_parents = $form_state['triggering_element']['#array_parents'];
+    $array_parents = array_slice($array_parents, 0, -1);
+    if (empty($errors)) {
+      // A specific entity form was submitted, process it and all of its children.
+      $entity_form = drupal_array_get_nested_value($form, $array_parents);
+
+
+      $ief_id = $entity_form['#ief_id'];
+      $instance = $form_state['inline_entity_form'][$ief_id]['instance'];
+      // Instantiate the controller and validate the form.
+      $controller = inline_entity_form_get_controller($instance);
+      $controller->entityFormSubmit($entity_form, $form_state);
+      inline_entity_form_cleanup_entity_form_state($entity_form, $form_state);
+
+      if ($entity_form['#op'] == 'add') {
+        // Determine the correct weight of the new element.
+        $weight = 0;
+        if (!empty($form_state['inline_entity_form'][$ief_id]['entities'])) {
+          $weight = max(array_keys($form_state['inline_entity_form'][$ief_id]['entities'])) + 1;
+        }
+        // Add the entity to form state, mark it for saving, and close the form.
+        $form_state['inline_entity_form'][$ief_id]['entities'][] = array(
+          'entity' => $entity_form['#entity'],
+          'weight' => $weight,
+          'form' => NULL,
+          'needs_save' => TRUE,
+        );
+      }
+      else {
+        $delta = $entity_form['#ief_row_delta'];
+        $form_state['inline_entity_form'][$ief_id]['entities'][$delta]['entity'] = $entity_form['#entity'];
+        $form_state['inline_entity_form'][$ief_id]['entities'][$delta]['needs_save'] = TRUE;
+      }
+      $entity_form = &drupal_array_get_nested_value($form_state['input'], $array_parents);
+      $entity_form = NULL;
+    }
+    $form_state['rebuild'] = TRUE;
+  }
+}
+
+
+/**
+ * Implements hook_field_widget_error().
+ */
+function merci_line_item_ief_field_widget_error($element, $error) {
+  form_error($element, $error['message']);
+}
+
