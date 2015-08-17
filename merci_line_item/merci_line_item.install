@@ -62,6 +62,12 @@ function merci_line_item_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'uid' => array(
+        'description' => 'The {users}.uid that owns this node; initially, this is the user that created it.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'data' => array(
         'type' => 'blob',
         'not null' => FALSE,
@@ -74,6 +80,13 @@ function merci_line_item_schema() {
     'indexes' => array(
       'entity_id' => array('entity_id'),
       'line_item_type' => array('type'),
+      'uid' => array('uid'),
+    ),
+    'foreign keys' => array(
+      'node_author' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
     ),
   );
 

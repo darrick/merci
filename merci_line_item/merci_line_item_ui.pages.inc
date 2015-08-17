@@ -7,16 +7,52 @@
  *   The entity_type object to edit or for a create form an empty entity_type object
  *     with only a entity_type type defined.
  */
-function merci_line_item_form($form, &$form_state, $entity) {
+function merci_line_item_form($form, &$form_state, $line_item) {
+
+  // Add custom css to prettify the form.
+  drupal_add_css(drupal_get_path('module', 'merci_line_item') . '/merci_line_item.css');
+
   $entity_type = $form_state['entity_type'];
-  $entity_info = $entity->entityInfo();
+  $entity_info = $line_item->entityInfo();
   $path = $entity_info['admin ui']['path'];
-  $form['#entity'] = $entity;
+  $form['#entity'] = $line_item;
+
+  $form['owner'] = array(
+    '#type' => 'textfield', 
+    '#access' => user_access('edit any merci_reservation entities'),
+    '#title' => t('Reservation for ...'), 
+    '#maxlength' => 60, 
+    '#autocomplete_path' => 'user/autocomplete', 
+    '#default_value' => !empty($line_item->owner) ? $line_item->owner : '', 
+    '#description' => t('Leave blank for %anonymous.', array('%anonymous' => variable_get('anonymous', t('Anonymous')))),
+  );
+
+  $form['quantity'] = array(
+    '#type' => 'textfield',
+    '#datatype' => 'integer',
+    '#title' => t('Quantity'),
+    '#description' => t('The quantity of the selected resource to reserve.'),
+    '#default_value' => (int) $line_item->quantity,
+    '#size' => 4,
+    '#maxlength' => max(4, strlen($line_item->quantity)),
+    '#required' => TRUE,
+  );
 
   // Add the field related form elements.
-  $form_state[$entity_type] = $entity;
-  field_attach_form($entity_type, $entity, $form, $form_state);
+  $form_state[$entity_type] = $line_item;
+  field_attach_form($entity_type, $line_item, $form, $form_state);
 
+  // Only show return date field if the checkout status warrents it.
+  $form_parents = array();
+  $parents = array_merge($form_parents, array(MERCI_CHECKOUT_STATUS, 'und'));
+  $head = array_shift($parents);
+  $field_path = implode('][', $parents);
+
+  $form[MERCI_RETURN_DATE]['#states'] = array(
+    'visible' => array(
+      ':input[name="' . $head . '[' . $field_path .  ']"]' => array('value' => 'returned'),
+    ),
+  );
   $form['actions'] = array(
     '#type' => 'container',
     '#attributes' => array('class' => array('form-actions')),
@@ -37,7 +73,7 @@ function merci_line_item_form($form, &$form_state, $entity) {
     '#submit' => $submit + array('merci_line_item_ui_form_submit'),
   );
 
-  if (!empty($entity->id)) {
+  if (!empty($line_item->id)) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
@@ -50,6 +86,8 @@ function merci_line_item_form($form, &$form_state, $entity) {
   // We append the validate handler to #validate in case a form callback_wrapper
   // is used to add validate handlers earlier.
   $form['#validate'][] = 'merci_line_item_ui_form_validate';
+
+  dpm($form);
 
   return $form;
 }
@@ -69,6 +107,16 @@ function merci_line_item_ui_form_validate(&$form, &$form_state) {
     return;
   }
 
+  // Return if any errors from validation.
+  if (form_get_errors()) {
+    return t('Form error');
+  }
+
+  // Allow other modules to validate.
+  foreach (module_implements('merci_line_item_validate') as $module) {
+    $function = $module . '_merci_line_item_validate';
+    $function($entity, $form, $form_state);
+  }
 }
 
 

@@ -14,6 +14,7 @@ class MerciLineItemController extends EntityAPIController {
    *   A new instance of the entity type.
    */
   public function create(array $values = array()) {
+    global $user;
     $values += array(
       'line_item_id' => NULL,
       'entity_id' => 0,
@@ -22,6 +23,7 @@ class MerciLineItemController extends EntityAPIController {
       'quantity' => 1,
       'created' => '',
       'changed' => '',
+      'owner' => $user->name,
       'data' => array(),
     );
     return parent::create($values);

@@ -29,6 +29,15 @@ define('MERCI_ACCESSORY_TAXONOMY', 'merci_accessory_taxonomy');
 define('MERCI_LINE_ITEM_TYPE_PATH', MERCI_ADMIN_CONFIG_PATH . '/merci-line_items');
 define('MERCI_LINE_ITEM_PATH', MERCI_LINE_ITEM_TYPE_PATH);
 
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function merci_line_item_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'entity_validator') {
+    return 'plugins/' . $plugin;
+  }
+}
+
 /*
  * Save the parent_id to the merci_line_item_id entity_id property.
  */
@@ -188,6 +197,12 @@ function merci_line_item_entity_property_info_alter(&$info) {
     'setter callback' => 'entity_property_verbatim_set',
     'required' => TRUE,
     'schema field' => 'line_item_label',
+  );
+  $properties['owner'] = array(
+    'label' => t('Owner'),
+    'description' => t('The owner of the reservation.'),
+    'type' => 'user',
+    'schema field' => 'uid',
   );
 
 }
