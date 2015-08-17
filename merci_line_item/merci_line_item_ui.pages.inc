@@ -16,6 +16,11 @@ function merci_line_item_form($form, &$form_state, $line_item) {
   $entity_info = $line_item->entityInfo();
   $path = $entity_info['admin ui']['path'];
   $form['#entity'] = $line_item;
+  $account = user_load($line_item->uid);
+
+  if (empty($line_item->owner)) {
+    $line_item->owner = !empty($account) ? $account->name : '';
+  }
 
   $form['owner'] = array(
     '#type' => 'textfield', 
@@ -87,8 +92,6 @@ function merci_line_item_form($form, &$form_state, $line_item) {
   // is used to add validate handlers earlier.
   $form['#validate'][] = 'merci_line_item_ui_form_validate';
 
-  dpm($form);
-
   return $form;
 }
 
@@ -99,23 +102,62 @@ function merci_line_item_ui_form_validate(&$form, &$form_state) {
   $entity_type = $form_state['entity_type'];
   $entity = $form_state[$entity_type];
   
+  $account = user_load_by_name($form_state['values']['owner']);
+  // Validate the "authored by" field.
+  if (!$account) {
+    // The use of empty() is mandatory in the context of usernames
+    // as the empty string denotes the anonymous user. In case we
+    // are dealing with an anonymous user we set the user ID to 0.
+    form_set_error('name', t('The username %name does not exist.', array('%name' => $form_state['values']['owner'])));
+  }
+
+  $entity->uid = $account->uid;
+
   // Notify field widgets to validate their data.
   field_attach_form_validate($entity_type, $entity, $form, $form_state);
+
 
   // Do no validation if their errors from the main validation function.
   if (form_get_errors()) {
     return;
   }
 
-  // Return if any errors from validation.
-  if (form_get_errors()) {
-    return t('Form error');
-  }
+  // Submit the attached fields.
+  try {
+    merci_line_item_validate($entity);
+  } catch ( MerciException $e) {
+    $parents_path = implode('][', $e->getParents());
+    $conflicts = $e->getData();
+    $quantity = $entity->quantity;
+    $line_item_wrapper = entity_metadata_wrapper($entity_type, $entity);
+    $resource  = $line_item_wrapper->{MERCI_RESOURCE_REFERENCE};
 
-  // Allow other modules to validate.
-  foreach (module_implements('merci_line_item_validate') as $module) {
-    $function = $module . '_merci_line_item_validate';
-    $function($entity, $form, $form_state);
+
+    // Display an error for not enough available items.
+    if (count($conflicts) < $quantity) {
+      $available = $quantity - count($conflicts);
+      form_set_error($parents_path, t('You reserved %count but only %available are available.',
+                      array('%count' => $quantity, '%available' => $available)));
+    } else {
+      // Display error showing conflicts.
+      $ids = array();
+      foreach ($conflicts as $conflict) {
+        foreach ($conflict as $item) {
+          $ids[] = $item->parent_id;
+        }
+      }
+
+      // Load the entities which hold the conflicting item.
+      $entities = entity_load($entity_type, $ids);
+
+      foreach ($entities as $id => $line_item) {
+        $entity_uri = entity_uri($entity_type, $line_item);
+        $entity_label = entity_label($entity_type, $line_item);
+        $line_items[] = l(t("@label", array('@label' => $entity_label)), $entity_uri['path']);
+      }
+
+      form_set_error($parents_path, t('%name is already checked out or reserved by: !orders', array('%name' => $resource->label(), '!orders' => implode(', ', $line_items))));
+    }
   }
 }
 

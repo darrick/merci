@@ -509,6 +509,16 @@ function merci_line_item_save($line_item) {
 }
 
 /**
+ * Validates a line item.
+ *
+ * @param $line_item
+ *   The full line item object to save.
+ *
+ */
+function merci_line_item_validate($line_item) {
+  return entity_get_controller('merci_line_item')->validate($line_item);
+}
+/**
  * Loads a line item by ID.
  */
 function merci_line_item_load($line_item_id) {

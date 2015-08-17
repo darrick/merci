@@ -28,4 +28,46 @@ class MerciLineItemController extends EntityAPIController {
     );
     return parent::create($values);
   }
+
+  public function validate($entity) {
+
+    $field_status = MERCI_CHECKOUT_STATUS;
+    $field_date   = MERCI_CHECKOUT_DATES;
+    $field_resource = MERCI_RESOURCE_REFERENCE;
+
+    $line_item_wrapper = entity_metadata_wrapper('merci_line_item', $entity);
+
+    // No conflict checking or returned, missing or broken items.
+    $status = $line_item_wrapper->{$field_status}->value();
+    if (!empty($status) and in_array($status, array('returned', 'missing', 'broken'))) {
+      return;
+    } 
+
+    // Check of conflicts.
+    $context = array(
+      'quantity_field' => 'quantity', 
+      'date_field' => $field_date, 
+      'item_field' => $field_resource, 
+      'status_field' => $field_status
+    );
+
+    $controller = merci_get_controller('non_inventory', $context);
+    $resource  = $line_item_wrapper->{$context['item_field']};
+
+    // Determine if the quantity field exists.  If so use it.
+    try {
+      $quantity = $resource->{$context['quantity_field']}->value();
+    } catch (EntityMetadataWrapperException $e) {
+      $quantity = 1;
+    }
+
+
+    // Returns array of $product_id => $line_item_id
+    $conflicts = $controller->conflicts($line_item_wrapper);
+
+    if (count($conflicts) + $line_item_wrapper->quantity->value() > $quantity) {
+      $parents = array(MERCI_RESOURCE_REFERENCE, 'und', 0, 'target_id');
+      throw new MerciException('MERCI conflict errors', $parents, 0, $conflicts); 
+    }
+  }
 }
