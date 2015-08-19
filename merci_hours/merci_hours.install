@@ -60,6 +60,7 @@ function merci_hours_uninstall() {
  * Implements hook_enable().
  */
 function merci_hours_enable() {
-  merci_core_create_field(MERCI_HOURS_FIELD, 'merci_hours', 'merci_hours');
+  $fields = merci_hours_merci_fields_info();
+  merci_core_create_field($fields[MERCI_HOURS_FIELD], 'merci_hours', 'merci_hours');
 }
 

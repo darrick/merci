@@ -13,6 +13,7 @@ define ('MERCI_DEFAULT_ALLOW_OVERNIGHT', TRUE);
 define('MERCI_RESTRICTIONS_TYPE_PATH', MERCI_ADMIN_CONFIG_PATH . '/merci-restrictions');
 define('MERCI_RESTRICTIONS_PATH', MERCI_RESTRICTIONS_TYPE_PATH);
 
+
 function merci_restrictions_field_widget_form_alter(&$element, &$form_state, $context) {
   // Add a css class to widget form elements for all fields of type mytype.
   if ($context['field']['field_name'] == MERCI_OVERRIDE_RESTRICTIONS) {
@@ -290,3 +291,4 @@ function merci_restrictions_merci_fields_info() {
   }
   return $fields;
 }
+

@@ -43,11 +43,6 @@ class MerciDefaultController {
     $result = $query->execute();
     $conflicts = array();
     foreach ($result as $record){
-      /*
-      if (!array_key_exists($record->item_id, $conflicts)) {
-        $conflicts[$record->item_id] = array();
-      } 
-       */
       $conflicts[] = $record;
     }
     return $conflicts;
@@ -200,16 +195,6 @@ class MerciDefaultController_non_inventory extends MerciDefaultController {
     $this->date_column  = $date_column        = $date_storage[$date_table]['value'];
     $this->date_column2 = $date_column2       = $date_storage[$date_table]['value2'];
 
-    // Add ourselves to the list of reservations.
-    /*
-    $line_item = new StdClass;
-    $line_item->{$date_column} = $dates['value'];
-    $line_item->{$date_column2} = $dates['value2'];
-    $line_item->parent_id = 0;
-    $line_item->quantity = $entity->quantity->value();
-
-    $reservations[] = $line_item;
-    */
     // Split reservations based on quantity. 
     $reservations = array();
     foreach(parent::conflicts($entity) as $reservation) {

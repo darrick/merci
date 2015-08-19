@@ -52,8 +52,11 @@ function merci_restrictions_uninstall() {
  * Implements hook_enable().
  */
 function merci_restrictions_enable() {
-  merci_core_create_field(MERCI_ALLOWED_ROLES, 'merci_restrictions', 'merci_restrictions');
-  merci_core_create_field(MERCI_CHECKOUT_MAX_LENGTH, 'merci_restrictions', 'merci_restrictions');
-  merci_core_create_field(MERCI_CHECKOUT_OFFSITE, 'merci_restrictions', 'merci_restrictions');
+  $fields = merci_permissions_merci_fields_info();
+  merci_core_create_field($fields[MERCI_ALLOWED_ROLES], 'merci_restrictions', 'merci_restrictions');
+  $fields = merci_restrictions_merci_fields_info();
+  foreach (array(MERCI_CHECKOUT_MAX_LENGTH, MERCI_CHECKOUT_OFFSITE) as $field_name) {
+    merci_core_create_field($fields[$field_name], 'merci_restrictions', 'merci_restrictions');
+  }
 }
 

@@ -122,7 +122,7 @@ function merci_line_item_ui_form_validate(&$form, &$form_state) {
     return;
   }
 
-  // Submit the attached fields.
+  // Determine if they are any conflicts. 
   try {
     merci_line_item_validate($entity);
   } catch ( MerciException $e) {
@@ -131,7 +131,6 @@ function merci_line_item_ui_form_validate(&$form, &$form_state) {
     $quantity = $entity->quantity;
     $line_item_wrapper = entity_metadata_wrapper($entity_type, $entity);
     $resource  = $line_item_wrapper->{MERCI_RESOURCE_REFERENCE};
-
 
     // Display an error for not enough available items.
     if (count($conflicts) < $quantity) {

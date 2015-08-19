@@ -4,4 +4,7 @@ package = MERCI
 core = 7.x
 version = 7.x-3.0
 
+; Tests
+files[] = tests/merci_base.test
+
 files[] = includes/MerciException.php

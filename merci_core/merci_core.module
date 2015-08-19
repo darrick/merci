@@ -172,8 +172,17 @@ function merci_core_merci_core_line_item_summary_link_info_alter(&$links) {
  * @param $bundle
  *   The bundle name.
  */
-function merci_core_create_field($field_name, $entity_type, $bundle) {
-  if ($merci_field = merci_core_fields_info($field_name)) {
+function merci_core_create_field($field, $entity_type, $bundle) {
+  if (is_string($field)) {
+    $field_name = $field;
+    $merci_field = merci_core_fields_info($field_name);
+  } elseif (is_array($field)) {
+    $merci_field = $field;
+    $field_name = $field['field']['field_name'];
+  } else {
+    return;
+  }
+  if ($merci_field) {
     $field = field_info_field($field_name);
     if (empty($field)) {
       $field = field_create_field($merci_field['field']);
