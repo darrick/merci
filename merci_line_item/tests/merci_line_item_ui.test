@@ -57,7 +57,6 @@ class MerciLineItemUITest extends MerciBaseTestCase {
       MERCI_CHECKOUT_DATES . '[und][0][value2][date]' => date('m/d/Y'),
       MERCI_CHECKOUT_DATES . '[und][0][value2][time]' => '12:00pm',
       MERCI_RESOURCE_REFERENCE . '[und][0][target_id]' => 'Product One (' . $this->resource->product_id . ')',
-      MERCI_CHECKOUT_STATUS . '[und]' => 'reserved',
     );
 
     // Create the base line_item for the rest of tests. Assign it to the normal
@@ -82,7 +81,6 @@ class MerciLineItemUITest extends MerciBaseTestCase {
       MERCI_CHECKOUT_DATES . '[und][0][value2][date]' => date('m/d/Y'),
       MERCI_CHECKOUT_DATES . '[und][0][value2][time]' => '12:00pm',
       MERCI_RESOURCE_REFERENCE . '[und][0][target_id]' => 'Product One (' . $this->resource->product_id . ')',
-      MERCI_CHECKOUT_STATUS . '[und]' => 'reserved',
     );
 
     // Create the base line_item for the rest of tests. Assign it to the normal
@@ -99,7 +97,6 @@ class MerciLineItemUITest extends MerciBaseTestCase {
       MERCI_CHECKOUT_DATES . '[und][0][value2][date]' => date('m/d/Y'),
       MERCI_CHECKOUT_DATES . '[und][0][value2][time]' => '2:00pm',
       MERCI_RESOURCE_REFERENCE . '[und][0][target_id]' => 'Product One (' . $this->resource->product_id . ')',
-      MERCI_CHECKOUT_STATUS . '[und]' => 'reserved',
     );
 
     // Create the base line_item for the rest of tests. Assign it to the normal

@@ -56,13 +56,6 @@ class MerciDefaultController {
     $exclude_id   = $this->entity->getIdentifier();
     $entity_type  = $this->entity->type();
 
-    // Storage location for status field.
-    $status_field_info  = field_info_field($context['status_field']);
-    $status_storage     = $status_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
-    $keys               = array_keys($status_storage);
-    $status_table       = reset($keys);
-    $status_column      = $status_storage[$status_table]['value'];
-
     // Storage location for date field.
     $date_field_info    = field_info_field($context['date_field']);
     $date_storage       = $date_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
@@ -93,6 +86,7 @@ class MerciDefaultController {
 
     $query->join('merci_line_item', 'merci_line_item', 'item_table.entity_id = merci_line_item.line_item_id');
     $query->addField('merci_line_item', 'quantity', 'quantity');
+    $query->condition('merci_line_item.status', 1, '=');
     /*
     $query->join($quantity_table, 'quantity_table', 'quantity_table.entity_id = quantity_table.entity_id');
     $query->addField('quantity_table', $quantity_column);//, MERCI_DATE_FIELD_ALIAS);
@@ -104,10 +98,6 @@ class MerciDefaultController {
     $query->condition('date_table.entity_type',$entity_type,'=');
     $query->condition('date_table.deleted' , 0, '=');
 
-    $query->join($status_table, 'status_table', 'item_table.entity_id = status_table.entity_id');
-    $query->condition($status_column, array('reserved', 'checked out'), 'IN');
-    $query->condition('status_table.entity_type',$entity_type,'=');
-    $query->condition('status_table.deleted' , 0, '=');
     $query->condition( db_or()
       //  start falls within another reservation.
       //                     |-------------this-------------|

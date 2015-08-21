@@ -68,6 +68,12 @@ function merci_line_item_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'status' => array(
+        'description' => 'Boolean indicating whether the item will conflict.', 
+        'type' => 'int', 
+        'not null' => TRUE, 
+        'default' => 1,
+      ),
       'data' => array(
         'type' => 'blob',
         'not null' => FALSE,
@@ -197,4 +203,37 @@ function merci_line_item_uninstall() {
    */
 }
 
+function merci_line_item_update_7301() {
+  db_add_field('merci_line_item', 'uid', 
+    array(
+      'description' => 'Boolean indicating whether the item will conflict.',
+      'type' => 'int',
+      'not null' => TRUE,
+      'default' => 0,
+    ),
+    array(
+      'indexes' => array(
+        'uid' => array('uid'),
+      ),
+      'foreign keys' => array(
+        'node_author' => array(
+          'table' => 'users',
+          'columns' => array('uid' => 'uid'),
+        ),
+      ),
+    )
+  );
+
+}
+
+function merci_line_item_update_7302() {
+  db_add_field('merci_line_item', 'status', array(
+    'description' => 'Boolean indicating whether the item will conflict.',
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 1,
+    'initial' => 1,
+  ));
+
+}
 

@@ -25,6 +25,7 @@ class MerciLineItemController extends EntityAPIController {
       'changed' => '',
       'owner' => $user->name,
       'uid' => $user->uid,
+      'status' => 1,
       'data' => array(),
     );
     return parent::create($values);
@@ -32,24 +33,21 @@ class MerciLineItemController extends EntityAPIController {
 
   public function validate($entity) {
 
-    $field_status = MERCI_CHECKOUT_STATUS;
     $field_date   = MERCI_CHECKOUT_DATES;
     $field_resource = MERCI_RESOURCE_REFERENCE;
 
     $line_item_wrapper = entity_metadata_wrapper('merci_line_item', $entity);
 
     // No conflict checking or returned, missing or broken items.
-    $status = $line_item_wrapper->{$field_status}->value();
-    if (!empty($status) and in_array($status, array('returned', 'missing', 'broken'))) {
+    if (empty($entity->status)) {
       return;
-    } 
+    }
 
     // Check of conflicts.
     $context = array(
-      'quantity_field' => 'quantity', 
-      'date_field' => $field_date, 
-      'item_field' => $field_resource, 
-      'status_field' => $field_status
+      'quantity_field' => 'quantity',
+      'date_field' => $field_date,
+      'item_field' => $field_resource,
     );
 
     $controller = merci_get_controller('non_inventory', $context);
@@ -68,7 +66,7 @@ class MerciLineItemController extends EntityAPIController {
 
     if (count($conflicts) + $line_item_wrapper->quantity->value() > $quantity) {
       $parents = array(MERCI_RESOURCE_REFERENCE, 'und', 0, 'target_id');
-      throw new MerciException('MERCI conflict errors', $parents, 0, $conflicts); 
+      throw new MerciException('MERCI conflict errors', $parents, 0, $conflicts);
     }
   }
 }
