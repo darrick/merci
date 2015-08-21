@@ -1,0 +1,112 @@
+<?php
+
+/**
+ * @file
+ * Functional tests for the merci_line_item UI module.
+ */
+
+/**
+ * Functional tests for the merci_line_item UI module.
+ */
+class MerciLineItemUITest extends MerciBaseTestCase {
+
+  /**
+   * Dummy resource for adding to the line_items.
+   */
+  protected $resource;
+
+  /**
+   * Line Items created and manipulated in the process.
+   */
+  protected $line_items = array();
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Merci Line Item UI',
+      'description' => 'Test creating, editing and deleting a MERCI line item through the user interface.',
+      'group' => 'Drupal Merci',
+    );
+  }
+
+  /**
+   * Implementation of setUp().
+   */
+  function setUp() {
+    $modules = parent::setUpHelper('all');
+    parent::setUp($modules);
+
+    // User creation for different operations.
+    $this->merci_admin = $this->createMerciAdmin();
+    $this->merci_customer = $this->createMerciCustomer();
+
+    // Create dummy resources.
+    $this->resource = $this->createDummyProduct('PROD-01', 'Product One');
+
+    // Log in as store customer.
+    $this->drupalLogin($this->merci_customer);
+
+    // Navigate to the merci line item add page.
+    $this->drupalGet('merci_line_item/add/merci_line_item');
+
+    $edit = array(
+      MERCI_CHECKOUT_DATES . '[und][0][value][date]' => date('m/d/Y'),
+      MERCI_CHECKOUT_DATES . '[und][0][value][time]' => '11:00am',
+      MERCI_CHECKOUT_DATES . '[und][0][value2][date]' => date('m/d/Y'),
+      MERCI_CHECKOUT_DATES . '[und][0][value2][time]' => '12:00pm',
+      MERCI_RESOURCE_REFERENCE . '[und][0][target_id]' => 'Product One (' . $this->resource->product_id . ')',
+      MERCI_CHECKOUT_STATUS . '[und]' => 'reserved',
+    );
+
+    // Create the base line_item for the rest of tests. Assign it to the normal
+    // user.
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+  }
+
+  /**
+   * Test general edit form fields of an order.
+   */
+  public function testMerciLineItemUIConflict() {
+    // Log in as store customer.
+    $this->drupalLogin($this->merci_customer);
+
+    // Navigate to the merci line item add page.
+    $this->drupalGet('merci_line_item/add/merci_line_item');
+
+    $edit = array(
+      MERCI_CHECKOUT_DATES . '[und][0][value][date]' => date('m/d/Y'),
+      MERCI_CHECKOUT_DATES . '[und][0][value][time]' => '11:00am',
+      MERCI_CHECKOUT_DATES . '[und][0][value2][date]' => date('m/d/Y'),
+      MERCI_CHECKOUT_DATES . '[und][0][value2][time]' => '12:00pm',
+      MERCI_RESOURCE_REFERENCE . '[und][0][target_id]' => 'Product One (' . $this->resource->product_id . ')',
+      MERCI_CHECKOUT_STATUS . '[und]' => 'reserved',
+    );
+
+    // Create the base line_item for the rest of tests. Assign it to the normal
+    // user.
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t("Product One is already checked out or reserved by"));
+
+    // Navigate to the merci line item add page.
+    $this->drupalGet('merci_line_item/add/merci_line_item');
+
+    $edit = array(
+      MERCI_CHECKOUT_DATES . '[und][0][value][date]' => date('m/d/Y'),
+      MERCI_CHECKOUT_DATES . '[und][0][value][time]' => '1:00pm',
+      MERCI_CHECKOUT_DATES . '[und][0][value2][date]' => date('m/d/Y'),
+      MERCI_CHECKOUT_DATES . '[und][0][value2][time]' => '2:00pm',
+      MERCI_RESOURCE_REFERENCE . '[und][0][target_id]' => 'Product One (' . $this->resource->product_id . ')',
+      MERCI_CHECKOUT_STATUS . '[und]' => 'reserved',
+    );
+
+    // Create the base line_item for the rest of tests. Assign it to the normal
+    // user.
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t("Line item saved."));
+  }
+
+
+}

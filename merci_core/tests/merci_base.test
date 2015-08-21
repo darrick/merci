@@ -125,7 +125,7 @@ abstract class MerciBaseTestCase extends DrupalWebTestCase {
     $merci_admin = array(
       'access administration pages',
       'administer MERCI',
-      'administer all merci hours',
+      //'administer all merci hours',
       'administer merci line item types',
       'administer merci line items',
       'administer merci_reservation types',
@@ -142,6 +142,7 @@ abstract class MerciBaseTestCase extends DrupalWebTestCase {
     );
     $merci_operator = array(
       'administer merci line items',
+      'create any merci line item',
       'override merci permissions',
       'create merci_reservation entities',
       'view merci_reservation entities',
@@ -154,6 +155,7 @@ abstract class MerciBaseTestCase extends DrupalWebTestCase {
       'view merci_reservation entities',
       'edit own merci_reservation entities',
       'view any commerce_product entity',
+      'create own merci line item',
     );
 
     $final_permissions = array();

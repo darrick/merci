@@ -7,3 +7,5 @@ configure = admin/merci/config/line-items
 
 ; Views handlers
 files[] = includes/views/handlers/merci_line_item_ui_handler_field_operations.inc
+
+files[] = tests/merci_line_item_ui.test

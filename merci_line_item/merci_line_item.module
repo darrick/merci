@@ -397,6 +397,24 @@ function merci_line_item_permission() {
       'description' => t('Update and delete any line item on the site.'),
       'restrict access' => TRUE,
     ),
+    'create own merci line item' => array(
+      'title' => t('Create own MERCI line item'),
+      'description' => t('View and configure fields attached to module defined line item types.'),
+    ),
+    'create any merci line item' => array(
+      'title' => t('Create any MERCI line item'),
+      'description' => t('Update and delete any line item on the site.'),
+      'restrict access' => TRUE,
+    ),
+    'view own merci line item' => array(
+      'title' => t('View own MERCI line item'),
+      'description' => t('View and configure fields attached to module defined line item types.'),
+    ),
+    'view any merci line item' => array(
+      'title' => t('View any MERCI line item'),
+      'description' => t('Update and delete any line item on the site.'),
+      'restrict access' => TRUE,
+    ),
   );
 
   return $permissions;
@@ -460,7 +478,15 @@ function merci_line_item_access($op, $line_item, $account = NULL) {
   $account = isset($account) ? $account : clone($user);
 
   // If the user has the administration permission, return TRUE now.
-  if (user_access('administer merci line items', $account)) {
+  if (user_access('create any merci line item', $account) or user_access('administer merci line items', $account)) {
+    return TRUE;
+  }
+
+  if (user_access('create any merci line item', $account)) {
+    return TRUE;
+  }
+
+  if (user_access('create own merci line item', $account)) {
     return TRUE;
   }
 
