@@ -114,8 +114,8 @@ function merci_line_item_fields() {
           'merci_resource' => 'merci_resource',
         ),
       ),
-      'target_type' => 'commerce_product',
        */
+      'target_type' => 'commerce_product',
     ),
     'translatable' => 0,
     'type' => 'entityreference',

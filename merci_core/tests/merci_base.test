@@ -53,7 +53,7 @@ abstract class MerciBaseTestCase extends DrupalWebTestCase {
     $api = array(
       'merci_core',
       'merci_line_item',
-      'merci_hours',
+      //'merci_hours',
     );
     $ui = array(
       'merci_line_item_ui',
@@ -146,12 +146,14 @@ abstract class MerciBaseTestCase extends DrupalWebTestCase {
       'create merci_reservation entities',
       'view merci_reservation entities',
       'edit any merci_reservation entities',
+      'view any commerce_product entity',
 
     );
     $merci_customer = array(
       'create merci_reservation entities',
       'view merci_reservation entities',
       'edit own merci_reservation entities',
+      'view any commerce_product entity',
     );
 
     $final_permissions = array();
@@ -267,7 +269,7 @@ abstract class MerciBaseTestCase extends DrupalWebTestCase {
    *  A product type with most of it's basic fields set random values.
    *  FALSE if the appropiate modules were not available.
    */
-  public function createDummyProduct($sku = '', $title = '', $amount = -1, $currency_code = 'USD', $uid = 1, $type_given = 'product') {
+  public function createDummyProduct($sku = '', $title = '', $amount = -1, $currency_code = 'USD', $uid = 1, $type_given = 'merci_resource') {
     if (module_exists('commerce_product')) {
       $new_product = commerce_product_new($type_given);
       $new_product->sku = empty($sku) ? $this->randomName(10) : $sku;
@@ -276,6 +278,8 @@ abstract class MerciBaseTestCase extends DrupalWebTestCase {
 
       $new_product->commerce_price[LANGUAGE_NONE][0]['amount'] = ($amount < 0) ? rand(2, 500) : $amount;
       $new_product->commerce_price[LANGUAGE_NONE][0]['currency_code'] = 'USD';
+
+      $new_product->field_quantity[LANGUAGE_NONE][0]['value'] = '1';
 
       commerce_product_save($new_product);
 
@@ -332,6 +336,57 @@ abstract class MerciBaseTestCase extends DrupalWebTestCase {
     }
 
     return $content_type;
+  }
+
+  /**
+   * Create a dummy order in a given status.
+   *
+   * @param $uid
+   * 	 ID of the user that owns the order.
+   * @param $products
+   *  	Array of products that are going to be added to the order: keys are
+   *    product ids, values are the quantity of products to add.
+   * @param $status
+   * 	 Status of the order
+   *
+   * @return
+   *   A commerce order object in the given status.
+   */
+  public function createDummyLineItem($uid = 1, $products = array(), $dates = array()) {
+    // If there aren't any products to add to the order, create one.
+    if (empty($products)) {
+      $product = $this->createDummyProduct('PROD-01', 'Product One', -1, 'USD', $uid);
+      $products[$product->product_id] = rand(1,10);
+    }
+
+    if (empty($dates)) {
+      $dates = array(
+        'value' => date('Y-m-d H:i:s'),
+        'value2' => date('Y-m-d H:i:s', time() + 3600),
+        'timezone' => 'America/Los Angeles',
+        'timezone_db' => 'UTC',
+        'data_type' => 'datetime',
+      );
+    }
+
+
+    $default_values = array(
+      'type' => 'merci_line_item',
+    );
+
+    $line_item = entity_create('merci_line_item', $default_values);
+
+    $wrapper = entity_metadata_wrapper('merci_line_item', $line_item);
+
+    // TODO support for multiple products.
+    reset($products);
+    $wrapper->{MERCI_RESOURCE_REFERENCE}->set(key($products));
+    $wrapper->{MERCI_CHECKOUT_DATES}->set($dates);
+
+    $wrapper->save();
+
+    $this->verbose(print_r($wrapper->value(), TRUE));
+    return $wrapper->value();
   }
 
   /**
@@ -625,6 +680,16 @@ class MerciSandboxTestCase extends MerciBaseTestCase {
    * Sandbox for test development
    */
   public function testTestTest() {
+    $operator_user = $this->createMerciOperator(array('access checkout'));
+    $this->drupalLogin($operator_user);
+
+    $sku = 'PROD-01';
+    $product_name = 'Product One';
+    $product = $this->createDummyProduct($sku, $product_name);
+    $line_item = $this->createDummyLineItem($operator_user->uid, array($product->product_id => 1));
+
+    $this->drupalGet("merci_line_item/{$line_item->line_item_id}/edit");
+    $this->assertFieldById('edit-merci-resource-reference-und-0-target-id', $product_name . ' (' . $product->product_id . ')', t('When editing the product in the administration interface, the SKU is informed correctly'));
 
   }
 }
@@ -735,7 +800,7 @@ class MerciBaseTesterTestCase extends MerciBaseTestCase {
   /**
    * Make a test product.
    */
-  public function testTestCreateDummyProduct() {
+  public function _testTestCreateDummyProduct() {
     // Create the product.
     $product = $this->createDummyProduct();
 
@@ -754,7 +819,7 @@ class MerciBaseTesterTestCase extends MerciBaseTestCase {
    * Test the creation of a product_display content type and add a product
    * reference field to the content type.
    */
-  public function testTestCreateDummyProductDisplayAndRefField() {
+  public function _testTestCreateDummyProductDisplayAndRefField() {
     $this->createDummyProductDisplayContentType();
 
     $this->drupalLogin($this->site_admin);
@@ -772,7 +837,7 @@ class MerciBaseTesterTestCase extends MerciBaseTestCase {
   /**
    * Test the createDummyProductNode function.
    */
-  public function testTestCreateDummyProductNode() {
+  public function _testTestCreateDummyProductNode() {
     // Create a dummy product display content type
     $this->createDummyProductDisplayContentType();
 
@@ -791,7 +856,7 @@ class MerciBaseTesterTestCase extends MerciBaseTestCase {
   /**
    * Test the createDummyProductNodeBatch function.
    */
-  public function testTestCreateDummyProductNodeBatch() {
+  public function _testTestCreateDummyProductNodeBatch() {
     $product_nodes = $this->createDummyProductNodeBatch(3);
     $this->drupalLogin($this->site_admin);
     $product_node = $product_nodes[1];
@@ -802,21 +867,17 @@ class MerciBaseTesterTestCase extends MerciBaseTestCase {
   /**
    * Test the createDummyReservation function.
    */
-  public function _testTestCreateDummyReservation() {
-    return;
-    $normal_user = $this->drupalCreateUser(array('access checkout'));
-    $this->drupalLogin($normal_user);
+  public function testTestCreateDummyLineItem() {
+    $operator_user = $this->createMerciOperator(array('access checkout'));
+    $this->drupalLogin($operator_user);
 
     $sku = 'PROD-01';
     $product_name = 'Product One';
     $product = $this->createDummyProduct($sku, $product_name);
-    $order = $this->createDummyReservation($normal_user->uid, array($product->product_id => 1));
+    $line_item = $this->createDummyLineItem($operator_user->uid, array($product->product_id => 1));
 
-    // Check if the order is in cart status.
-    $this->assertTrue(commerce_cart_order_is_cart($order), t('Order is in a shopping cart status'));
-    $this->drupalGet('checkout');
+    $this->drupalGet("merci_line_items/{$line_item->line_item_id}/edit");
+    $this->assertFieldById('edit-merci-resource-reference-und-0-target-id', $product_name . ' (' . $product->id . ')', t('When editing the product in the administration interface, the SKU is informed correctly'));
 
-    $this->assertTitle(t('Checkout'). ' | Drupal', t('Checkout accessible for the order'));
-    $this->assertText($product_name, t('Product is added to the order'));
   }
 }

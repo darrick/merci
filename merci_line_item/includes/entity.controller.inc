@@ -24,6 +24,7 @@ class MerciLineItemController extends EntityAPIController {
       'created' => '',
       'changed' => '',
       'owner' => $user->name,
+      'uid' => $user->uid,
       'data' => array(),
     );
     return parent::create($values);
