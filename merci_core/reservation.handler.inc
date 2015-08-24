@@ -13,21 +13,57 @@
  */
 class MerciDefaultController {
 
-  protected $item_type, $entity, $context;
+  protected $dates, $date_table, $date_column, $date_column2, $item_table, $item_column, $items, $item_type, $entity, $context;
 
-  public static function getInstance($item_type, $context) {
+  public static function getInstance($entity, $item_type, $context) {
 
     if (class_exists($class_name = 'MerciDefaultController_' . $item_type)) {
-      return new $class_name($item_type, $context);
+      return new $class_name($entity, $item_type, $context);
     }
     else {
-      return new MerciDefaultController($item_type, $context);
+      return new MerciDefaultController($entity, $item_type, $context);
     }
   }
 
-  public function __construct($item_type, $context) {
+  public function __construct($entity, $item_type, $context) {
     $this->context = $context;
     $this->item_type  = $item_type;
+    $this->entity       = $entity;
+
+    $this->items = array();
+    // Determine if dealing with multiple values.
+    if (substr($entity->{$context['item_field']}->type(), 0, 5) == 'list<') {
+      foreach ($entity->{$context['item_field']}->getIterator() as $delta => $item) {
+        $this->items[$delta] = $item->getIdentifier();
+      }
+    } else {
+      $this->items[0] = $entity->{$context['item_field']}->getIdentifier();
+    }
+
+    if (substr($entity->{$context['date_field']}->type(), 0, 5) == 'list<') {
+      foreach ($entity->{$context['date_field']}->getIterator() as $delta => $item) {
+        $this->dates[$delta] = $item->value();
+      }
+    } else {
+      $this->dates[0] = $entity->{$context['date_field']}->value();
+    }
+
+    // Storage location for date field.
+    $date_field_info    = field_info_field($context['date_field']);
+    $date_storage       = $date_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
+    $keys               = array_keys($date_storage);
+    $this->date_table         = reset($keys);
+    $this->date_column        = $date_storage[$this->date_table]['value'];
+    $this->date_column2       = $date_storage[$this->date_table]['value2'];
+
+    // Storage location for item field.
+    $item_field_info    = field_info_field($context['item_field']);
+    $item_storage       = $item_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
+    $keys               = array_keys($item_storage);
+    $this->item_table         = reset($keys);
+    $keys               = array_keys($item_field_info['indexes']);
+    $item_key           = reset($keys);
+    $this->item_column        = $item_storage[$this->item_table][$item_key];
   }
 
   /*
@@ -36,49 +72,51 @@ class MerciDefaultController {
    * Returns array of conflicting line items.
    */
 
-  public function conflicts($entity) {
-    $this->entity       = $entity;
-    $query = $this->buildConflictQuery();
-
-    $result = $query->execute();
+  public function conflicts() {
     $conflicts = array();
-    foreach ($result as $record){
-      $conflicts[] = $record;
+    foreach ($this->dates as $dates) {
+      $query = $this->buildConflictQuery($dates);
+
+      $result = $query->execute();
+      foreach ($result as $record){
+        if (!isset($conflicts[$record->item_id])) {
+          $conflicts[$record->item_id] = array();
+        }
+        $conflicts[$record->item_id][] = $record;
+      }
+
     }
-    return $conflicts;
+    $return = array();
+    foreach ($this->items as $delta => $item_id) {
+      if (isset($conflicts[$item_id])) {
+        $return[$delta] = $conflicts[$item_id];
+      }
+    }
+    return $return;
   }
 
-  protected function buildConflictQuery() {
+  protected function buildConflictQuery($dates) {
     $context = $this->context;
 
-    $dates        = $this->entity->{$context['date_field']}->value();
-    $item_id      = $this->entity->{$context['item_field']}->raw();
     $exclude_id   = $this->entity->getIdentifier();
     $entity_type  = $this->entity->type();
+    $item_table   = $this->item_table;
+    $item_column  = $this->item_column;
+    $date_table   = $this->date_table;
+    $date_column  = $this->date_column;
+    $date_column2 = $this->date_column2;
 
-    // Storage location for date field.
-    $date_field_info    = field_info_field($context['date_field']);
-    $date_storage       = $date_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
-    $keys               = array_keys($date_storage);
-    $date_table         = reset($keys);
-    $date_column        = $date_storage[$date_table]['value'];
-    $date_column2       = $date_storage[$date_table]['value2'];
-
-    // Storage location for item field.
-    $item_field_info    = field_info_field($context['item_field']);
-    $item_storage       = $item_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
-    $keys               = array_keys($item_storage);
-    $item_table         = reset($keys);
-    $keys               = array_keys($item_field_info['indexes']);
-    $item_key           = reset($keys);
-    $item_column        = $item_storage[$item_table][$item_key];
 
     // Build the query.
     $query = db_select($item_table, 'item_table');
     $query->addField('item_table', $item_column, 'item_id');
     $query->addField('item_table', 'entity_id', 'parent_id');
 
-    $query->condition($item_column, $item_id);
+    if (count($this->items) == 1) {
+      $query->condition($item_column, reset($this->items));
+    } else {
+      $query->condition($item_column, $this->items, 'IN');
+    }
     // Ignore myself.
     if ($exclude_id) {
       $query->condition('item_table.entity_id', $exclude_id, '!=');
@@ -87,10 +125,6 @@ class MerciDefaultController {
     $query->join('merci_line_item', 'merci_line_item', 'item_table.entity_id = merci_line_item.line_item_id');
     $query->addField('merci_line_item', 'quantity', 'quantity');
     $query->condition('merci_line_item.status', 1, '=');
-    /*
-    $query->join($quantity_table, 'quantity_table', 'quantity_table.entity_id = quantity_table.entity_id');
-    $query->addField('quantity_table', $quantity_column);//, MERCI_DATE_FIELD_ALIAS);
-    */
 
     $query->join($date_table, 'date_table', 'item_table.entity_id = date_table.entity_id');
     $query->addField('date_table', $date_column);//, MERCI_DATE_FIELD_ALIAS);
@@ -98,28 +132,30 @@ class MerciDefaultController {
     $query->condition('date_table.entity_type',$entity_type,'=');
     $query->condition('date_table.deleted' , 0, '=');
 
-    $query->condition( db_or()
+    // TODO handled multiple dates.
+    $query->condition(
+      db_or()
       //  start falls within another reservation.
       //                     |-------------this-------------|
       //            |-------------conflict-------------------------|
       //            OR
       //                     |-------------this-------------------------------|
       //            |-------------conflict-------------------------|
-      ->condition(db_and() 
-        ->condition($date_column, $dates['value'], '<=')->condition($date_column2, $dates['value'], '>=')
+      ->condition(
+        db_and()->condition($date_column, $dates['value'], '<=')->condition($date_column2, $dates['value'], '>=')
       )
       //  end falls within another reservation.
       //                     |-------------this-------------------------------|
       //                                   |-------------conflict-------------------------|
-      ->condition(db_and() 
-        ->condition($date_column, $dates['value2'], '<=')->condition($date_column2, $dates['value2'], '>=')
+      ->condition(
+        db_and()->condition($date_column, $dates['value2'], '<=')->condition($date_column2, $dates['value2'], '>=')
       )
       //  start before another reservation.
       //  end after another reservation.
       //                     |-------------------------this-------------------------------|
       //                            |----------------conflict------------------|
-      ->condition(db_and()
-        ->condition($date_column, $dates['value'], '>')->condition($date_column2, $dates['value2'], '<')
+      ->condition(
+        db_and()->condition($date_column, $dates['value'], '>')->condition($date_column2, $dates['value2'], '<')
       )
     );
 
@@ -140,8 +176,8 @@ class MerciDefaultController_non_inventory extends MerciDefaultController {
 
   protected $date_column, $date_column2;
 
-  public function conflicts($entity) {
-    return $this->bestFit($entity);
+  public function conflicts() {
+    return $this->bestFit();
   }
 
   public function quantity_available($entity) {
@@ -162,8 +198,9 @@ class MerciDefaultController_non_inventory extends MerciDefaultController {
     return $reservations;
   }
 
-  public function bestFit($entity) {
+  public function bestFit() {
 
+    $entity = $this->entity;
     $context = $this->context;
 
     $resource  = $entity->{$context['item_field']};

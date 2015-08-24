@@ -66,16 +66,12 @@ function merci_core_menu() {
 }
 
 
-function merci_get_controller($target_type, $context) {
-  $controllers = &drupal_static(__FUNCTION__, array());
+function merci_get_controller($entity, $target_type, $context) {
+  $class = 'MerciDefaultController';
   module_load_include('inc', 'merci_core', 'reservation.handler');
-  if (!isset($controllers[$target_type])) {
-    $class = 'MerciDefaultController';
-    if (class_exists($class)) {
-      $controllers[$target_type] = call_user_func(array($class, 'getInstance'), $target_type, $context);
-    }
+  if (class_exists($class)) {
+    return call_user_func(array($class, 'getInstance'), $entity, $target_type, $context);
   }
-  return $controllers[$target_type];
 }
 
 function merci_core_line_item_validate(&$line_item, $element, &$form_state, $form)

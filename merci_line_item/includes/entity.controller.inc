@@ -50,7 +50,8 @@ class MerciLineItemController extends EntityAPIController {
       'item_field' => $field_resource,
     );
 
-    $controller = merci_get_controller('non_inventory', $context);
+    $controller = merci_get_controller($line_item_wrapper, 'default', $context);
+    /*
     $resource  = $line_item_wrapper->{$context['item_field']};
 
     // Determine if the quantity field exists.  If so use it.
@@ -59,14 +60,14 @@ class MerciLineItemController extends EntityAPIController {
     } catch (EntityMetadataWrapperException $e) {
       $quantity = 1;
     }
+     */
 
+    $quantity = 1;
 
     // Returns array of $product_id => $line_item_id
-    $conflicts = $controller->conflicts($line_item_wrapper);
-
+    $conflicts = $controller->conflicts();
     if (count($conflicts) + $line_item_wrapper->quantity->value() > $quantity) {
-      $parents = array(MERCI_RESOURCE_REFERENCE, 'und', 0, 'target_id');
-      throw new MerciException('MERCI conflict errors', $parents, 0, $conflicts);
+      throw new MerciException('MERCI conflict errors', MERCI_RESOURCE_REFERENCE, $conflicts);
     }
   }
 }

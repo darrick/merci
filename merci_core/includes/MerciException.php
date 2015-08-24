@@ -8,23 +8,18 @@
 class MerciException extends Exception {
 
 
-  protected $parents;
+  protected $field;
   protected $delta; 
   protected $data;
 
-  function __construct($msg, $parents = '', $delta = 0, $data = array()) {
+  function __construct($msg, $field = '', $data = array()) {
     parent::__construct($msg);
-    $this->parents    = $parents;
-    $this->delta = $delta;
+    $this->field    = $field;
     $this->data    = $data;
   }
 
-  public function getParents () {
-    return $this->parents;
-  }
-
-  public function getDelta () {
-    return $this->delta;
+  public function getField () {
+    return $this->field;
   }
 
   public function getData () {

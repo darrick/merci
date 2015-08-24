@@ -101,7 +101,7 @@ function merci_line_item_form($form, &$form_state, $line_item) {
 function merci_line_item_ui_form_validate(&$form, &$form_state) {
   $entity_type = $form_state['entity_type'];
   $entity = $form_state[$entity_type];
-  
+
   $account = user_load_by_name($form_state['values']['owner']);
   // Validate the "authored by" field.
   if (!$account) {
@@ -126,37 +126,52 @@ function merci_line_item_ui_form_validate(&$form, &$form_state) {
   try {
     merci_line_item_validate($entity);
   } catch ( MerciException $e) {
-    $parents_path = implode('][', $e->getParents());
+    //$parents_path = implode('][', $e->getParents());
     $conflicts = $e->getData();
     $quantity = $entity->quantity;
     $line_item_wrapper = entity_metadata_wrapper($entity_type, $entity);
-    $resource  = $line_item_wrapper->{MERCI_RESOURCE_REFERENCE};
 
-    // Display an error for not enough available items.
-    if (count($conflicts) < $quantity) {
-      $available = $quantity - count($conflicts);
-      form_set_error($parents_path, t('You reserved %count but only %available are available.',
-                      array('%count' => $quantity, '%available' => $available)));
-    } else {
-      // Display error showing conflicts.
-      $ids = array();
-      foreach ($conflicts as $conflict) {
-        foreach ($conflict as $item) {
-          $ids[] = $item->parent_id;
+    $is_list = $form_state['field'][MERCI_RESOURCE_REFERENCE]['und']['field']['cardinality'];
+
+    foreach ($conflicts as $delta => $conflicting_line_items) {
+
+      $parents_path = implode('][', array(MERCI_RESOURCE_REFERENCE, 'und', $delta, 'target_id'));
+
+      if ($is_list != 1) {
+        $resource  = $line_item_wrapper->{MERCI_RESOURCE_REFERENCE}[$delta];
+      } else {
+        $resource  = $line_item_wrapper->{MERCI_RESOURCE_REFERENCE};
+      }
+
+
+      // Display an error for not enough available items.
+      if (count($conflicting_line_items) < $quantity) {
+        $available = $quantity - count($conflicts);
+        form_set_error($parents_path, t('You reserved %count but only %available are available.',
+          array('%count' => $quantity, '%available' => $available)));
+      } else {
+        // Display error showing conflicts.
+        $ids = array();
+        foreach ($conflicting_line_items as $item) {
+          //foreach ($conflict as $item) {
+            $ids[] = $item->parent_id;
+          //}
         }
+
+        // Load the entities which hold the conflicting item.
+        $entities = entity_load($entity_type, $ids);
+
+        foreach ($entities as $id => $line_item) {
+          $entity_uri = entity_uri($entity_type, $line_item);
+          $entity_label = entity_label($entity_type, $line_item);
+          $line_items[] = l(t("@label", array('@label' => $entity_label)), $entity_uri['path']);
+        }
+
+        form_set_error($parents_path, t('%name is already checked out or reserved by: !orders', array('%name' => $resource->label(), '!orders' => implode(', ', $line_items))));
       }
-
-      // Load the entities which hold the conflicting item.
-      $entities = entity_load($entity_type, $ids);
-
-      foreach ($entities as $id => $line_item) {
-        $entity_uri = entity_uri($entity_type, $line_item);
-        $entity_label = entity_label($entity_type, $line_item);
-        $line_items[] = l(t("@label", array('@label' => $entity_label)), $entity_uri['path']);
-      }
-
-      form_set_error($parents_path, t('%name is already checked out or reserved by: !orders', array('%name' => $resource->label(), '!orders' => implode(', ', $line_items))));
     }
+      $parents_path = implode('][', array(MERCI_RESOURCE_REFERENCE, 'und', 0, 'target_id'));
+    form_set_error($parents_path, t('%name is already checked out or reserved by: !orders', array('%name' => 'test', '!orders' => implode(', ', $line_items))));
   }
 }
 
