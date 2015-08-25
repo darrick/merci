@@ -15,6 +15,12 @@ class MerciDefaultController {
 
   protected $dates, $date_table, $date_column, $date_column2, $item_table, $item_column, $items, $item_type, $entity, $context;
 
+  protected $conflicting_entities;
+
+  protected $quanity_reserved;
+
+  protected $validated = FALSE;
+
   public static function getInstance($entity, $item_type, $context) {
 
     if (class_exists($class_name = 'MerciDefaultController_' . $item_type)) {
@@ -34,10 +40,12 @@ class MerciDefaultController {
     // Determine if dealing with multiple values.
     if (substr($entity->{$context['item_field']}->type(), 0, 5) == 'list<') {
       foreach ($entity->{$context['item_field']}->getIterator() as $delta => $item) {
-        $this->items[$delta] = $item->getIdentifier();
+        if ($item->getIdentifier()) {
+          $this->items[$delta] = $item;
+        }
       }
     } else {
-      $this->items[0] = $entity->{$context['item_field']}->getIdentifier();
+      $this->items[0] = $entity->{$context['item_field']};
     }
 
     if (substr($entity->{$context['date_field']}->type(), 0, 5) == 'list<') {
@@ -66,15 +74,70 @@ class MerciDefaultController {
     $this->item_column        = $item_storage[$this->item_table][$item_key];
   }
 
+  protected function validate() {
+    if (!$this->validated) {
+      $this->conflicting_entities = $this->conflicts();
+      $this->validated = TRUE;
+      foreach ($this->conflicting_entities as $delta => $dates) {
+        foreach ($dates as $date_start => $conflicts) {
+          if (!array_key_exists($delta, $this->quantity_reserved)) {
+            $this->quantity_reserved[$delta] = array();
+          }
+          $this->quantity_reserved[$delta][$date_start] = 1;
+        }
+      }
+    }
+  }
+
+  public function getConflicts($delta = NULL, $dates = array()) {
+
+    $this->validate();
+    $conflicts = $this->conflicting_entities;
+
+
+    if ($delta === NULL) {
+      return $conflicts;
+    }
+
+    if (empty($dates)) {
+      return array_key_exists($delta, $conflicts) ?
+        $conflicts[$delta] : FALSE;
+    }
+
+    $date_value = $dates['value'];
+    return (array_key_exists($delta, $conflicts) and array_key_exists($date_value, $conflicts[$delta])) ?
+      $conflicts[$delta][$date_value] : FALSE;
+  }
+
+  public function getQuantityReserved($delta = NULL, $dates = array()) {
+
+    $this->validate();
+    $quantity_reserved = $this->quantity_reserved;;
+
+    if ($delta === NULL) {
+      return $quantity_reserved;
+    }
+
+    if (empty($dates)) {
+      return array_key_exists($delta, $quantity_reserved) ?
+        $quantity_reserved[$delta] : 0;
+    }
+
+    $date_value = $dates['value'];
+    return (array_key_exists($delta, $quantity_reserved) and array_key_exists($date_value, $quantity_reserved[$delta])) ?
+      $quantity_reserved[$delta][$date_value] : 0;
+  }
   /*
    * Determine if merci_line_item $entity conflicts with any other existing line_items.
    *
    * Returns array of conflicting line items.
    */
 
-  public function conflicts() {
+  protected function conflicts() {
     $conflicts = array();
     foreach ($this->dates as $dates) {
+      $date_value = $dates['value'];
+
       $query = $this->buildConflictQuery($dates);
 
       $result = $query->execute();
@@ -82,14 +145,18 @@ class MerciDefaultController {
         if (!isset($conflicts[$record->item_id])) {
           $conflicts[$record->item_id] = array();
         }
-        $conflicts[$record->item_id][] = $record;
+        if (!isset($conflicts[$record->item_id][$date_value])) {
+          $conflicts[$record->item_id][$date_value] = array();
+        }
+        $conflicts[$record->item_id][$date_value][] = $record;
       }
 
     }
+
     $return = array();
-    foreach ($this->items as $delta => $item_id) {
-      if (isset($conflicts[$item_id])) {
-        $return[$delta] = $conflicts[$item_id];
+    foreach ($this->items as $delta => $item) {
+      if (isset($conflicts[$item->getIdentifier()])) {
+        $return[$delta] = $conflicts[$item->getIdentifier()];
       }
     }
     return $return;
@@ -106,6 +173,12 @@ class MerciDefaultController {
     $date_column  = $this->date_column;
     $date_column2 = $this->date_column2;
 
+    $items = array();
+
+    foreach ($this->items as $delta => $item) {
+      $items[] = $item->getIdentifier();
+    }
+
 
     // Build the query.
     $query = db_select($item_table, 'item_table');
@@ -113,9 +186,9 @@ class MerciDefaultController {
     $query->addField('item_table', 'entity_id', 'parent_id');
 
     if (count($this->items) == 1) {
-      $query->condition($item_column, reset($this->items));
+      $query->condition($item_column, reset($items));
     } else {
-      $query->condition($item_column, $this->items, 'IN');
+      $query->condition($item_column, $items, 'IN');
     }
     // Ignore myself.
     if ($exclude_id) {
@@ -176,8 +249,35 @@ class MerciDefaultController_non_inventory extends MerciDefaultController {
 
   protected $date_column, $date_column2;
 
+  protected function validate() {
+    if (!$this->validated) {
+      $this->conflicting_entities = $this->conflicts();
+      $this->validated = TRUE;
+      foreach ($this->conflicting_entities as $date_start => $items) {
+        if (!array_key_exists($date_start, $this->quanity_reserved)) {
+          $this->quanity_reserved[$date_start] = array();
+        }
+        foreach ($items as $delta => $conflicts) {
+          $this->quantity_reserved[$date_start][$delta] = 1;
+        }
+      }
+    }
+  }
+
   public function conflicts() {
-    return $this->bestFit();
+    $conflicts = array();
+    foreach ($this->dates as $dates) {
+      $date_value = $dates['value'];
+      $result = $this->bestFit($dates);
+      foreach ($result as $delta => $buckets) {
+        if (!isset($conflicts[$date_value])) {
+          $conflicts[$date_value] = array();
+        }
+        $conflicts[$date_value][$delta] = $buckets;
+
+      }
+    }
+    return $conflicts;
   }
 
   public function quantity_available($entity) {
@@ -198,87 +298,91 @@ class MerciDefaultController_non_inventory extends MerciDefaultController {
     return $reservations;
   }
 
-  public function bestFit() {
+  public function bestFit($dates) {
 
     $entity = $this->entity;
     $context = $this->context;
+    $best_fit = array();
 
-    $resource  = $entity->{$context['item_field']};
 
-    // Determine if the quantity field exists.  If so use it.
-    try {
-      $quantity = $resource->{$context['quantity_field']}->value();
-    } catch (EntityMetadataWrapperException $e) {
-      $quantity = 1;
-    }
+    $parent_conflicts = parent::conflicts($dates);
 
-    $dates        = $entity->{$context['date_field']}->value();
-    
-    // Storage location for date field.
-    $date_field_info    = field_info_field($context['date_field']);
-    $date_storage       = $date_field_info['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
-    $keys               = array_keys($date_storage);
-    $date_table         = reset($keys);
-    $this->date_column  = $date_column        = $date_storage[$date_table]['value'];
-    $this->date_column2 = $date_column2       = $date_storage[$date_table]['value2'];
+    $date_value = $dates['value'];
 
-    // Split reservations based on quantity. 
-    $reservations = array();
-    foreach(parent::conflicts($entity) as $reservation) {
-      for ($i = 0; $i < $reservation->quantity; $i++) {
-        $reservations[] = $reservation;
+    foreach ($this->items as $delta => $item) {
+
+      // No need to sort into buckets if there is nothing to sort into buckets.
+      if (!array_key_exists($date_value, $parent_conflicts) or !array_key_exists($delta, $parent_conflicts[$date_value])) {
+        continue;
       }
-    }
 
-    // Determine how many bucket items are needed for this time period.
-    // Need to sort like this:
-    //            .... time ....
-    // item1  x x a a a x x x x x f x e e e x x x x x
-    // item2  x x x d d d d d d x x x x c c c x x x x
-    // item3  x x b b b b b b b b b b b b b x x x x x
-    // etc ......
-    //
-    //      // Order by lenght of reservation descending.
-    //      // Do first-fit algorythm.
+      // Determine if the quantity field exists.  If so use it.
+      try {
+        $quantity = $item->{$context['quantity_field']}->value();
+      } catch (EntityMetadataWrapperException $e) {
+        $quantity = 1;
+      }
 
+      // Split reservations based on quantity. 
+      $reservations = array();
 
+      foreach($parent_conflicts[$date_value][$delta][0] as $reservation) {
+        for ($i = 0; $i < $reservation->quantity; $i++) {
+          $reservations[] = $reservation;
+        }
+      }
 
-    // Sort by length of reservation.
-    uasort($reservations, array($this, "merci_bucket_cmp_length"));
-
-    $buckets = array();
-    // First-fit algorythm.
-    foreach ($reservations as $test_reservation) {
-
-      // Go through each bucket item to look for a available slot for this reservation.
+      // Determine how many bucket items are needed for this time period.
+      // Need to sort like this:
+      //            .... time ....
+      // item1  x x a a a x x x x x f x e e e x x x x x
+      // item2  x x x d d d d d d x x x x c c c x x x x
+      // item3  x x b b b b b b b b b b b b b x x x x x
+      // etc ......
       //
-      // Find a bucket to use for this reservation.
-      for ($i = 0; $i < $quantity; $i++) {
+      //      // Order by lenght of reservation descending.
+      //      // Do first-fit algorythm.
 
-        $fits = TRUE;
-        // Bucket already has other reservations we need to check against for a fit.
-        if (array_key_exists($i, $buckets)) {
-          foreach ($buckets[$i] as $reservation) {
-            if ($this->merci_bucket_intersects($reservation, $test_reservation)) {
-              //Conflict so skip saving the reservation to this slot and try to use the next bucket item.
-              $fits = FALSE;
-              break;
+      // Sort by length of reservation.
+      uasort($reservations, array($this, "merci_bucket_cmp_length"));
+
+      $buckets = array();
+      // First-fit algorythm.
+      foreach ($reservations as $test_reservation) {
+
+        // Go through each bucket item to look for a available slot for this reservation.
+        //
+        // Find a bucket to use for this reservation.
+        for ($i = 0; $i < $quantity; $i++) {
+
+          $fits = TRUE;
+          // Bucket already has other reservations we need to check against for a fit.
+          if (array_key_exists($i, $buckets)) {
+            foreach ($buckets[$i] as $reservation) {
+              if ($this->merci_bucket_intersects($reservation, $test_reservation)) {
+                //Conflict so skip saving the reservation to this slot and try to use the next bucket item.
+                $fits = FALSE;
+                break;
+              }
             }
           }
-        }
 
-        // We've found a slot so test the next reservation.
-        if ($fits) {
-          if (array_key_exists($i, $buckets)) {
-            $buckets[$i] = array();
+          // We've found a slot so test the next reservation.
+          if ($fits) {
+            if (array_key_exists($i, $buckets)) {
+              $buckets[$i] = array();
+            }
+            $buckets[$i][] = $test_reservation;
+            break;
           }
-          $buckets[$i][] = $test_reservation;
-          break;
-        }
 
+        }
+      }
+      if (count($buckets)) {
+        $best_fit[$delta] = $buckets;
       }
     }
-    return $buckets;
+    return $best_fit;
   }
 
 /*

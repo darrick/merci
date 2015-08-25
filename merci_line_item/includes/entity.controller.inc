@@ -65,9 +65,10 @@ class MerciLineItemController extends EntityAPIController {
     $quantity = 1;
 
     // Returns array of $product_id => $line_item_id
-    $conflicts = $controller->conflicts();
-    if (count($conflicts) + $line_item_wrapper->quantity->value() > $quantity) {
-      throw new MerciException('MERCI conflict errors', MERCI_RESOURCE_REFERENCE, $conflicts);
+    $reserved = $controller->getQuantityReserved();
+    if ($reserved) {
+      throw new MerciException('MERCI conflict errors', MERCI_RESOURCE_REFERENCE, $controller);
     }
+      //throw new MerciException('MERCI conflict errors', MERCI_RESOURCE_REFERENCE, $conflicts);
   }
 }
