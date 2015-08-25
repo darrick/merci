@@ -86,7 +86,7 @@ class MerciLineItemUITest extends MerciBaseTestCase {
     // Create the base line_item for the rest of tests. Assign it to the normal
     // user.
     $this->drupalPost(NULL, $edit, t('Save'));
-    $this->assertText(t("Product One is already checked out or reserved by"));
+    $this->assertText(t("Product One is already reserved by"));
 
     // Navigate to the merci line item add page.
     $this->drupalGet('merci_line_item/add/merci_line_item');

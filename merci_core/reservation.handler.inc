@@ -17,7 +17,7 @@ class MerciDefaultController {
 
   protected $conflicting_entities;
 
-  protected $quanity_reserved;
+  protected $quantity_reserved;
 
   protected $validated = FALSE;
 
@@ -112,7 +112,7 @@ class MerciDefaultController {
   public function getQuantityReserved($delta = NULL, $dates = array()) {
 
     $this->validate();
-    $quantity_reserved = $this->quantity_reserved;;
+    $quantity_reserved = $this->quantity_reserved;
 
     if ($delta === NULL) {
       return $quantity_reserved;
@@ -248,45 +248,47 @@ class MerciDefaultController {
 class MerciDefaultController_non_inventory extends MerciDefaultController {
 
   protected $date_column, $date_column2;
+  protected $buckets;
 
   protected function validate() {
     if (!$this->validated) {
-      $this->conflicting_entities = $this->conflicts();
+      $this->buckets = $this->fillBuckets();
       $this->validated = TRUE;
-      foreach ($this->conflicting_entities as $date_start => $items) {
-        if (!array_key_exists($date_start, $this->quanity_reserved)) {
-          $this->quanity_reserved[$date_start] = array();
-        }
-        foreach ($items as $delta => $conflicts) {
-          $this->quantity_reserved[$date_start][$delta] = 1;
+      $conflicts = array();
+      foreach ($this->buckets as $delta => $dates) {
+        foreach ($dates as $date_value => $buckets){
+          if (!isset($this->quantity_reserved[$delta])) {
+            $this->quantity_reserved[$delta] = array();
+          }
+          $this->quantity_reserved[$delta][$date_value] = count($buckets);
+          if (!isset($conflicts[$delta])) {
+            $conflicts[$delta] = array();
+          }
+          $conflicts[$delta][$date_value] = array();
+          foreach ($buckets as $bucket) {
+            $conflicts[$delta][$date_value] = array_merge($conflicts[$delta][$date_value], $bucket);
+          }
         }
       }
+      $this->conflicting_entities = $conflicts;
     }
   }
 
-  public function conflicts() {
+  public function fillBuckets() {
     $conflicts = array();
     foreach ($this->dates as $dates) {
       $date_value = $dates['value'];
       $result = $this->bestFit($dates);
+      // Result is array indexed by $delta of filled buckets.
       foreach ($result as $delta => $buckets) {
-        if (!isset($conflicts[$date_value])) {
-          $conflicts[$date_value] = array();
+        if (!isset($conflicts[$delta])) {
+          $conflicts[$delta] = array();
         }
-        $conflicts[$date_value][$delta] = $buckets;
+        $conflicts[$delta][$date_value] = $buckets;
 
       }
     }
     return $conflicts;
-  }
-
-  public function quantity_available($entity) {
-    $context = $this->context;
-
-    $resource  = $entity->{$context['item_field']};
-    $quantity = $resource->{$context['quantity_field']}->value();
-
-    return $quantity - count($this->bestFit($entity));
   }
 
   public function reservations($dates, $exclude_id) {
@@ -298,6 +300,11 @@ class MerciDefaultController_non_inventory extends MerciDefaultController {
     return $reservations;
   }
 
+  /*
+   * Perform first-fit algorhtym on reservations into buckets.
+   *
+   * Return array indexed by item delta of array of filled buckets.
+   */
   public function bestFit($dates) {
 
     $entity = $this->entity;
@@ -312,7 +319,7 @@ class MerciDefaultController_non_inventory extends MerciDefaultController {
     foreach ($this->items as $delta => $item) {
 
       // No need to sort into buckets if there is nothing to sort into buckets.
-      if (!array_key_exists($date_value, $parent_conflicts) or !array_key_exists($delta, $parent_conflicts[$date_value])) {
+      if (!array_key_exists($delta, $parent_conflicts) or !array_key_exists($date_value, $parent_conflicts[$delta])) {
         continue;
       }
 
@@ -326,7 +333,7 @@ class MerciDefaultController_non_inventory extends MerciDefaultController {
       // Split reservations based on quantity. 
       $reservations = array();
 
-      foreach($parent_conflicts[$date_value][$delta][0] as $reservation) {
+      foreach($parent_conflicts[$delta][$date_value] as $reservation) {
         for ($i = 0; $i < $reservation->quantity; $i++) {
           $reservations[] = $reservation;
         }

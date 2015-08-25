@@ -172,16 +172,19 @@ function merci_line_item_ui_form_validate(&$form, &$form_state) {
         }
 
         $date_start = $dates['value'];
+        // Don't show the date repeat rule in the error message.
+        unset ($dates['rrule']);
 
+        $render_dates = field_view_value($entity_type, $entity, MERCI_CHECKOUT_DATES, $dates);
         $conflict_errors[$date_start] = t('%name is already reserved by: !items for selected dates !dates',
           array(
             '%name' => $resource->label(),
             '!items' => implode(', ', $line_items),
-            '!dates' => render(field_view_value($entity_type, $entity, MERCI_CHECKOUT_DATES, $dates)),
+            '!dates' => render($render_dates),
           ));
       }
       $parents_path = implode('][', array(MERCI_RESOURCE_REFERENCE, 'und', $delta, 'target_id'));
-      form_set_error($parents_path, t('!errors', array('!errors' => implode('<br> ', $conflict_errors))));
+      form_set_error($parents_path, '<span>' . t('!errors', array('!errors' => implode('<br> ', $conflict_errors))) . '</span>');
     }
   }
 }

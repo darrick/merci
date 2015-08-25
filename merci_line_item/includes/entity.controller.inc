@@ -50,7 +50,7 @@ class MerciLineItemController extends EntityAPIController {
       'item_field' => $field_resource,
     );
 
-    $controller = merci_get_controller($line_item_wrapper, 'default', $context);
+    $controller = merci_get_controller($line_item_wrapper, 'non_inventory', $context);
     /*
     $resource  = $line_item_wrapper->{$context['item_field']};
 
