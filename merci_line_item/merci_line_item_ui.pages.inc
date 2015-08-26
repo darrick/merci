@@ -116,75 +116,29 @@ function merci_line_item_ui_form_validate(&$form, &$form_state) {
   // Notify field widgets to validate their data.
   field_attach_form_validate($entity_type, $entity, $form, $form_state);
 
-
   // Do no validation if their errors from the main validation function.
   if (form_get_errors()) {
     return;
   }
 
-  // Determine if they are any conflicts. 
+  // Determine if they are any conflicts.
   try {
     merci_line_item_validate($entity);
   } catch ( MerciException $e) {
-    $controller = $e->getData();
+    foreach ($e->getData()->getErrors() as $delta => $errors){
 
-    $quantity = $entity->quantity;
-    $line_item_wrapper = entity_metadata_wrapper($entity_type, $entity);
+      $msg = array();
 
-    $is_list = $form_state['field'][MERCI_RESOURCE_REFERENCE]['und']['field']['cardinality'] == 1 ? FALSE : TRUE;
-
-    $conflict_errors = array();
-
-    $reserved = $controller->getQuantityReserved();
-
-    foreach ($reserved as $delta => $start_dates) {
-
-      // Load the resource being reserved.
-      if ($is_list) {
-        $resource  = $line_item_wrapper->{MERCI_RESOURCE_REFERENCE}[$delta];
-      } else {
-        $resource  = $line_item_wrapper->{MERCI_RESOURCE_REFERENCE};
+      if (array_key_exists(MERCI_ERROR_TOO_MANY, $errors)) {
+        $msg[] = $errors[MERCI_ERROR_TOO_MANY];
+      } elseif (array_key_exists(MERCI_ERROR_CONFLICT, $errors)) {
+        foreach ($errors[MERCI_ERROR_CONFLICT] as $date_start => $message) {
+          $msg[] = $message;
+        }
       }
 
-      $conflict_error = array();
-
-      foreach ($entity->{MERCI_CHECKOUT_DATES}['und'] as $dates) {
-
-        // Determine if there are conflicts for this date and item.
-        if (!$controller->getQuantityReserved($delta, $dates)) {
-          continue;
-        }
-
-        // Load each conflicting entity so we can show information about it to
-        // the user.
-        $ids = array();
-        foreach ($controller->getConflicts($delta, $dates) as $conflict) {
-          $ids[] = $conflict->parent_id;
-        }
-
-        // Load the entities which hold the conflicting item.
-        $entities = entity_load($entity_type, $ids);
-
-        foreach ($entities as $id => $line_item) {
-          $entity_uri = entity_uri($entity_type, $line_item);
-          $entity_label = entity_label($entity_type, $line_item);
-          $line_items[] = l(t("@label", array('@label' => $entity_label)), $entity_uri['path']);
-        }
-
-        $date_start = $dates['value'];
-        // Don't show the date repeat rule in the error message.
-        unset ($dates['rrule']);
-
-        $render_dates = field_view_value($entity_type, $entity, MERCI_CHECKOUT_DATES, $dates);
-        $conflict_errors[$date_start] = t('%name is already reserved by: !items for selected dates !dates',
-          array(
-            '%name' => $resource->label(),
-            '!items' => implode(', ', $line_items),
-            '!dates' => render($render_dates),
-          ));
-      }
       $parents_path = implode('][', array(MERCI_RESOURCE_REFERENCE, 'und', $delta, 'target_id'));
-      form_set_error($parents_path, '<span>' . t('!errors', array('!errors' => implode('<br> ', $conflict_errors))) . '</span>');
+      form_set_error($parents_path, t('!errors', array('!errors' => implode('<br> ', $msg))));
     }
   }
 }

@@ -21,6 +21,10 @@ class MerciDefaultController {
 
   protected $validated = FALSE;
 
+  protected $items_is_list = FALSE;
+
+  protected $errors = NULL;
+
   public static function getInstance($entity, $item_type, $context) {
 
     if (class_exists($class_name = 'MerciDefaultController_' . $item_type)) {
@@ -44,6 +48,7 @@ class MerciDefaultController {
           $this->items[$delta] = $item;
         }
       }
+      $this->items_is_list = TRUE;
     } else {
       $this->items[0] = $entity->{$context['item_field']};
     }
@@ -74,6 +79,147 @@ class MerciDefaultController {
     $this->item_column        = $item_storage[$this->item_table][$item_key];
   }
 
+  public function getErrors($delta = NULL, $dates = array()) {
+    // Determine if reserving too many of the same item.
+    if ($this->errors === NULL) {
+      $this->validate();
+      $entity = $this->entity;
+      $entity_type = $entity->type();
+      $context = $this->context;
+      $errors = array();
+      if ($this->items_is_list) {
+        foreach ($entity->{$context['item_field']}->getIterator() as $delta => $resource) {
+          $item_id = $resource->getIdentifier();
+          if (empty($item_id)) {
+            continue;
+          }
+          if (empty($item_count[$item_id])) {
+            $item_count[$item_id] = 0;
+          }
+          $item_count[$item_id]++;
+          try {
+            $quantity_reservable = $resource->field_quantity->value();
+          } catch (EntityMetadataWrapperException $e) {
+            $quantity_reservable = 1;
+          }
+          if ($item_count[$item_id] > $quantity_reservable) {
+            // Selected to many.
+            if (!array_key_exists($delta, $errors)) {
+              $errors[$delta] = array();
+            }
+            $parents_path = implode('][', array($context['item_field'], 'und', $delta, 'target_id'));
+            $errors[$delta][MERCI_ERROR_TOO_MANY] =  t('%name: You have selected too many of the same item.  We only have %quantity available but you reserved %reserved.',
+              array(
+                '%name' => $resource->label(),
+                '%quantity' => $quantity_reservable,
+                '%reserved' => $item_count[$item_id],
+              ));
+          }
+        }
+      } else {
+
+        $resource = $entity->{$context['item_field']};
+        $item_count[$resource->getIdentifier()] = $entity->quantity->value();
+        try {
+          $quantity_reservable = $resource->field_quantity->value();
+        } catch (EntityMetadataWrapperException $e) {
+          $quantity_reservable = 1;
+        }
+        if ($entity->quantity->value() > $quantity_reservable) {
+          if (!array_key_exists($delta, $errors)) {
+            $errors[$delta] = array();
+          }
+          $errors[$delta][MERCI_ERROR_TOO_MANY] =  t('%name: You have selected too many of the same item.  We only have %quantity available but you reserved %reserved.',
+            array(
+              '%name' => $resource->label(),
+              '%quantity' => $quantity_reservable,
+              '%reserved' => $entity->quantity->value(),
+            ));
+          // Selected to many.
+        }
+      }
+
+      $reserved = $this->getQuantityReserved();
+
+      $reserved = $reserved ? $reserved : array();
+
+      $reserved_so_far_by_me = array();
+
+      foreach ($reserved as $delta => $start_dates) {
+
+        $conflict_errors = array();
+
+        // Load the resource being reserved.
+        if ($this->items_is_list) {
+          $resource  = $entity->{$context['item_field']}[$delta];
+        } else {
+          $resource  = $entity->{$context['item_field']};
+        }
+
+        // Determine if the quantity field exists.  If so use it.
+        try {
+          $quantity_reservable = $resource->field_quantity->value();
+        } catch (EntityMetadataWrapperException $e) {
+          $quantity_reservable = 1;
+        }
+
+        $item_id = $resource->getIdentifier();
+        if (empty($reserved_so_far_by_me[$item_id])) {
+          $reserved_so_far_by_me[$item_id] = 0;
+        }
+        $reserved_so_far_by_me[$item_id]++;
+
+        foreach ($this->dates as $dates) {
+
+          $quantity_reserved = $this->getQuantityReserved($delta, $dates);
+
+
+          // Determine if there are conflicts for this date and item.
+          if ($quantity_reservable >= $quantity_reserved + $reserved_so_far_by_me[$item_id]) {
+            continue;
+          }
+          // Load each conflicting entity so we can show information about it to
+          // the user.
+          $ids = array();
+          foreach ($this->getConflicts($delta, $dates) as $conflict) {
+            $ids[] = $conflict->parent_id;
+          }
+
+          // Load the entities which hold the conflicting item.
+          $entities = entity_load($entity_type, $ids);
+
+          $line_items = array();
+
+          foreach ($entities as $id => $line_item) {
+            $entity_uri = entity_uri($entity_type, $line_item);
+            $entity_label = entity_label($entity_type, $line_item);
+            $line_items[] = l(t("@label", array('@label' => $entity_label)), $entity_uri['path']);
+          }
+
+          $date_start = $dates['value'];
+          // Don't show the date repeat rule in the error message.
+          unset ($dates['rrule']);
+
+          $render_dates = field_view_value($entity_type, $entity->value(), $context['date_field'], $dates);
+          $conflict_errors[$date_start] = t('%name is already reserved by: !items for selected dates !dates',
+            array(
+              '%name' => $resource->label(),
+              '!items' => implode(', ', $line_items),
+              '!dates' => render($render_dates),
+            ));
+        }
+        if ($conflict_errors) {
+          if (!array_key_exists($delta, $errors)) {
+            $errors[$delta] = array();
+          }
+          $errors[$delta][MERCI_ERROR_CONFLICT] = $conflict_errors;
+        }
+      }
+      $this->errors = $errors;
+    }
+    return $this->errors;
+  }
+
   protected function validate() {
     if (!$this->validated) {
       $this->conflicting_entities = $this->conflicts();
@@ -93,7 +239,6 @@ class MerciDefaultController {
 
     $this->validate();
     $conflicts = $this->conflicting_entities;
-
 
     if ($delta === NULL) {
       return $conflicts;
@@ -127,6 +272,7 @@ class MerciDefaultController {
     return (array_key_exists($delta, $quantity_reserved) and array_key_exists($date_value, $quantity_reserved[$delta])) ?
       $quantity_reserved[$delta][$date_value] : 0;
   }
+
   /*
    * Determine if merci_line_item $entity conflicts with any other existing line_items.
    *
