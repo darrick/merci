@@ -4,6 +4,16 @@ define('MERCI_ADMIN_PATH', 'admin/merci');
 define('MERCI_ADMIN_CONFIG_PATH', MERCI_ADMIN_PATH . '/config');
 define('MERCI_ERROR_CONFLICT', 1);
 define('MERCI_ERROR_TOO_MANY', 2);
+
+/**
+  ** Implements hook_ctools_plugin_directory().
+  **/
+function merci_core_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'entityreference' || $module == 'ctools') {
+    return 'plugins/' . $plugin;
+  }
+}
+
 /**
  * Implements hook_permission().
  */

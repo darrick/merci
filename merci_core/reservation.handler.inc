@@ -13,15 +13,15 @@
  */
 class MerciDefaultController {
 
-  protected $dates, $date_table, $date_column, $date_column2, $item_table, $item_column, $items, $item_type, $entity, $context;
+  protected $parent_table, $parent_index, $dates, $date_table, $date_column, $date_column2, $item_table, $item_column, $items, $item_type, $entity, $context;
 
   protected $conflicting_entities;
 
-  protected $quantity_reserved;
+  protected $quantity_reserved, $entity_quantity;
 
   protected $validated = FALSE;
 
-  protected $items_is_list = FALSE;
+  protected $parent_has_quantity, $parent_has_status, $items_is_list = FALSE;
 
   protected $errors = NULL;
 
@@ -77,6 +77,19 @@ class MerciDefaultController {
     $keys               = array_keys($item_field_info['indexes']);
     $item_key           = reset($keys);
     $this->item_column        = $item_storage[$this->item_table][$item_key];
+
+    $entity_info = $entity->entityInfo();
+
+    $this->parent_index = $entity->entityKey('id');
+    $this->parent_table = $entity_info['base table'];
+    $this->parent_has_quantity = in_array('quantity', $entity_info['schema_fields_sql']['base table']);
+    $this->parent_has_status = in_array('status', $entity_info['schema_fields_sql']['base table']);
+
+    try {
+      $this->entity_quantity = $entity->quantity->value();
+    } catch (EntityMetadataWrapperException $e) {
+      $this->entity_quantity = 1;
+    }
   }
 
   public function getErrors($delta = NULL, $dates = array()) {
@@ -119,13 +132,13 @@ class MerciDefaultController {
       } else {
 
         $resource = $entity->{$context['item_field']};
-        $item_count[$resource->getIdentifier()] = $entity->quantity->value();
+        $item_count[$resource->getIdentifier()] = $this->entity_quantity;
         try {
           $quantity_reservable = $resource->field_quantity->value();
         } catch (EntityMetadataWrapperException $e) {
           $quantity_reservable = 1;
         }
-        if ($entity->quantity->value() > $quantity_reservable) {
+        if ($this->entity_quantity > $quantity_reservable) {
           if (!array_key_exists($delta, $errors)) {
             $errors[$delta] = array();
           }
@@ -133,7 +146,7 @@ class MerciDefaultController {
             array(
               '%name' => $resource->label(),
               '%quantity' => $quantity_reservable,
-              '%reserved' => $entity->quantity->value(),
+              '%reserved' => $this->entity_quantity,
             ));
           // Selected to many.
         }
@@ -319,6 +332,9 @@ class MerciDefaultController {
     $date_column  = $this->date_column;
     $date_column2 = $this->date_column2;
 
+    $parent_table = $this->parent_table;
+    $parent_index = $this->parent_index;
+
     $items = array();
 
     foreach ($this->items as $delta => $item) {
@@ -341,9 +357,17 @@ class MerciDefaultController {
       $query->condition('item_table.entity_id', $exclude_id, '!=');
     }
 
-    $query->join('merci_line_item', 'merci_line_item', 'item_table.entity_id = merci_line_item.line_item_id');
-    $query->addField('merci_line_item', 'quantity', 'quantity');
-    $query->condition('merci_line_item.status', 1, '=');
+    $query->join($parent_table, 'merci_line_item', 'item_table.entity_id = merci_line_item.' . $parent_index);
+
+    if ($this->parent_has_quantity) {
+      $query->addField('merci_line_item', 'quantity', 'quantity');
+    } else {
+      $query->addExpression('1', 'quantity');
+    }
+
+    if ($this->parent_has_status) {
+      $query->condition('merci_line_item.status', 1, '=');
+    }
 
     $query->join($date_table, 'date_table', 'item_table.entity_id = date_table.entity_id');
     $query->addField('date_table', $date_column);//, MERCI_DATE_FIELD_ALIAS);
