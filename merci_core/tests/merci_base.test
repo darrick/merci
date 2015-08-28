@@ -121,6 +121,8 @@ abstract class MerciBaseTestCase extends DrupalWebTestCase {
       'administer taxonomy',
       'administer permissions',
       'administer users',
+      'administer commerce_product entities',
+      'configure store',
     );
     $merci_admin = array(
       'access administration pages',
@@ -645,6 +647,30 @@ abstract class MerciBaseTestCase extends DrupalWebTestCase {
     $this->assertFieldById('edit-title', $product->title, t('When editing the product in the administration interface, the Title is informed correctly'));
   }
 
+  function fieldUIAddNewField($bundle_path, $initial_edit, $field_edit = array(), $instance_edit = array()) {
+    // Use 'test_field' field type by default.
+    $initial_edit += array(
+      'fields[_add_new_field][type]' => 'test_field',
+      'fields[_add_new_field][widget_type]' => 'test_field_widget',
+    );
+    $label = $initial_edit ['fields[_add_new_field][label]'];
+    $field_name = $initial_edit ['fields[_add_new_field][field_name]'];
+
+    // First step : 'Add new field' on the 'Manage fields' page.
+    $this->drupalPost("$bundle_path/fields", $initial_edit, t('Save'));
+    $this->assertRaw(t('These settings apply to the %label field everywhere it is used.', array('%label' => $label)), 'Field settings page was displayed.');
+
+    // Second step : 'Field settings' form.
+    $this->drupalPost(NULL, $field_edit, t('Save field settings'));
+    $this->assertRaw(t('Updated field %label field settings.', array('%label' => $label)), 'Redirected to instance and widget settings page.');
+
+    // Third step : 'Instance settings' form.
+    $this->drupalPost(NULL, $instance_edit, t('Save settings'));
+    $this->assertRaw(t('Saved %label configuration.', array('%label' => $label)), 'Redirected to "Manage fields" page.');
+
+    // Check that the field appears in the overview form.
+    $this->assertFieldByXPath('//table[@id="field-overview"]//td[1]', $label, 'Field was created and appears in the overview page.');
+  }
 }
 
 

@@ -1,0 +1,149 @@
+<?php
+
+/**
+ * @file
+ * Functional tests for the merci_line_item UI module.
+ */
+
+/**
+ * Functional tests for the merci_line_item UI module.
+ */
+class MerciEntityRefBehaviorTest extends MerciBaseTestCase {
+
+  /**
+   * Dummy resource for adding to the line_items.
+   */
+  protected $resource;
+
+  /**
+   * Line Items created and manipulated in the process.
+   */
+  protected $line_items = array();
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Merci Entity Reference Behavior',
+      'description' => 'Test Merci Entity Reference Behavior.',
+      'group' => 'Drupal Merci',
+    );
+  }
+
+  /**
+   * Implementation of setUp().
+   */
+  function setUp() {
+    $modules = parent::setUpHelper('dependencies', array('merci_entityref_behavior'));
+    parent::setUp($modules);
+
+    // User creation for different operations.
+    $this->site_admin = $this->createSiteAdmin();
+    $this->drupalLogin($this->site_admin);
+    $this->drupalCreateContentType(array('type' => 'reservation', 'name' => 'Reservation'));
+    // Create a field, and a node with some data for the field.
+    $edit = array(
+      'fields[_add_new_field][label]' => 'Checkout Date',
+      'fields[_add_new_field][field_name]' => 'merci_checkout_dates',
+      'fields[_add_new_field][type]' => 'datetime',
+      'fields[_add_new_field][widget_type]' => 'date_popup',
+    );
+
+    $field_edit = array(
+      'field[settings][enddate_get]' => 1,
+    );
+
+    $this->fieldUIAddNewField('admin/structure/types/manage/reservation',$edit, $field_edit);
+
+    $edit = array(
+      'fields[_add_new_field][label]' => 'Resource',
+      'fields[_add_new_field][field_name]' => 'merci_resource_reference',
+      'fields[_add_new_field][type]' => 'entityreference',
+      'fields[_add_new_field][widget_type]' => 'entityreference_autocomplete',
+    );
+
+    $field_edit = array(
+      'field[settings][target_type]' => 'commerce_product',
+      'field[settings][handler_settings][behaviors][merci][status]' => 1,
+      //'field[settings][handler_settings][behaviors][merci][merci][merci_date_field]' => 'field_merci_checkout_dates',
+    );
+
+    $this->fieldUIAddNewField('admin/structure/types/manage/reservation',$edit, $field_edit);
+
+    $this->drupalGet('admin/structure/types/manage/reservation/fields/field_merci_resource_reference/field-settings');
+    $edit = array(
+      'field[settings][handler_settings][behaviors][merci][merci][merci_date_field]' => 'field_merci_checkout_dates',
+    );
+    $this->drupalPost(NULL, $edit, t('Save field settings'));
+
+    //$this->merci_customer = $this->createMerciCustomer();
+
+    // Create dummy resources.
+    $this->resource = $this->createDummyProduct('PROD-01', 'Product One');
+
+    // Log in as store customer.
+    //$this->drupalLogin($this->merci_customer);
+
+    // Navigate to the merci line item add page.
+    $this->drupalGet('node/add/reservation');
+
+    $edit = array(
+      'title' => $this->randomName(8),
+      'field_merci_checkout_dates' . '[und][0][value][date]' => date('m/d/Y'),
+      'field_merci_checkout_dates' . '[und][0][value][time]' => '11:00',
+      'field_merci_checkout_dates' . '[und][0][value2][date]' => date('m/d/Y'),
+      'field_merci_checkout_dates' . '[und][0][value2][time]' => '12:00',
+      'field_merci_resource_reference' . '[und][0][target_id]' => 'Product One (' . $this->resource->product_id . ')',
+    );
+
+    // Create the base line_item for the rest of tests. Assign it to the normal
+    // user.
+    $this->drupalPost(NULL, $edit, t('Save'));
+  }
+
+  /**
+   * Test general edit form fields of an order.
+   */
+  public function testMerciLineItemUIConflict() {
+    // Log in as store customer.
+    //$this->drupalLogin($this->merci_customer);
+
+    $this->drupalLogin($this->site_admin);
+    // Navigate to the merci line item add page.
+    $this->drupalGet('node/add/reservation');
+
+    $edit = array(
+      'title' => $this->randomName(8),
+      'field_merci_checkout_dates' . '[und][0][value][date]' => date('m/d/Y'),
+      'field_merci_checkout_dates' . '[und][0][value][time]' => '11:00',
+      'field_merci_checkout_dates' . '[und][0][value2][date]' => date('m/d/Y'),
+      'field_merci_checkout_dates' . '[und][0][value2][time]' => '12:00',
+      'field_merci_resource_reference' . '[und][0][target_id]' => 'Product One (' . $this->resource->product_id . ')',
+    );
+
+    // Create the base line_item for the rest of tests. Assign it to the normal
+    // user.
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t("Product One is already reserved by"));
+
+    // Navigate to the merci line item add page.
+    $this->drupalGet('node/add/reservation');
+
+    $edit = array(
+      'title' => $this->randomName(8),
+      'field_merci_checkout_dates' . '[und][0][value][date]' => date('m/d/Y'),
+      'field_merci_checkout_dates' . '[und][0][value][time]' => '15:00',
+      'field_merci_checkout_dates' . '[und][0][value2][date]' => date('m/d/Y'),
+      'field_merci_checkout_dates' . '[und][0][value2][time]' => '16:00',
+      'field_merci_resource_reference' . '[und][0][target_id]' => 'Product One (' . $this->resource->product_id . ')',
+    );
+
+    // Create the base line_item for the rest of tests. Assign it to the normal
+    // user.
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t("has been created."));
+  }
+
+
+}

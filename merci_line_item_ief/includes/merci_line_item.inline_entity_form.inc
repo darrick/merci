@@ -160,27 +160,43 @@ class MerciLineItemInlineEntityFormController extends EntityInlineEntityFormCont
    * @todo Remove once Commerce gets a quantity #element_validate function.
    */
   public function entityFormValidate($entity_form, &$form_state) {
-    $line_item = $entity_form['#entity'];
+    $entity = $entity_form['#entity'];
     $line_item_values = drupal_array_get_nested_value($form_state['values'], $entity_form['#parents']);
 
-    $line_item->quantity = $line_item_values['quantity'];
+    $entity->quantity = $line_item_values['quantity'];
 
     // Validate attached fields.
-    field_attach_form_validate('merci_line_item', $line_item, $entity_form, $form_state);
+    field_attach_form_validate('merci_line_item', $entity, $entity_form, $form_state);
 
     // Return if any errors from validation.
     if (form_get_errors()) {
       return t('Form error');
     }
 
-    // Allow other modules to validate.
-    foreach (module_implements('merci_line_item_validate') as $module) {
-      $function = $module . '_merci_line_item_validate';
-      $function($line_item, $entity_form, $form_state);
+    // Determine if they are any conflicts.
+    try {
+      merci_line_item_validate($entity);
+    } catch ( MerciException $e) {
+      foreach ($e->getData()->getErrors() as $delta => $errors){
+
+        $msg = array();
+
+        if (array_key_exists(MERCI_ERROR_TOO_MANY, $errors)) {
+          $msg[] = $errors[MERCI_ERROR_TOO_MANY];
+        } elseif (array_key_exists(MERCI_ERROR_CONFLICT, $errors)) {
+          foreach ($errors[MERCI_ERROR_CONFLICT] as $date_start => $message) {
+            $msg[] = $message;
+          }
+        }
+
+        $parents_path = implode('][', array(MERCI_RESOURCE_REFERENCE, 'und', $delta, 'target_id'));
+        $parents_path = implode('][', $form['#parents']) . $parents_path;
+        form_set_error($parents_path, t('!errors', array('!errors' => implode('<br> ', $msg))));
+      }
     }
 
     // Submit the attached fields.
-    field_attach_submit('merci_line_item', $line_item, $entity_form, $form_state);
+    field_attach_submit('merci_line_item', $entity, $entity_form, $form_state);
 
   }
 

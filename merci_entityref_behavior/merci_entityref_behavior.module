@@ -1,0 +1,11 @@
+<?php
+
+/**
+  ** Implements hook_ctools_plugin_directory().
+  **/
+function merci_entityref_behavior_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'entityreference') {
+    return 'plugins/' . $plugin;
+  }
+}
+

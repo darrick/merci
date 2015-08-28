@@ -63,8 +63,8 @@ class EntityReferenceBehavior_Merci extends EntityReference_BehaviorHandler_Abst
       }
     }
 
-    $settings = $field['settings']['handler_settings']['behaviors']['merci']['merci'];
-    $default_value = array_key_exists('merci_date_field', $settings) ? $settings['merci_date_field'] : 'disabled';
+    $settings = $field['settings']['handler_settings']['behaviors']['merci'];
+    $default_value = (array_key_exists('merci', $settings) and array_key_exists('merci_date_field', $settings['merci'])) ? $settings['merci']['merci_date_field'] : 'disabled';
     $form['merci'] = array(
       '#type' => 'fieldset',
       '#title' => t('Merci'),
