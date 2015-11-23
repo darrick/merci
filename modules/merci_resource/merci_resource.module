@@ -1,0 +1,26 @@
+<?php
+
+function merci_resource_views_data_alter(array &$data) {
+
+  $data['entityref__roles']['table']['join'] = array(
+    'node__field_reservable_by' => array(
+      'left_field' => 'id',
+      'field' => 'target_id',
+      'table' => 'user__roles',
+    ),
+  );
+  $data['entityref__roles']['roles_entity_ref_target_id'] = array(
+    'title' => t('Roles'),
+    'help' => t('Roles that a user belongs to.'),
+    'argument' => array(
+      'id' => 'user__roles_rid',
+      'name table' => 'role',
+      'name field' => 'name',
+      'empty field name' => t('No role'),
+      'zero is null' => TRUE,
+      'numeric' => TRUE,
+    ),
+
+  );
+  dpm($data);
+}

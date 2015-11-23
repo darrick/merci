@@ -4,9 +4,8 @@ status: true
 dependencies:
   config:
     - field.storage.node.merci_reservation_items
-    - node.type.merci_resource
     - node.type.merci_reservation
-id: node.test.field_items
+id: node.merci_reservation.merci_reservation_items
 field_name: merci_reservation_items
 entity_type: node
 bundle: merci_reservation
@@ -17,10 +16,11 @@ translatable: false
 default_value: {  }
 default_value_callback: ''
 settings:
-  handler: 'default:node'
+  handler: views
   handler_settings:
-    target_bundles:
-      merci_resource: merci_resource
-    sort:
-      field: _none
+    view:
+      view_name: reservable_resources
+      display_name: entity_reference_1
+      arguments: {  }
 field_type: entity_reference
+

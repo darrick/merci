@@ -1,0 +1,27 @@
+uuid: 30b3587d-277a-48fb-8704-4aa9ba7900d0
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_checked_out_by
+    - node.type.merci_reservation
+    - node.type.merci_resource
+id: node.merci_resource.field_checked_out_by
+field_name: field_checked_out_by
+entity_type: node
+bundle: merci_resource
+label: 'Checked out by'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:node'
+  handler_settings:
+    target_bundles:
+      merci_reservation: merci_reservation
+    sort:
+      field: _none
+field_type: entity_reference
+

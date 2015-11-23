@@ -1,0 +1,42 @@
+uuid: 276f5540-3954-484d-b401-1f9b6c23063e
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.merci_resource.field_checked_out_by
+    - field.field.node.merci_resource.field_reservable_by
+    - field.field.node.merci_resource.field_reservable_quantity
+    - node.type.merci_resource
+  module:
+    - user
+id: node.merci_resource.default
+targetEntityType: node
+bundle: merci_resource
+mode: default
+content:
+  field_checked_out_by:
+    weight: 101
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    type: entity_reference_label
+  field_reservable_by:
+    weight: 103
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    type: entity_reference_label
+  field_reservable_quantity:
+    weight: 102
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    type: number_integer
+  links:
+    weight: 100
+hidden: {  }
+
