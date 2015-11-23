@@ -1,0 +1,5 @@
+name: Merci Core 
+package: Merci
+description: 'Merci core functions fo creating reservations.'
+core: 8.x
+type: module

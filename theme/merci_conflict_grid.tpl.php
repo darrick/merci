@@ -33,7 +33,10 @@
         <?php foreach ($times as $time => $available): ?>
 
          <td class="<?php print $available['class'] . ' '; print strstr($time, ':45') ? 'hourborder' : ''; ?>">
-            <?php print $available['class'] == 'available' ? 0 : l('X', 'node/' . $available['data'], array('attributes' => array('class' => 'unavailable'))); ?>
+            <?php // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// print $available['class'] == 'available' ? 0 : l('X', 'node/' . $available['data'], array('attributes' => array('class' => 'unavailable')));
+ ?>
         </td>
 
         <?php endforeach; ?>

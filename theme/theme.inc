@@ -15,8 +15,8 @@ function template_preprocess_merci_conflict_grid(&$variables) {
   $reservation_nid = $variables['reservation_nid'];
 
   $hours = array();
-  if (user_access('create reservations outside hours of operation')) {
-    $adminhours = explode('-', variable_get('merci_hours_admin', '07:00-23:00'));
+  if (\Drupal::currentUser()->hasPermission('create reservations outside hours of operation')) {
+    $adminhours = explode('-', \Drupal::config('merci.settings')->get('merci_hours_admin'));
 
     for ($day = 0; $day < 7; $day++) {
       $hours[$day]['open'] = $adminhours[0];
@@ -27,7 +27,12 @@ function template_preprocess_merci_conflict_grid(&$variables) {
     $hours = merci_load_hours_of_operation();
   }
 
-  $timezone = variable_get('date_default_timezone', 'UTC');
+  // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// $timezone = variable_get('date_default_timezone', 'UTC');
+
   // Convert the start and end dates to the site timezone.
   /*
   $start = date_create($start, "UTC");
@@ -149,11 +154,20 @@ function theme_merci_choices($variables) {
 function theme_merci_build_reservation_table_form2($variables) {
   $form = $variables['form'];
   
-  $output = theme('status_messages');
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $output = theme('status_messages');
+
   $header = $form['#header'];
   $node   = $form['#node'];
   $rows   = array();
-  foreach (element_children($form) as $did) {
+  foreach (\Drupal\Core\Render\Element::children($form) as $did) {
 
     if (strstr($did, 'form_')) {
       continue;
@@ -161,13 +175,13 @@ function theme_merci_build_reservation_table_form2($variables) {
     $values = $form[$did];
 
     $values['display_name']['#type'] = 'markup';
-    $name = drupal_render($values['display_name']);
+    $name = \Drupal::service("renderer")->render($values['display_name']);
 
     if ($values['merci_item_nid']['#type'] == 'value') {
-      $item = ($values['display_item_title']['#markup']) ? drupal_render($values['display_item_title']) : t('SPECIFIC ITEM NOT SELECTED');
+      $item = ($values['display_item_title']['#markup']) ? \Drupal::service("renderer")->render($values['display_item_title']) : t('SPECIFIC ITEM NOT SELECTED');
     }
     else {
-      $item = drupal_render($values['merci_item_nid']);
+      $item = \Drupal::service("renderer")->render($values['merci_item_nid']);
     }
 
     $row = array(
@@ -177,10 +191,10 @@ function theme_merci_build_reservation_table_form2($variables) {
 
     foreach ($form['#header'] as $index => $value) {
       if ($value == t('Accessories')) {
-        $row[$index] = drupal_render($values['accessories']);
+        $row[$index] = \Drupal::service("renderer")->render($values['accessories']);
       }
       else if ($value == t('Operations')) {
-        $row[$index] = drupal_render($values['ops']);
+        $row[$index] = \Drupal::service("renderer")->render($values['ops']);
       }
     }
 
@@ -190,9 +204,27 @@ function theme_merci_build_reservation_table_form2($variables) {
   if (!empty($rows)) {
     $table_caption = in_array((int) $node->merci_reservation_status, array(MERCI_STATUS_CHECKED_OUT, MERCI_STATUS_CHECKED_IN)) ? t('Checked out items') : t('Currently reserved items');
     $output .= '<div class="existing-items-table-header">' . $table_caption . '</div>';
-    $output .= theme('table', array('header' => $header, 'rows' => $rows));
+    // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $output .= theme('table', array('header' => $header, 'rows' => $rows));
+
   }
-  $output .= theme('status_messages');
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $output .= theme('status_messages');
+
 
   return $output;
 }
@@ -223,9 +255,15 @@ function theme_merci_current_inventory() {
     $info = (array) $info;
     $info['url_str'] = str_replace('_', '-', $info['type']);
 
-    $operations = l(t('Edit'), 'admin/structure/types/manage/' . $info['url_str'], array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+    // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// $operations = l(t('Edit'), 'admin/structure/types/manage/' . $info['url_str'], array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+
     $operations .= " | ";
-    $operations .= l(t('Add Item'), 'node/add/' . $info['url_str'], array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+    // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// $operations .= l(t('Add Item'), 'node/add/' . $info['url_str'], array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+
 
     $checked_out = merci_get_reservation_count($merci_type['type']);
 
@@ -234,13 +272,25 @@ function theme_merci_current_inventory() {
 
     $unavailable = merci_get_count($merci_type, MERCI_UNA_F);
     $total = $onhand + $unavailable + $checked_out;
-    $available = l($onhand, 'admin/merci/manage/current_inventory/' . $info['type'] . '/Available');
-    $checked_out = l($checked_out, 'admin/merci/manage/current_inventory/' . $info['type'] . '/checked-out');
-    $unavailable = l($unavailable, 'admin/merci/manage/current_inventory/' . $info['type'] . '/Unavailable');
+    // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// $available = l($onhand, 'admin/merci/manage/current_inventory/' . $info['type'] . '/Available');
 
-    $title = views_get_view('merci_inventory_view')
-        ? l($info['name'], 'admin/merci/manage/inventory/view', array('html' => TRUE, 'query' => array('merci_content_type' => $merci_type['type'])))
-        : $info['name'];
+    // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// $checked_out = l($checked_out, 'admin/merci/manage/current_inventory/' . $info['type'] . '/checked-out');
+
+    // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// $unavailable = l($unavailable, 'admin/merci/manage/current_inventory/' . $info['type'] . '/Unavailable');
+
+
+    // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// $title = views_get_view('merci_inventory_view')
+//         ? l($info['name'], 'admin/merci/manage/inventory/view', array('html' => TRUE, 'query' => array('merci_content_type' => $merci_type['type'])))
+//         : $info['name'];
+
 
     $rows[] = array(
       $title,
@@ -251,8 +301,26 @@ function theme_merci_current_inventory() {
       $operations,
     );
   }
-  $output = theme('status_messages');
-  $output .= theme('table', array('header' => $header, 'rows' => $rows));
-  $output .= '&raquo; ' . l(t('Add a new content type'), 'admin/structure/types/add', array('query' => array('destination' => 'admin/merci/manage/current_inventory')));
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $output = theme('status_messages');
+
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $output .= theme('table', array('header' => $header, 'rows' => $rows));
+
+  $output .= '&raquo; ' . \Drupal::l(t('Add a new content type'), \Drupal\Core\Url::fromRoute('node.type_add'));
   return $output;
 }

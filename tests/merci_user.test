@@ -63,10 +63,16 @@ class MerciUserTestCase extends MerciTestCase {
     ));
 
     $edit = array('roles' => ($this->merci_user->roles + array($this->merci_role => $this->merci_role)));
-    user_save($this->merci_user, $edit);
+    // @FIXME
+// user_save() is now a method of the user entity.
+// user_save($this->merci_user, $edit);
+
 
     $edit = array('roles' => ($this->admin_user->roles + array($this->merci_role => $this->merci_role)));
-    user_save($this->admin_user, $edit);
+    // @FIXME
+// user_save() is now a method of the user entity.
+// user_save($this->admin_user, $edit);
+
   }
 
   // This doesn't work for some reason.  I believe it's because you can't override the global $user variable within simpletest.
@@ -226,7 +232,7 @@ class MerciUserTestCase extends MerciTestCase {
 
     // Login the merci user.
     $this->drupalLogin($this->merci_user);
-    $closed = variable_get('merci_closed_dates','12-25');
+    $closed = \Drupal::config('merci.settings')->get('merci_closed_dates');
 
     $today = '2010-'.$closed;
 
@@ -252,7 +258,7 @@ class MerciUserTestCase extends MerciTestCase {
     // Login the merci user.
     $this->drupalLogin($this->merci_user);
     $max_days = 2;
-    variable_set("merci_max_days_advance_reservation", $max_days);
+    \Drupal::configFactory()->getEditable('merci.settings')->set("merci_max_days_advance_reservation", $max_days)->save();
 
     $max_days++;
 
@@ -273,7 +279,7 @@ class MerciUserTestCase extends MerciTestCase {
 
     $first = $this->merciCreateNode('merci-reservation',$edit,FALSE);
     $this->assertText(t("You cannot make a Reservation more than 2 days in advance."));
-    variable_set("merci_max_days_advance_reservation", 0);
+    \Drupal::configFactory()->getEditable('merci.settings')->set("merci_max_days_advance_reservation", 0)->save();
   }
 
   // Multiple bucket tests for conflicts.  Requires three bucket items 

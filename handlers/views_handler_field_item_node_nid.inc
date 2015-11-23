@@ -47,7 +47,7 @@ class views_handler_field_item_node_nid extends views_handler_field_prerender_li
       $result = db_query("SELECT m.vid as node_vid, m.did, m.merci_item_status, pn.nid AS pnid, pn.title AS ptitle, tn.nid AS tnid, tn.title AS ttitle, nt.type, nt.name FROM {merci_reservation_detail} m INNER JOIN {node} pn ON m.merci_placeholder_nid = pn.nid INNER JOIN {node_type} nt ON pn.type = nt.type LEFT JOIN {node} tn ON m.merci_item_nid = tn.nid WHERE m.vid IN (" . implode(', ', $vids) . ")");
 
       foreach($result as $item) {
-        $this->items[$item->node_vid][$item->pnid]['name'] = check_plain($item->ttitle ? $item->ttitle : $item->name);
+        $this->items[$item->node_vid][$item->pnid]['name'] = \Drupal\Component\Utility\SafeMarkup::checkPlain($item->ttitle ? $item->ttitle : $item->name);
       }
     }
   }

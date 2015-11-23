@@ -1,0 +1,7 @@
+name: Date Combo 
+package: Date
+description: 'Field for start and end date.'
+core: 8.x
+dependencies:
+  - datetime
+type: module

@@ -1,0 +1,26 @@
+uuid: e8030238-5b31-46df-bc00-e050da2bdffc
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.merci_reservation_items
+    - node.type.merci_resource
+    - node.type.merci_reservation
+id: node.test.field_items
+field_name: merci_reservation_items
+entity_type: node
+bundle: merci_reservation
+label: Items
+description: 'Items to reserve'
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:node'
+  handler_settings:
+    target_bundles:
+      merci_resource: merci_resource
+    sort:
+      field: _none
+field_type: entity_reference

@@ -1,0 +1,13 @@
+type: merci_reservation 
+name: Reservation
+dependencies:
+  enforced:
+      module:
+            - date_combo 
+description: 'A reservation reserves a resource or group of resources for some period of time.'
+help: ''
+new_revision: true 
+display_submitted: true
+preview_mode: 1
+status: true
+langcode: en

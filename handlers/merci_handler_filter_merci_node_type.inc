@@ -12,9 +12,9 @@ class merci_handler_filter_merci_node_type extends views_handler_filter_in_opera
       $options = array();
 
       // Group the buckets.
-      $vid = variable_get('merci_equipment_grouping_vid', 0);
+      $vid = \Drupal::config('merci.settings')->get('merci_equipment_grouping_vid');
       // With the correct weight.
-      $terms = taxonomy_get_tree($vid);
+      $terms = \Drupal::entityManager()->getStorage("taxonomy_term")->loadTree($vid);
       foreach ($terms as $term) {
         $options[$term->name] = array();
       }

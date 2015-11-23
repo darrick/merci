@@ -24,7 +24,7 @@ function merci_admin_settings($form, &$form_state) {
     '#type' => 'select',
     '#title' => t('Default Reservation Status'),
     '#options' => $statuses,
-    '#default_value' => variable_get('merci_default_reservation_status', ''),
+    '#default_value' => \Drupal::config('merci.settings')->get('merci_default_reservation_status'),
     '#description' => t('New Reservations will be set to this by default.  Use Checked Out if you are using MERCI to manage the checkout, but do not allow actual Reservations.'),
   );
 
@@ -33,7 +33,7 @@ function merci_admin_settings($form, &$form_state) {
     '#title' => t('Max Advance'),
     '#size' => 11,
     '#maxlength' => 11,
-    '#default_value' => variable_get('merci_max_days_advance_reservation', '0'),
+    '#default_value' => \Drupal::config('merci.settings')->get('merci_max_days_advance_reservation'),
     '#description' => t('Maximum number of days a Reservation can be made in advance.  Set to 0 if to allow Reservations to be made an unlimitted time into the future.'),
   );
 
@@ -86,16 +86,21 @@ function merci_admin_settings($form, &$form_state) {
       '#maxlength' => 11,
       '#element_validate' => array('merci_admin_validate_hours_of_operation'),
     );
-    $form['merci_hours']['merci_' . $day . '_is_weekend'] = array(
-      '#default_value' => variable_get('merci_' . $day . '_is_weekend', 0),
-      '#type' => 'checkbox',
-      '#title' => t('is considered a weekend'),
-    );
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $form['merci_hours']['merci_' . $day . '_is_weekend'] = array(
+//       '#default_value' => variable_get('merci_' . $day . '_is_weekend', 0),
+//       '#type' => 'checkbox',
+//       '#title' => t('is considered a weekend'),
+//     );
+
   }
 
   $form['merci_hours']['merci_hours_admin'] = array(
     '#title' => t('Admin hours'),
-    '#default_value' => variable_get('merci_hours_admin', '07:00-22:00'),
+    '#default_value' => \Drupal::config('merci.settings')->get('merci_hours_admin'),
     '#description' => t('This setting controls the hours shown on the conflict grid for users with Adminster MERCI permessions.  The conflict grid is normally limited to the days and hours the set above.  Because users with Admister MERCI rights can create Resevervations outside the normal hours of operation, they need to see conflicts during those times as well.'),
     '#type' => 'textfield',
     '#size' => 11,
@@ -109,7 +114,7 @@ function merci_admin_settings($form, &$form_state) {
     '#rows' => 10,
     // TODO: this doesn't seem to work...
     '#cols' => 5,
-    '#default_value' => variable_get('merci_closed_dates', ''),
+    '#default_value' => \Drupal::config('merci.settings')->get('merci_closed_dates'),
     '#description' => '<div>' . t('Enter dates which are closed regardless of the day of the week, one date per line, in the format') . ' <em>mm-dd</em></div>' . t('ex.') . ' <em>07-04</em> ' . t('would mean July 4th is always closed, regardless of what day of the week it falls on.'),
     '#element_validate' => array('merci_admin_validate_closed_days'),
   );
@@ -124,7 +129,7 @@ function merci_admin_settings($form, &$form_state) {
   $form['merci_advanced']['merci_verbose_logging'] = array(
     '#type' => 'checkbox',
     '#title' => t('Verbose Logging Mode'),
-    '#default_value' => variable_get('merci_verbose_logging', 0),
+    '#default_value' => \Drupal::config('merci.settings')->get('merci_verbose_logging'),
     '#description' => t('This option will add log messages at several points in the resevervation process making it easier to diagnose configuration issues.'),
   );
 
@@ -151,7 +156,7 @@ function merci_admin_settings_submit($form, &$form_state) {
   if ($form_state['values']['merci_lock'] != $field['locked']) {
     $field['locked'] = $form_state['values']['merci_lock'];
     module_load_include('inc', 'field', 'field.crud');
-    field_update_field($field);
+    $field->save();
   }
   $days_of_the_week = array(
     'sunday',
@@ -180,11 +185,11 @@ function merci_admin_settings_submit($form, &$form_state) {
   $parts = explode("\n", $closed_days_raw);
   foreach ($parts as $date) {
     $date = trim($date);
-    if (drupal_strlen($date) == 5) {
+    if (\Drupal\Component\Utility\Unicode::strlen($date) == 5) {
       $hours_of_operation['closed_days'][] = $date;
     }
   }
-  variable_set('merci_hours_operation', $hours_of_operation);
+  \Drupal::configFactory()->getEditable('merci.settings')->set('merci_hours_operation', $hours_of_operation)->save();
 }
 
 function merci_admin_validate_closed_days($element, &$form_state) {
@@ -198,14 +203,17 @@ function merci_admin_validate_closed_days($element, &$form_state) {
     $hours_of_operation['closed_days'][] = $date;
     list($month, $day) = explode('-', $date);
     if(strlen($month) != 2) {
-      form_error($element, t('Month must be two digits.'));
+      //form_error($element, t('Month must be two digits.'));
+      $form_state->setError($element, t('Month must be two digits.'));
     }
     if(strlen($day) != 2) {
-      form_error($element, t('Day must be two digits.'));
+      //form_error($element, t('Day must be two digits.'));
+      $form_state->setError($element, t('Day must be two digits.'));
     }
 
     if (!checkdate($month, $day, date('Y'))) {
-      form_error($element, t('Date %date is invalid', array('%date' => $date)));
+      //form_error($element, t('Date %date is invalid', array('%date' => $date)));
+      $form_state->setError($element, t('Date %date is invalid', array('%date' => $date)));
     }
   }
 }
@@ -216,20 +224,25 @@ function merci_admin_validate_hours_of_operation($element, &$form_state) {
     foreach ($values as $value) {
       list ($hour, $min) = explode(':', $value);
       if ($hour > 23) {
-        form_error($element, t('Hour must be less than or equal to 23.'));
+        //form_error($element, t('Hour must be less than or equal to 23.'));
+        $form_state->setError($element, t('Hour must be less than or equal to 23.'));
       }
       if ($hour < 0) {
-        form_error($element, t('Hour must be greater than or equal to 0.'));
+        //form_error($element, t('Hour must be greater than or equal to 0.'));
+        $form_state->setError($element, t('Hour must be greater than or equal to 0.'));
       }
       if ($min > 59) {
-        form_error($element, t('Minutes must be less than or equal to 59.'));
+        //form_error($element, t('Minutes must be less than or equal to 59.'));
+        $form_state->setError($element, t('Minutes must be less than or equal to 59.'));
       }
       if ($min < 0) {
-        form_error($element, t('Minutes must be greater than or equal to 0.'));
+        //form_error($element, t('Minutes must be greater than or equal to 0.'));
+        $form_state->setError($element, t('Minutes must be greater than or equal to 0.'));
       }
     }
     if ($values[1] < $values[0]) {
-        form_error($element, t('Closing time must be greater then opening time.'));
+        //form_error($element, t('Closing time must be greater then opening time.'));
+        $form_state->setError($element, t('Closing time must be greater then opening time.'));
     }
   }
 }

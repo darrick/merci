@@ -67,7 +67,7 @@ function merci_taxonomy_node_save_terms($node, $tids) {
   foreach ($tids as $tid) {
     if ($tid) {
       $object = array('nid' => $node->nid, 'vid' => $node->vid, 'tid' => $tid);
-      drupal_write_record('taxonomy_term_node', $object);
+      \Drupal::database()->insert('taxonomy_term_node')->fields($object)->execute();
     }
   }
 }
@@ -78,6 +78,35 @@ function merci_taxonomy_node_save_terms($node, $tids) {
  */
 function merci_nodes_for_type_count($type) {
   return db_query("SELECT COUNT(nid) FROM {node} WHERE type = :type", array(':type' => $type))->fetchField();
+}
+
+function merci_node_type_variables(\Drupal\node\Entity\NodeType $info) {
+  $variables = array(
+    'merci_type_setting',
+    'merci_max_hours_per_reservation',
+    'merci_allow_overnight',
+    'merci_allow_weekends',
+    'merci_late_fee_per_hour',
+    'merci_rate_per_hour',
+    'merci_fee_free_hours',
+    'merci_spare_items',
+    'merci_min_cancel_hours',
+    'merci_autocheckout',
+    'merci_autocheckin',
+    'merci_selfcheckout',
+    'merci_active_status',
+    'merci_auto_assign_bucket_item',
+  );
+
+  $settings = array(
+    //'merci_type_setting' => merci_type_setting($info->id()),
+    'type' => $info->id(),
+  );
+
+  foreach ($variables as $variable) {
+    $settings[$variable] = $info->getThirdPartySetting('merci', $variable);
+  }
+  return $settings;
 }
 
 function merci_node_type_update_variables($info, $existing) {
@@ -93,7 +122,6 @@ function merci_node_type_update_variables($info, $existing) {
     'merci_late_fee_per_hour',
     'merci_rate_per_hour',
     'merci_fee_free_hours',
-    'merci_status',
     'merci_spare_items',
     'merci_min_cancel_hours',
     'merci_autocheckout',
@@ -101,24 +129,30 @@ function merci_node_type_update_variables($info, $existing) {
     'merci_selfcheckout',
     'merci_active_status',
     'merci_auto_assign_bucket_item',
+    'merci_type_setting',
   );
   $settings = array(
-    'merci_type_setting' => merci_type_setting($info->type),
-    'type' => $info->type,
+    //'merci_type_setting' => merci_type_setting($info->getEntityType()),
+    'type' => $info->getEntityType(),
   );
   foreach ($variables as $variable) {
-    $settings[$variable] = variable_get($variable . '_' . $info->type, 0);
-    variable_del($variable . '_' . $info->type);
+    $info->setThirdPartySetting('merci', $variable, $info->{$variable});
   }
+  return;
 
   if (!$existing) {
-    $return = drupal_write_record('merci_node_type', $settings);
+    $return = \Drupal::database()->insert('merci_node_type')->fields($settings)->execute();
   }
   else {
-    $return = drupal_write_record('merci_node_type', $settings, 'type');
+    $return = \Drupal::database()->merge('merci_node_type')->fields($settings)->key(['type'])->execute();
   }
-  cache_clear_all('merci_' . $settings['type'] . '_data', 'cache');
-  cache_clear_all('merci_content_type_info', 'cache');
+
+  // @FIXME may not be correct.
+  \Drupal::cache()->delete('merci_' . $settings['type'] . '_data');
+  \Drupal::cache()->delete('merci_content_type_info');
+
+  //cache_clear_all('merci_' . $settings['type'] . '_data', 'cache');
+  //cache_clear_all('merci_content_type_info', 'cache');
 }
 /**
  * @todo Please document this function.
@@ -136,11 +170,19 @@ function merci_node_type_delete($info) {
   // TODO Please review the conversion of this statement to the D7 database API syntax.
   /* db_query("DELETE FROM {merci_node_type} WHERE type = '%s'", $info->type) */
   db_delete('merci_node_type')
-  ->condition('type', $info->type)
+  ->condition('type', $info->getEntityType())
   ->execute();
-  variable_del('merci_type_setting_' . $info->type);
-  cache_clear_all('merci_' . $info->type . '_data', 'cache');
-  cache_clear_all('merci_content_type_info', 'cache');
+  // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// variable_del('merci_type_setting_' . $info->type);
+   //     \Drupal::config('merci.settings')->clear('merci_type_setting_' . $info->type)->save();
+
+  \Drupal::cache()->delete('merci_' . $info->getEntityType() . '_data');
+  \Drupal::cache()->delete('merci_content_type_info');
+  //cache_clear_all('merci_' . $info->type . '_data', 'cache');
+  //cache_clear_all('merci_content_type_info', 'cache');
 }
 
 /**
@@ -183,7 +225,7 @@ function merci_get_reservation_count($content_type) {
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
-function merci_delete_record($table, &$object, $key) {
+function merci_delete_record($table, \Drupal\node\NodeInterface &$object, $key) {
   return db_delete($table)
     ->condition($key, $object->{$key})
     ->execute();
@@ -263,7 +305,10 @@ function merci_checked_out_reservations_for_item_nid($nid, $exclude_nid) {
 
   $bad_reservations = array();
   foreach ($reservations as $reservation) {
-    $bad_reservations[] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
+    // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// $bad_reservations[] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
+
   }
 
   return $bad_reservations;
@@ -289,7 +334,10 @@ function merci_incomplete_reservations_for_item_nid($nid) {
 
   $bad_reservations = array();
   foreach ($reservations as $reservation) {
-    $bad_reservations[] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
+    // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// $bad_reservations[] = l($reservation->title, "node/$reservation->nid/edit", array('query' => drupal_get_destination()));
+
   }
 
   return $bad_reservations;
@@ -302,6 +350,7 @@ function merci_incomplete_reservations_for_item_nid($nid) {
  */
 function merci_db_reservations_by_status_in_timespan($statuses = array(), $start = NULL, $end = NULL, $older = TRUE) {
 
+  return;
   // Determine CCK table and columns the date data is stored in.
   $field = field_info_field('field_merci_date');
   $table           = key($field['storage']['details']['sql']['FIELD_LOAD_CURRENT']);

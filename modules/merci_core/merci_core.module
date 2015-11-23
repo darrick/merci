@@ -1,0 +1,5 @@
+<?php
+
+
+define('MERCI_ERROR_TOO_MANY', 1);
+define('MERCI_ERROR_CONFLICT', 2);

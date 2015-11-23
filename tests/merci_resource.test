@@ -53,10 +53,16 @@ class MerciResourceTestCase extends MerciTestCase {
     ));
 
     $edit = array('roles' => ($this->merci_user->roles + array($this->merci_role => $this->merci_role)));
-    user_save($this->merci_user, $edit);
+    // @FIXME
+// user_save() is now a method of the user entity.
+// user_save($this->merci_user, $edit);
+
 
     $edit = array('roles' => ($this->admin_user->roles + array($this->merci_role => $this->merci_role)));
-    user_save($this->admin_user, $edit);
+    // @FIXME
+// user_save() is now a method of the user entity.
+// user_save($this->admin_user, $edit);
+
   }
 
   function testMerciTooManyResources() {

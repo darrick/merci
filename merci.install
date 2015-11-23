@@ -12,7 +12,7 @@
 function merci_install() {
   // Core doesn't load the .module file on install for some reason,
   // so load it here manually.
-  drupal_load('module', 'merci');
+  //drupal_load('module', 'merci');
   // Create tables.
   // TODO The drupal_(un)install_schema functions are called automatically in D7.
   // drupal_install_schema('merci')
@@ -24,14 +24,26 @@ function merci_install() {
 function merci_uninstall() {
 
   // Delete the vocabulary.
-  $vid = variable_get('merci_equipment_grouping_vid', 0);
-  taxonomy_vocabulary_delete($vid);
+  $vid = \Drupal::config('merci.settings')->get('merci_equipment_grouping_vid');
+  //taxonomy_vocabulary_delete($vid);
+  $vocabulary = \Drupal\taxonomy\Entity\Vocabulary::load($vid);
+  if ($vocabulary) {
+    $vocabulary->delete();
+  }
+  return;
 
   // Loop over each of the fields defined by this module and delete
   // all instances of the field, their data, and the field itself.
   // http://api.drupal.org/api/function/field_delete_field/7
   foreach (array_keys(_merci_installed_fields()) as $field) {
-    field_delete_field($field);
+    // @FIXME
+// Fields and field instances are now exportable configuration entities, and
+// the Field Info API has been removed.
+// 
+// 
+// @see https://www.drupal.org/node/2012896
+// field_delete_field($field);
+
   }
 
   // Loop over any remaining field instances attached to the node_example
@@ -39,13 +51,26 @@ function merci_uninstall() {
   // http://api.drupal.org/api/function/field_delete_field/7
   $instances = field_info_instances('node', 'merci_reservation');
   foreach ($instances as $instance_name => $instance) {
-    field_delete_instance($instance);
+    // @FIXME
+// Fields and field instances are now exportable configuration entities, and
+// the Field Info API has been removed.
+// 
+// 
+// @see https://www.drupal.org/node/2012896
+// field_delete_instance($instance);
+
   }
 
   // Remove all MERCI variables.
+  // @FIXME may not need to do this.
   $variables = db_query("SELECT name FROM {variable} WHERE name LIKE 'merci_%'");
   foreach($variables as $variable) {
-    variable_del($variable->name);
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// variable_del($variable->name);
+
   }
 
   // Remove all MERCI all associated nodes
@@ -567,14 +592,28 @@ function merci_create_cck_fields() {
 
   foreach (_merci_installed_fields() as $field) {
     if (!field_info_field($field['field_name'])) {
-      field_create_field($field);
+      // @FIXME
+// Fields and field instances are now exportable configuration entities, and
+// the Field Info API has been removed.
+// 
+// 
+// @see https://www.drupal.org/node/2012896
+// field_create_field($field);
+
   }
   }
 
 
   foreach (_merci_installed_instances() as $instance) {
     if (!field_info_instance($instance['entity_type'], $instance['field_name'], $instance['bundle'])) {
-      field_create_instance($instance);
+      // @FIXME
+// Fields and field instances are now exportable configuration entities, and
+// the Field Info API has been removed.
+// 
+// 
+// @see https://www.drupal.org/node/2012896
+// field_create_instance($instance);
+
     }
   }
 }
@@ -590,7 +629,7 @@ function merci_add_group_taxonomy() {
   // a low weight so it will appear first in forum topic create and edit
   // forms.
   // Delete the vocabulary.
-  $vid = variable_get('merci_equipment_grouping_vid', 0);
+  $vid = \Drupal::config('merci.settings')->get('merci_equipment_grouping_vid');
   if (!taxonomy_vocabulary_load($vid)) {
     $vocabulary = array(
       'name' => t('MERCI Equipment Grouping'),
@@ -606,13 +645,18 @@ function merci_add_group_taxonomy() {
     $vocabulary_obj = (object)$vocabulary;;
     taxonomy_vocabulary_save($vocabulary_obj /* TODO Vocabulary object replaces array $vocabulary */);
 
-    variable_set('merci_equipment_grouping_vid', $vocabulary_obj->vid);
+    \Drupal::configFactory()->getEditable('merci.settings')->set('merci_equipment_grouping_vid', $vocabulary_obj->vid)->save();
   }
 }
 
 function _merci_installed_instances () {
   // Create the date, commercial_total, and member_total fields for the reservation.
-  $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
+  // @FIXME
+// // @FIXME
+// // This looks like another module's variable. You'll need to rewrite this call
+// // to ensure that it uses the correct configuration object.
+// $short_date_format = variable_get('date_format_short', 'm/d/Y - H:i');
+
 
   return  array(
     'field_merci_date' => array(
@@ -685,7 +729,12 @@ function merci_update_7001() {
 
   $hours_of_operation = array();
   foreach ($days_of_the_week as $num => $day) {
-    $hours = variable_get('merci_hours_' . $day, '');
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $hours = variable_get('merci_hours_' . $day, '');
+
     if (empty($hours)) {
       $hours_of_operation[$num] = FALSE;
     } else {
@@ -695,16 +744,16 @@ function merci_update_7001() {
     }
   }
 
-  $closed_days_raw = variable_get('merci_closed_dates','');
+  $closed_days_raw = \Drupal::config('merci.settings')->get('merci_closed_dates');
   $hours_of_operation['closed_days'] = array();
   $parts = explode("\n", $closed_days_raw);
   foreach ($parts as $date) {
     $date = trim($date);
-    if (drupal_strlen($date) == 5) {
+    if (\Drupal\Component\Utility\Unicode::strlen($date) == 5) {
       $hours_of_operation['closed_days'][] = $date;
     }
   }
-  variable_set('merci_hours_operation', $hours_of_operation);
+  \Drupal::configFactory()->getEditable('merci.settings')->set('merci_hours_operation', $hours_of_operation)->save();
   return array(array('success' => TRUE, 'query' => 'Should only be doing db updates.  But I am doing a lot more.'));
 }
 

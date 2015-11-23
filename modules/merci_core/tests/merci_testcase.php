@@ -31,7 +31,9 @@ class MerciTestCase extends DrupalWebTestCase {
         //'date_popup',
         //'text',
         //'views',
-        'merci'
+      'merci_core',
+      'merci_line_item',
+      'merci_line_item_ui',
         //'merci_staff'
 
         );
@@ -113,9 +115,7 @@ class MerciTestCase extends DrupalWebTestCase {
     $this->verbose('Creating node: ' . var_export($settings, TRUE));
     $this->drupalPost('node/add/' . $type, $settings, t('Save'));
     if (array_key_exists('title', $settings)) {
-      $node = // @FIXME
-// To reset the entity cache, use EntityStorageInterface::resetCache().
-\Drupal::entityManager()->getStorage('node')->loadByProperties(array('title' => $settings['title']));
+      $node = entity_load('node',FALSE,array('title' => $settings['title']));
       //$this->verbose('Node created: ' . var_export($node, TRUE));
       return array_shift($node);
     }
@@ -123,7 +123,7 @@ class MerciTestCase extends DrupalWebTestCase {
 
   function merciUpdateNode($nid,$settings,$pass=TRUE) {
     $this->drupalPost("node/$nid/edit", $settings, t('Save'));
-    $node = \Drupal::entityManager()->getStorage('node')->load($nid);
+    $node = node_load($nid);
     return $node;
   }
 
