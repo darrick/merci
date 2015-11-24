@@ -39,8 +39,8 @@ class DateComboFieldItemList extends FieldItemList {
         '#parents' => array('default_value_input'),
         'default_date_type' => array(
           '#type' => 'select',
-          '#title' => t('Default date'),
-          '#description' => t('Set a default value for this date.'),
+          '#title' => t('Default date for start'),
+          '#description' => t('Set a default value for the start date.'),
           '#default_value' => isset($default_value[0]['default_date_type']) ? $default_value[0]['default_date_type'] : '',
           '#options' => array(
             static::DEFAULT_VALUE_NOW => t('Current date'),
@@ -50,7 +50,7 @@ class DateComboFieldItemList extends FieldItemList {
         ),
         'default_date' => array(
           '#type' => 'textfield',
-          '#title' => t('Relative default value'),
+          '#title' => t('Relative default start value'),
           '#description' => t("Describe a time by reference to the current day, like '+90 days' (90 days from the day the field is created) or '+1 Saturday' (the next Saturday). See <a href=\"@url\">@strtotime</a> for more details.", array('@strtotime' => 'strtotime', '@url' => 'http://www.php.net/manual/en/function.strtotime.php')),
           '#default_value' => (isset($default_value[0]['default_date_type']) && $default_value[0]['default_date_type'] == static::DEFAULT_VALUE_CUSTOM) ? $default_value[0]['default_date'] : '',
           '#states' => array(
@@ -58,7 +58,13 @@ class DateComboFieldItemList extends FieldItemList {
               ':input[id="edit-default-value-input-default-date-type"]' => array('value' => static::DEFAULT_VALUE_CUSTOM),
             )
           )
-        )
+        ),
+        'default_date2' => array(
+          '#type' => 'textfield',
+          '#title' => t('Relative default end value'),
+          '#description' => t("Relative to start date. Describe a time by reference to the current day, like '+90 days' (90 days from the day the field is created) or '+1 Saturday' (the next Saturday). See <a href=\"@url\">@strtotime</a> for more details.", array('@strtotime' => 'strtotime', '@url' => 'http://www.php.net/manual/en/function.strtotime.php')),
+          '#default_value' =>  $default_value[0]['default_date2'],
+          )
       );
 
       return $element;
@@ -69,7 +75,7 @@ class DateComboFieldItemList extends FieldItemList {
    * {@inheritdoc}
    */
   public function defaultValuesFormValidate(array $element, array &$form, FormStateInterface $form_state) {
-    if ($form_state->getValue(['default_value_input', 'default_date_type']) == static::DEFAULT_VALUE_CUSTOM) {
+  if ($form_state->getValue(['default_value_input', 'default_date_type']) == static::DEFAULT_VALUE_CUSTOM) {
       $is_strtotime = @strtotime($form_state->getValue(array('default_value_input', 'default_date')));
       if (!$is_strtotime) {
         $form_state->setErrorByName('default_value_input][default_date', t('The relative date value entered is invalid.'));
@@ -101,13 +107,17 @@ class DateComboFieldItemList extends FieldItemList {
       // storage.
       $date = new DrupalDateTime($default_value[0]['default_date'], DATETIME_STORAGE_TIMEZONE);
       $value = $date->format(DATETIME_DATETIME_STORAGE_FORMAT);
+      $date2 = new DrupalDateTime($value . ' ' . $default_value[0]['default_date2'], DATETIME_STORAGE_TIMEZONE);
+      $value2 = $date2->format(DATETIME_DATETIME_STORAGE_FORMAT);
       // We only provide a default value for the first item, as do all fields.
       // Otherwise, there is no way to clear out unwanted values on multiple value
       // fields.
       $default_value =  array(
         array(
           'value' => $value,
+          'value2' => $value2,
           'date' => $date,
+          'date2' => $date2,
         )
       );
     }

@@ -44,6 +44,7 @@ function merci_resource_node_presave(Drupal\Core\Entity\EntityInterface $entity)
       // reservation.
       if ($saved_entity->{'merci_reservation_items'}->count() != $entity->{'merci_reservation_items'}->count()) {
         merci_resource_update_checked_out_by($saved_entity, 'checked_in');
+        merci_resource_update_checked_out_by($entity, $status);
       }
     } else if ($status == 'checked_out') {
       merci_resource_update_checked_out_by($entity, $status);
