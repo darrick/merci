@@ -81,8 +81,6 @@ class ReservationConflicts implements ReservationConflictsInterface {
       }
       $this->conflicting_entities = $conflicts;
     }
-    dpm($this->buckets);
-    dpm($this->conflicting_entities);
   }
 
   public function getErrors($delta = NULL) {
@@ -430,7 +428,6 @@ class ReservationConflicts implements ReservationConflictsInterface {
 
 
     $parent_conflicts = $this->conflicts($dates);
-    dpm($parent_conflicts);
 
     $date_value = $dates->get('value')->getValue();
 

@@ -22,5 +22,45 @@ function merci_resource_views_data_alter(array &$data) {
     ),
 
   );
-  dpm($data);
+}
+
+/*
+  Update resources with reference to reservation if status is checked out.
+ */
+function merci_resource_node_presave(Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->bundle() == 'merci_reservation') {
+    $status = $entity->{'field_reservation_status'}->__get('value');
+
+    // Only update if status is changed from checked_out or to checked_out.
+    if (!$entity->isNew()) {
+      $saved_entity = \Drupal::entityManager()->getStorage($entity->getEntityTypeId())->loadUnchanged($entity->id());
+      $saved_status = $saved_entity->{'field_reservation_status'}->__get('value');
+      if ($saved_status != $status &&
+        ($saved_status == 'checked_out' || $status == 'checked_out')) {
+          merci_resource_update_checked_out_by($entity, $status);
+        }
+
+      // If any resources were removed update ... remove the reference to this
+      // reservation.
+      if ($saved_entity->{'merci_reservation_items'}->count() != $entity->{'merci_reservation_items'}->count()) {
+        merci_resource_update_checked_out_by($saved_entity, 'checked_in');
+      }
+    } else if ($status == 'checked_out') {
+      merci_resource_update_checked_out_by($entity, $status);
+    }
+
+  }
+}
+
+function merci_resource_update_checked_out_by(Drupal\Core\Entity\EntityInterface $entity, $status) {
+  foreach ($entity->{'merci_reservation_items'}->referencedEntities() as $resource) {
+    if ($status == 'checked_out') {
+      $resource->{'field_checked_out_by'}->setValue(array('target_id' => $entity->id()));
+    } else {
+      if (!$resource->{'field_checked_out_by'}->isEmpty()) {
+        $resource->{'field_checked_out_by'}->removeItem(0);
+      }
+    }
+    $resource->save();
+  }
 }

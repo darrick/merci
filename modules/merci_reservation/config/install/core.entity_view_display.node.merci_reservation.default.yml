@@ -3,17 +3,25 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.node.merci_reservation.field_reservation_status
     - field.field.node.merci_reservation.merci_reservation_date
     - field.field.node.merci_reservation.merci_reservation_items
     - node.type.merci_reservation
   module:
     - date_combo
+    - options
     - user
 id: node.merci_reservation.default
 targetEntityType: node
 bundle: merci_reservation
 mode: default
 content:
+  field_reservation_status:
+    weight: 101
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    type: list_default
   links:
     weight: 100
     settings: {  }

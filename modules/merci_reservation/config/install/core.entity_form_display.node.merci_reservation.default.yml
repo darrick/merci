@@ -18,6 +18,11 @@ content:
     weight: 10
     settings: {  }
     third_party_settings: {  }
+  field_reservation_status:
+    weight: 26
+    settings: {  }
+    third_party_settings: {  }
+    type: options_select
   merci_reservation_date:
     type: date_combo_default
     weight: 0

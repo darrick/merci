@@ -114,7 +114,6 @@ class ReservationConflictConstraintValidator extends ConstraintValidator {
     $conflicts->setEntity($value->getEntity());
     $conflicts->setDateField('merci_reservation_date');
     $conflicts->setItemField('merci_reservation_items');
-    dpm($conflicts->getErrors());
 
 
     foreach ($conflicts->getErrors() as $delta => $errors) {
