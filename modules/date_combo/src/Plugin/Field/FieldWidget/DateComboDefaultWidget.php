@@ -84,6 +84,7 @@ class DateComboDefaultWidget extends DateTimeWidgetBase implements ContainerFact
     $element['value2'] = $element['value'];
 
     $element['value'] += array(
+      '#title' => t('Start'),
       '#date_date_format'=>  $date_format,
       '#date_date_element' => $date_type,
       '#date_date_callbacks' => array(),
@@ -93,6 +94,7 @@ class DateComboDefaultWidget extends DateTimeWidgetBase implements ContainerFact
     );
 
     $element['value2'] += array(
+      '#title' => t('End'),
       '#date_date_format'=>  $date_format,
       '#date_date_element' => $date_type,
       '#date_date_callbacks' => array(),
@@ -113,6 +115,8 @@ class DateComboDefaultWidget extends DateTimeWidgetBase implements ContainerFact
       $date->setTimezone(new \DateTimeZone($element['value2']['#date_timezone']));
       $element['value2']['#default_value'] = $date;
     }
+    $element['#type'] = 'fieldset';
+    unset($element['#theme_wrappers']);
 
     return $element;
 
