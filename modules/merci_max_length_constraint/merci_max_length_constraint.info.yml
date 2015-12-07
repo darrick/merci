@@ -1,0 +1,5 @@
+name: Merci Max Lenght of Reservation Constraint 
+package: Merci
+description: 'Entityref validator for conflicts.'
+core: 8.x
+type: module
