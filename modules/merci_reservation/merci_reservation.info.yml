@@ -3,7 +3,8 @@ package: Merci
 description: 'Node type for creating reservations.'
 core: 8.x
 dependencies:
-  - date_combo
+  - merci
   - merci_resource
   - options
+  - date_combo
 type: module

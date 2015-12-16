@@ -1,0 +1,7 @@
+officehours:
+  version: 1.x 
+  js:
+    js/office_hours.js: {}
+  dependencies:
+    - core/jquery
+    - core/jquery.once

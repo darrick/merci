@@ -2,4 +2,8 @@ name: Merci Resource
 package: Merci
 description: 'Node type of a reservable item.'
 core: 8.x
+dependencies:
+  - merci_grouping
+  - merci_open_hours
+  - merci
 type: module

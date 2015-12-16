@@ -1,0 +1,11 @@
+uuid: 2dbe4938-535d-46eb-9807-7df0a009eec6
+langcode: en
+status: true
+dependencies:
+  enforced:
+      module:
+        - office_hours
+id: 12_hour_time_09_00_am
+label: '12 hour time (09:00 am)'
+locked: false
+pattern: 'h:i a'

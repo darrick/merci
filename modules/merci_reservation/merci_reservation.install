@@ -1,0 +1,18 @@
+<?php
+
+use Drupal\field\Entity\FieldStorageConfig;
+/**
+ *  * Implements hook_uninstall().
+ */
+function merci_reservation_uninstall() {
+  if ($field_storage = FieldStorageConfig::loadByName('node', 'field_reservation_status')) {
+    $field_storage->delete();
+  }
+  if ($field_storage = FieldStorageConfig::loadByName('node', 'merci_reservation_date')) {
+    $field_storage->delete();
+  }
+  if ($field_storage = FieldStorageConfig::loadByName('node', 'merci_reservation_items')) {
+    $field_storage->delete();
+  }
+  field_purge_batch(10);
+}

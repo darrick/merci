@@ -1,0 +1,12 @@
+uuid: 430830b1-31ea-4254-a300-ab545ccfec2b
+langcode: en
+status: true
+dependencies:
+  enforced:
+      module:
+        - office_hours
+id: 24_hour_time_9_00
+label: '24 hour time (9:00)'
+locked: false
+pattern: 'G:i'
+

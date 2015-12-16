@@ -1,0 +1,27 @@
+<?php
+/**
+ * @file
+ * Creates a field and widget for inserting working or office hours per day.
+ */
+
+use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Changes the Field_storage settings form to assure unlimited cardinality.
+ * 
+ */
+function office_hours_form_field_storage_config_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $entity = $form_state->getFormObject()->getEntity();
+  if ($entity->getType() == 'office_hours') {
+    $form['cardinality_container']['cardinality'] = array(
+      '#options' => array(FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED => t('Unlimited')),
+      '#default_value' => FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED,
+      '#description' => '<p>' . t("This is unlimited by this field's nature. See
+      'Number of slots' for limiting the number of slots per day."),
+    )
+    + $form['cardinality_container']['cardinality'];
+  }
+}

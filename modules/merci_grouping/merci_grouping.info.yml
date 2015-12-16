@@ -1,0 +1,9 @@
+name: Merci Grouping 
+package: Merci
+description: 'Groups resources using taxonomy and add fields for controlling reservation of resources.'
+core: 8.x
+dependencies:
+  - interval 
+  - merci_open_hours
+type: module
+
