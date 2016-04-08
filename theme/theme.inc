@@ -123,6 +123,8 @@ function template_preprocess_merci_conflict_grid(&$variables) {
     $time = $hours[$day]['open'];
     while ($time < $hours[$day]['close']) {
       $pretty_hours[$date][] = date('ga', strtotime($time));
+      // Don't overflow to next day.
+      if ($time >= '23:00') break;
       $time = date('H:i', strtotime($time . ' +1 hour'));
     }
   }
