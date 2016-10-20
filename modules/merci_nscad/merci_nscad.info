@@ -1,0 +1,8 @@
+name = "MERCI NSCAD"
+package = MERCI
+description = "Merci customization specific to NSCAD."
+core = 7.x
+dependencies[] = merci 
+project = "merci"
+
+files[] = merci_nscad.module

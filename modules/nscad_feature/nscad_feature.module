@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the nscad_feature feature.
+ */
+
+include_once 'nscad_feature.features.inc';
