@@ -1,4 +1,65 @@
 <?php
 
-function merci_nscad_form_alter(&$form, &$form_state, $form_id) {
+/**
+ * Implements hook_field_attach_form().
+ *
+ * Extend reference_option_limit module to work with multiple_selects widget.
+ */
+function merci_nscad_field_attach_form($entity_type, $entity, &$form, &$form_state, $langcode) {
+  // Check that the form is one we need to act on.
+  if (!isset($form_state['reference_option_limit'])) {
+    return;
+  }
+  // For each field to work on.
+  foreach ($form_state['reference_option_limit'] as $settings) {
+    dpm($settings);
+    // Get the current field name and instance.
+    $field_name_option_limited = $settings['field'];
+    $field_instance_option_limited = field_info_instance($settings['entity_type'], $field_name_option_limited, $settings['entity_bundle']);
+
+    // Get the form element to act on.
+    $element_limited =& $form[$field_name_option_limited];
+
+    $options = array(
+      '_none' => '- None -',
+    );
+
+    if (array_key_exists('#options', $element_limited[LANGUAGE_NONE]) and is_array($element_limited[LANGUAGE_NONE]['#options'])) {
+      $options += $element_limited[LANGUAGE_NONE]['#options'];
+    }
+
+    if (!empty($options) and $field_instance_option_limited['widget']['type'] == 'multiple_selects') {
+      foreach (element_children($element_limited[LANGUAGE_NONE]) as $key) {
+        $element_limited[LANGUAGE_NONE][$key]['target_id']['#options'] = $options;
+      }
+    }
+  }
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Limit the options in the merci_choice widget.
+ */
+function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state, $form_id) {
+
+  // Stash our settings in $form_state so hook_form_alter() can find them.
+  // We need to do this because in this current hook we can only see this
+  // field's form element.
+  // When in ajax, these are already here!!!!
+  $settings = array(
+    'field'         => 'choice_wrapper',
+    // We may not be at the top level of the form; this tells us where we
+    // actually are.
+    'field_parents' => array(),
+    'fields_match'  => array('field_location' => 'field_location'),//$fields_match,
+    // If there's a better way for hook_form_alter() to get these values than
+    // stashing them here, file a patch! ;)
+    'entity_type'   => 'node',//$context['instance']['entity_type'],
+    'entity_bundle' => 'example_item',//$context['instance']['bundle'],
+    'empty_behaviour' => !empty($context['instance']['options_limit_empty_behaviour']),
+  );
+  // Allow for settings for more than one field.
+  $form_state['reference_option_limit']['choice_wrapper'] = $settings;
+}
+
