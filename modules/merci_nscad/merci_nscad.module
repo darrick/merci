@@ -1,65 +1,140 @@
 <?php
 
 /**
- * Implements hook_field_attach_form().
- *
- * Extend reference_option_limit module to work with multiple_selects widget.
- */
-function merci_nscad_field_attach_form($entity_type, $entity, &$form, &$form_state, $langcode) {
-  // Check that the form is one we need to act on.
-  if (!isset($form_state['reference_option_limit'])) {
-    return;
-  }
-  // For each field to work on.
-  foreach ($form_state['reference_option_limit'] as $settings) {
-    dpm($settings);
-    // Get the current field name and instance.
-    $field_name_option_limited = $settings['field'];
-    $field_instance_option_limited = field_info_instance($settings['entity_type'], $field_name_option_limited, $settings['entity_bundle']);
-
-    // Get the form element to act on.
-    $element_limited =& $form[$field_name_option_limited];
-
-    $options = array(
-      '_none' => '- None -',
-    );
-
-    if (array_key_exists('#options', $element_limited[LANGUAGE_NONE]) and is_array($element_limited[LANGUAGE_NONE]['#options'])) {
-      $options += $element_limited[LANGUAGE_NONE]['#options'];
-    }
-
-    if (!empty($options) and $field_instance_option_limited['widget']['type'] == 'multiple_selects') {
-      foreach (element_children($element_limited[LANGUAGE_NONE]) as $key) {
-        $element_limited[LANGUAGE_NONE][$key]['target_id']['#options'] = $options;
-      }
-    }
-  }
-}
-
-/**
  * Implements hook_form_FORM_ID_alter().
  *
  * Limit the options in the merci_choice widget.
  */
 function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state, $form_id) {
 
-  // Stash our settings in $form_state so hook_form_alter() can find them.
-  // We need to do this because in this current hook we can only see this
-  // field's form element.
-  // When in ajax, these are already here!!!!
-  $settings = array(
-    'field'         => 'choice_wrapper',
-    // We may not be at the top level of the form; this tells us where we
-    // actually are.
-    'field_parents' => array(),
-    'fields_match'  => array('field_location' => 'field_location'),//$fields_match,
-    // If there's a better way for hook_form_alter() to get these values than
-    // stashing them here, file a patch! ;)
-    'entity_type'   => 'node',//$context['instance']['entity_type'],
-    'entity_bundle' => 'example_item',//$context['instance']['bundle'],
-    'empty_behaviour' => !empty($context['instance']['options_limit_empty_behaviour']),
+  $location = isset($form_state['values']['field_location'][LANGUAGE_NONE][0]['target_id'])
+    ? $form_state['values']['field_location'][LANGUAGE_NONE][0]['target_id'] : NULL;
+
+  if ($location) {
+    // Get our kits to refer to.
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'node');
+    // Limit for all the referrable bundles.
+    $query->entityCondition('bundle', 'reservable_kit');
+    // Limit for the matching field values.
+    $query->fieldCondition('field_location', 'target_id', $location);
+
+    $result = $query->execute();
+
+    // Load the resulting entities.
+    if (!empty($result['node'])) {
+      $entities = entity_load('node', array_keys($result['node']));
+    }
+    else {
+      $entities = array();
+    }
+
+    // Build an array of options.
+    $options_limited = array();
+    foreach ($entities as $entity) {
+      list($id, $vid, $bundle) = entity_extract_ids('node', $entity);
+      $options_limited[$id] = entity_label('node', $entity);
+    }
+    $options_limited_empty = (count($options_limited) == 0);
+
+    $options = array(
+      '_none' => '- None -',
+    );
+
+    // Add an explanation if there are no options to select at all.
+    if ($options_limited_empty) {
+      $form['field_kit'][LANGUAGE_NONE]['#description'] .= ' ' . t('<b>No options are available for the current form values. Try selecting different values for the following fields: @fields.</b>', array(
+        '@fields' => 'Location',
+      ));
+    }
+    else {
+      $options += $options_limited;
+    }
+
+    // Set the new options into the form element.
+    foreach (element_children($form['field_kit'][LANGUAGE_NONE]) as $key) {
+      $form['field_kit'][LANGUAGE_NONE][$key]['target_id']['#options'] = $options;
+    }
+
+    // Filter merci choices.
+    $node = (array) $form_state['values'] + (array) $form['#node'];
+
+    $item_options = merci_build_reservable_items($node, $form_state, NULL);
+
+    // Gather up the enity ids.
+    $item_ids = array();
+    foreach ($item_options['options'] as $group => $option) {
+      if (is_array($option)) {
+        foreach ($option as $item_id => $item) {
+          $item_ids[] = $item_id;
+        }
+      }
+    }
+
+    // Query those enities at selected location.
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'node');
+    // Limit for all the referrable bundles.
+    $query->entityCondition('entity_id', $item_ids, 'IN');
+    // Limit for the matching field values.
+    $query->fieldCondition('field_location', 'target_id', $location);
+
+    $result = $query->execute();
+
+    $filtered_ids = $result['node'];
+
+    // Add an explanation if there are no options to select at all.
+    if (empty($filtered_ids)) {
+      $form['choice_wrapper']['no_items']['#markup'] = ' ' . t('<b>No options are available for the current form values. Try selecting different values for the following fields: @fields.</b>', array(
+        '@fields' => 'Location',
+      ));
+    }
+
+    // Create filtered options list.
+    $filtered_options = array(
+      '<Select>',
+    );
+    foreach ($item_options['options'] as $group => $option) {
+      if (is_array($option)) {
+        foreach ($option as $item_id => $item) {
+          if (array_key_exists($item_id, $filtered_ids)) {
+            if (!array_key_exists($group, $filtered_options)) {
+              $filtered_options[$group] = array();
+            }
+            $filtered_options[$group][$item_id] = $item;
+          }
+        }
+      }
+    }
+
+    // Replace all the options in all the choices.
+    foreach (element_children($form['choice_wrapper']['merci_reservation_items']) as $delta) {
+      if (is_numeric($delta)) {
+        continue;
+      }
+      $delta = substr($delta, 7);
+      $default = isset($node->merci_reservation_items["choice_" . $delta]['merci_item_nid']) ? $node->merci_reservation_items["choice_" . $delta]['merci_item_nid'] : '';
+      $form['choice_wrapper']['merci_reservation_items']["choice_" . $delta]['merci_item_nid']['#options'] = $filtered_options;
+    }
+  }
+
+  // Filter merci_choices based on location ....
+  $form['field_location'][LANGUAGE_NONE]['#ajax'] = array(
+    'callback' => 'merci_nscad_js',
   );
-  // Allow for settings for more than one field.
-  $form_state['reference_option_limit']['choice_wrapper'] = $settings;
+
+  $form['field_kit']['#prefix'] = '<div id="merci-field-kit-wrapper">';
+  $form['field_kit']['#suffix'] = '</div>';
+
 }
 
+/**
+ * Ajax callback for the updated term reference field.
+ */
+function merci_nscad_js($form, $form_state) {
+
+  $commands = array();
+  $commands[] = ajax_command_replace('#merci-field-kit-wrapper', drupal_render($form['field_kit']));
+  $commands[] = ajax_command_replace('#merci-choice-wrapper', drupal_render($form['choice_wrapper']));
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
