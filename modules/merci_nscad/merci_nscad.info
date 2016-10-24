@@ -3,7 +3,6 @@ package = MERCI
 description = "Merci customization specific to NSCAD."
 core = 7.x
 dependencies[] = merci
-dependencies[] = reference_option_limit
 project = "merci"
 
 files[] = merci_nscad.module
