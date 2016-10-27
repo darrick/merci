@@ -205,7 +205,7 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
       '#type' => 'submit',
       '#value' => t('Add item'),
       '#name' => 'merci_quantity_button',
-      '#limit_validation_errors' => array(array('merci_quantity_widget'), array('field_location', LANGUAGE_NONE)),
+      '#limit_validation_errors' => array(array('merci_quantity_widget'), array('field_location', LANGUAGE_NONE), array('choice_count')),
       '#submit' => array('merci_nscad_add_multiple_buckets'),
       // See the examples in ajax_example.module for more details on the
       // properties of #ajax.
@@ -371,7 +371,6 @@ function merci_nscad_reservation_node_validate($form, &$form_state) {
   form_set_value($element, $choices, $form_state);
   $form_state['input']['merci_reservation_items'] = $choices;
   $form_state['values']['choice_count'] = count($choices) + 3;
-
 }
 
 /**
