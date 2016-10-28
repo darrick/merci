@@ -295,82 +295,87 @@ function merci_nscad_add_multiple_buckets($form, &$form_state) {
  */
 function merci_nscad_reservation_node_validate($form, &$form_state) {
 
-  $kit_items = array();
+  // Only run this code if submitted via ajax when adding kits or addint
+  // multiple quantities of buckets.
 
-  // Add selected kit items to merci choice array.
-  foreach ($form_state['values']['field_kit'][LANGUAGE_NONE] as $index => $kit) {
+  if ($form_state['triggering_element']['#name'] == 'merci_quantity_button' or $form_state['triggering_element']['#parents'][0] == 'field_kit') {
+    $kit_items = array();
 
-    if (!is_array($kit) or empty($kit['target_id'])) {
-      continue;
-    }
+    // Add selected kit items to merci choice array.
+    foreach ($form_state['values']['field_kit'][LANGUAGE_NONE] as $index => $kit) {
 
-    $node = node_load($kit['target_id']);
-    $node_wrapper = entity_metadata_wrapper('node', $node);
-    foreach ($node_wrapper->field_items->getIterator() as $index => $item) {
-      $kit_items[] = $item->getIdentifier();
-    }
-  }
-
-  $selected_items = array();
-
-  // Get currently selected non-kit items.
-  foreach ($form_state['values']['merci_reservation_items'] as $choice) {
-    if (!empty($choice['merci_item_nid'])) {
-      $selected_items[] = $choice['merci_item_nid'];
-    }
-  }
-
-  $non_kit_items = array_diff($selected_items, $kit_items);
-
-  $choices = array();
-  $delta = 1;
-  // Add kit items to choices.
-  foreach ($kit_items as $item_id) {
-    $choices['choice_' . $delta] = array(
-      'merci_item_nid' => $item_id,
-    );
-    $delta++;
-  }
-  // Add non-kit items to choices.
-  foreach ($non_kit_items as $item_id) {
-    $choices['choice_' . $delta] = array(
-      'merci_item_nid' => $item_id,
-    );
-    $delta++;
-  }
-
-  // Handle adding multiple bucket items.
-  if ($form_state['triggering_element']['#name'] == 'merci_quantity_button') {
-    $bucket_type = $form_state['values']['merci_quantity_item'];
-    if (empty($bucket_type)) {
-      form_set_error('merci_quantity_item', t('You need to select a bucket item to add.'));
-    }
-
-    $quantity = $form_state['values']['merci_quantity'];
-    if (intval($quantity) <= 0) {
-      form_set_error('merci_quantity', t('You need to select a quantity greater than zero.'));
-    }
-
-    if (!form_get_errors()) {
-      while ($quantity > 0) {
-        $choices['choice_' . $delta] = array(
-          'merci_item_nid' => $bucket_type,
-        );
-        $delta++;
-        $quantity--;
+      if (!is_array($kit) or empty($kit['target_id'])) {
+        continue;
       }
-      unset($form_state['input']['merci_quantity_item']);
-      unset($form_state['input']['merci_quantity']);
-    }
-  }
 
-  // Update form_state values.
-  $element = array(
-    '#parents' => array('merci_reservation_items'),
-  );
-  form_set_value($element, $choices, $form_state);
-  $form_state['input']['merci_reservation_items'] = $choices;
-  $form_state['values']['choice_count'] = count($choices) + 3;
+      $node = node_load($kit['target_id']);
+      $node_wrapper = entity_metadata_wrapper('node', $node);
+      foreach ($node_wrapper->field_items->getIterator() as $index => $item) {
+        $kit_items[] = $item->getIdentifier();
+      }
+    }
+
+    $selected_items = array();
+
+    // Get currently selected non-kit items.
+    foreach ($form_state['values']['merci_reservation_items'] as $choice) {
+      if (!empty($choice['merci_item_nid'])) {
+        $selected_items[] = $choice['merci_item_nid'];
+      }
+    }
+
+    $non_kit_items = array_diff($selected_items, $kit_items);
+
+    $choices = array();
+    $delta = 1;
+    // Add kit items to choices.
+    foreach ($kit_items as $item_id) {
+      $choices['choice_' . $delta] = array(
+        'merci_item_nid' => $item_id,
+      );
+      $delta++;
+    }
+    // Add non-kit items to choices.
+    foreach ($non_kit_items as $item_id) {
+      $choices['choice_' . $delta] = array(
+        'merci_item_nid' => $item_id,
+      );
+      $delta++;
+    }
+
+    // Handle adding multiple bucket items.
+    if ($form_state['triggering_element']['#name'] == 'merci_quantity_button') {
+      $bucket_type = $form_state['values']['merci_quantity_item'];
+      if (empty($bucket_type)) {
+        form_set_error('merci_quantity_item', t('You need to select a bucket item to add.'));
+      }
+
+      $quantity = $form_state['values']['merci_quantity'];
+      if (intval($quantity) <= 0) {
+        form_set_error('merci_quantity', t('You need to select a quantity greater than zero.'));
+      }
+
+      if (!form_get_errors()) {
+        while ($quantity > 0) {
+          $choices['choice_' . $delta] = array(
+            'merci_item_nid' => $bucket_type,
+          );
+          $delta++;
+          $quantity--;
+        }
+        unset($form_state['input']['merci_quantity_item']);
+        unset($form_state['input']['merci_quantity']);
+      }
+    }
+
+    // Update form_state values.
+    $element = array(
+      '#parents' => array('merci_reservation_items'),
+    );
+    form_set_value($element, $choices, $form_state);
+    $form_state['input']['merci_reservation_items'] = $choices;
+    $form_state['values']['choice_count'] = count($choices) + 3;
+  }
 }
 
 /**
@@ -390,6 +395,22 @@ function merci_nscad_load_hours_of_operation($location_id) {
   foreach ($location->field_office_hours[LANGUAGE_NONE] as $hours) {
     $hours_of_operation[$hours['day']]['open'] = _office_hours_time_to_24hr($hours['starthours']);
     $hours_of_operation[$hours['day']]['close'] = _office_hours_time_to_24hr($hours['endhours']);
+  }
+  $days_of_the_week = array(
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+  );
+
+  $hours_of_operation = array();
+  foreach ($days_of_the_week as $num => $day) {
+    if (!array_key_exists($num, $hours_of_operation)) {
+      $hours_of_operation[$num] = NULL;
+    }
   }
   $hours_of_operation['closed_days'] = array();
   return $hours_of_operation;
