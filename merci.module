@@ -916,7 +916,7 @@ function merci_node_update($node) {
   // Process active MERCI node types and reservation nodes.
   if (merci_is_merci_type($node->type)) {
     $merci_type = merci_type_setting($node->type);
-    if ($node->revision) {
+    if (property_exists($node, 'revision') and $node->revision) {
       drupal_write_record('merci_' . $merci_type . '_node', $node);
       drupal_write_record('merci_reservation_item_node', $node);
     }
@@ -1252,22 +1252,31 @@ function merci_build_reservation_table_form($form, &$form_state, $node, $edit_pa
     $form['display_item_title']['#markup'] = $form['item_title']['#value'];
 
     if (user_access("manage reservations")) {
-      $placeholder_node = node_load($item['merci_placeholder_nid']);
-      /*
-        TODO fix this.
-      if (merci_has_accessories($item['type'])) {
+      $item_node = node_load($item['merci_item_nid']);
+      $item_wrapper = entity_metadata_wrapper('node', $item_node);
 
+      // See if we have any accessories we can add.
+      if (isset($item_wrapper->field_merci_accessories)) {
+
+        $placeholder_node = node_load($item['merci_placeholder_nid']);
         if (!in_array(t('Accessories'), $table['#header'])) {
           $table['#header'][] = t('Accessories');
         }
 
-        if ($edit_page) {
+        if ($edit_page and count($item_wrapper->field_merci_accessories)) {
           if ($node->merci_reservation_status == MERCI_STATUS_CHECKED_OUT) {
             $collapsed = FALSE;
           }
           else {
             $collapsed = TRUE;
           }
+          $tmpform = array();
+          $tmpform_state = array();
+          field_attach_form('node', $placeholder_node, $tmpform, $tmpform_state, NULL, array('field_name' => 'field_merci_accessories'));
+          $tmpform['field_merci_accessories'][LANGUAGE_NONE]['#title'] = '';
+          $tmpform['field_merci_accessories'][LANGUAGE_NONE]['#ajax'] = array(
+            'callback' => 'merci_add_accessories_js',
+          );
 
           // Container for just the item selector.
           $form['accessories'] = array(
@@ -1277,24 +1286,22 @@ function merci_build_reservation_table_form($form, &$form_state, $node, $edit_pa
             '#collapsed' => $collapsed,
             '#prefix' => '<div id="merci-accessories-' . $placeholder_node->nid . '">',
             '#suffix' => '</div>',
-            'choices' => merci_build_accessory_form($form_state, $placeholder_node, $did),
+            'choices' => $tmpform['field_merci_accessories'],
+            //'choices' => merci_build_accessory_form($form_state, $placeholder_node, $did),
           );
         }
         else {
-          $accessories = '';
-          $terms = taxonomy_node_get_terms($placeholder_node);
-
-          if (!empty($terms)) {
-            foreach ($terms as $accessory) {
-              $accessories .= $accessory->name . ', ';
-            }
+          $accessories = array();
+          $wrapper = entity_metadata_wrapper('node', $placeholder_node);
+          foreach ($wrapper->field_merci_accessories->getIterator() as $delta => $entity_wrapper) {
+            $accessories[] = $entity_wrapper->label();
           }
+
           $form['accessories'] = array(
             '#type' => 'markup',
             '#title' => t('Accessories'),
-            '#value' => $accessories,
+            '#markup' => implode (',', $accessories),
           );
-
         }
 
         //$operations .= ' &nbsp;&nbsp;' . l(t('edit'), "node/$item->merci_placeholder_nid/edit", array('query' => drupal_get_destination()));
@@ -1306,7 +1313,6 @@ function merci_build_reservation_table_form($form, &$form_state, $node, $edit_pa
           $form['accessories']['#title'] = t('Accessories');
         }
       }
-*/
     }
     // Only allow editing or deletion if unconfirmed or confirmed.
     if ($edit_page && $node->merci_reservation_status < MERCI_STATUS_CHECKED_OUT) {
@@ -1348,6 +1354,15 @@ function merci_build_reservation_table_form($form, &$form_state, $node, $edit_pa
   }
 
   return $table;
+}
+
+/**
+ * Ajax callback for the updated location reference field.
+ */
+function merci_add_accessories_js($form, $form_state) {
+
+
+  return $form['merci_choice_wrapper'];
 }
 
 function merci_add_settings_form(&$form, $form_state) {

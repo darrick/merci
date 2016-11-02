@@ -99,6 +99,22 @@ function merci_validate_merci_selected_items($form, &$form_state) {
       // Are we checking an existing item?
       $nid = isset($item['did']) ? $node->nid : NULL; 
 
+      // Add accessories.
+      if (isset($item['did'])) {
+        if (array_key_exists('accessories', $item)) {
+          $placeholder = node_load($item['merci_placeholder_nid']);
+          $wrapper = entity_metadata_wrapper('node', $placeholder);
+          $accessories = array();
+          foreach ($item['accessories']['choices'][LANGUAGE_NONE] as $key => $value) {
+            if (is_array($value) and array_key_exists('target_id', $value)) {
+              $accessories[] = $value['target_id'];
+            }
+          }
+          $wrapper->field_merci_accessories->set($accessories);
+          $wrapper->save();
+        }
+      }
+
       if (merci_type_setting($type) == 'bucket') {
         $nid = $node->nid;
       }

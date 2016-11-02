@@ -211,6 +211,7 @@ function merci_has_accessories($content_type) {
   if (empty($content_type)) {
     return;
   }
+  return;
   return db_query("SELECT * FROM {taxonomy_vocabulary_node_type} WHERE type = :type", array(':type' => $content_type))->fetchObject();
 }
 
