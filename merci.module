@@ -1278,6 +1278,13 @@ function merci_build_reservation_table_form($form, &$form_state, $node, $edit_pa
             'callback' => 'merci_add_accessories_js',
           );
 
+          // Filter the options to only those allowed for this item.
+          $referenceable_accessories = array();
+          foreach ($item_wrapper->field_merci_accessories->getIterator() as $delta => $entity_wrapper) {
+            $referenceable_accessories[$entity_wrapper->getIdentifier()] = $entity_wrapper->label();;
+          }
+          $tmpform['field_merci_accessories'][LANGUAGE_NONE]['#options'] = $referenceable_accessories;
+
           // Container for just the item selector.
           $form['accessories'] = array(
             '#type' => 'fieldset',
