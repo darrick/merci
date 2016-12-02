@@ -12,7 +12,8 @@ function template_preprocess_merci_conflict_grid(&$variables) {
   $start = $variables['start'];
   $end = $variables['end'];
   $nid = $variables['nid'];
-  $reservation_nid = $variables['reservation_nid'];
+  $node = $variables['node'];
+  $reservation_nid = $node->nid;
 
   $hours = array();
   if (user_access('create reservations outside hours of operation')) {
@@ -24,7 +25,7 @@ function template_preprocess_merci_conflict_grid(&$variables) {
     }
   }
   else {
-    $hours = merci_load_hours_of_operation();
+    $hours = merci_load_hours_of_operation($node);
   }
 
   $timezone = variable_get('date_default_timezone', 'UTC');

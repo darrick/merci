@@ -18,7 +18,7 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
 
   $node_wrapper = entity_metadata_wrapper('node', $node);
 
-  $location = $node_wrapper->field_location;
+  $location = $node_wrapper->{MERCI_FIELD_LOCATION};
 
   // Selection widget for quantity of reservable items.
   //
@@ -29,10 +29,6 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
     '#suffix' => '</div>',
   );
 
-  // Filter merci_choices based on location ....
-  $form['field_location'][LANGUAGE_NONE]['#ajax'] = array(
-    'callback' => 'merci_nscad_location_js',
-  );
 
   $form['field_kit']['#prefix'] = '<div id="merci-field-kit-wrapper">';
   $form['field_kit']['#suffix'] = '</div>';
@@ -52,7 +48,6 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
 
   // Put our validation first.
   array_unshift($form['#validate'], "merci_nscad_reservation_node_validate");
-  $form['#validate'][] = 'merci_nscad_merci_reservation_date';
 
   if ($location_id = $location->getIdentifier()) {
     // Get our kits to refer to.
@@ -61,7 +56,7 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
     // Limit for all the referrable bundles.
     $query->entityCondition('bundle', 'reservable_kit');
     // Limit for the matching field values.
-    $query->fieldCondition('field_location', 'target_id', $location_id);
+    $query->fieldCondition(MERCI_FIELD_LOCATION, 'target_id', $location_id);
 
     $result = $query->execute();
 
@@ -100,78 +95,6 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
       $form['field_kit'][LANGUAGE_NONE][$key]['target_id']['#options'] = $options;
     }
 
-    // Filter merci choices.
-    //$node = (array) $form_state['values'] + (array) $form['#node'];
-
-    $item_options = merci_build_reservable_items($node, $form_state, NULL);
-
-    // Gather up the enity ids.
-    $item_ids = array();
-    foreach ($item_options['options'] as $group => $option) {
-      if (is_array($option)) {
-        foreach ($option as $item_id => $item) {
-          if (is_numeric($item_id)) {
-            $item_ids[] = $item_id;
-          }
-        }
-      }
-    }
-
-    // Query those enities at selected location.
-    $query = new EntityFieldQuery();
-    $query->entityCondition('entity_type', 'node');
-    // Limit for all the referrable bundles.
-    $query->entityCondition('entity_id', $item_ids, 'IN');
-    // Limit for the matching field values.
-    $query->fieldCondition('field_location', 'target_id', $location_id);
-
-    $result = $query->execute();
-
-    $filtered_ids = $result['node'];
-
-    // Add an explanation if there are no options to select at all.
-    if (empty($filtered_ids)) {
-      $form['choice_wrapper']['no_items']['#markup'] = ' ' . t('<b>No options are available for the current form values. Try selecting different values for the following fields: @fields.</b>', array(
-        '@fields' => 'Location',
-      ));
-    }
-
-    // Create filtered options list.
-    $filtered_options = array('' => t('<Select>'));
-    foreach ($item_options['options'] as $group => $option) {
-      if (is_array($option)) {
-        foreach ($option as $item_id => $item) {
-          // Resource type.
-          if (array_key_exists($item_id, $filtered_ids)) {
-            if (!array_key_exists($group, $filtered_options)) {
-              $filtered_options[$group] = array();
-            }
-            $filtered_options[$group][$item_id] = $item;
-          }
-          // Bucket type.
-          elseif (is_string($item_id)) {
-            $location = variable_get('field_location_' . $item_id);
-            if ($location == $location_id) {
-              if (!array_key_exists($group, $filtered_options)) {
-                $filtered_options[$group] = array();
-              }
-              $filtered_options[$group][$item_id] = $item;
-            }
-          }
-        }
-      }
-    }
-
-    // Replace all the options in all the choices.
-    foreach (element_children($form['choice_wrapper']['merci_reservation_items']) as $delta) {
-      if (is_numeric($delta)) {
-        continue;
-      }
-      $delta = substr($delta, 7);
-      $default = isset($node->merci_reservation_items["choice_" . $delta]['merci_item_nid']) ? $node->merci_reservation_items["choice_" . $delta]['merci_item_nid'] : '';
-      $form['choice_wrapper']['merci_reservation_items']["choice_" . $delta]['merci_item_nid']['#options'] = $filtered_options;
-      $form['choice_wrapper']['merci_reservation_items']["choice_" . $delta]['merci_item_nid']['#default_value'] = $default;
-    }
 
     $quantity_add_options = array('' => t('<Select>'));
     foreach ($filtered_options as $group => $option) {
@@ -205,7 +128,7 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
       '#type' => 'submit',
       '#value' => t('Add item'),
       '#name' => 'merci_quantity_button',
-      '#limit_validation_errors' => array(array('merci_quantity_widget'), array('field_location', LANGUAGE_NONE), array('choice_count')),
+      '#limit_validation_errors' => array(array('merci_quantity_widget'), array(MERCI_FIELD_LOCATION, LANGUAGE_NONE), array('choice_count')),
       '#submit' => array('merci_nscad_add_multiple_buckets'),
       // See the examples in ajax_example.module for more details on the
       // properties of #ajax.
@@ -213,47 +136,6 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
         'callback' => 'merci_nscad_add_multiple_buckets_js',
       ),
     );
-  }
-}
-
-/**
- * Implementation of hook_form_alter().
- */
-function merci_nscad_form_alter(&$form, $form_state, $form_id) {
-
-  if ($form_id == 'node_type_form') {
-    // Reservation content type can't used for other MERCI functionality.
-    if (isset($form['#node_type']->type) && $form['#node_type']->type == 'merci_reservation') {
-      return;
-    }
-
-    $query = new EntityFieldQuery();
-    $query->entityCondition('entity_type', 'node');
-    // Limit for all the referrable bundles.
-    $query->entityCondition('bundle', 'location');
-
-    $result = $query->execute();
-
-    // Load the resulting entities.
-    if (!empty($result['node'])) {
-      $entities = entity_load('node', array_keys($result['node']));
-    }
-    else {
-      $entities = array();
-    }
-
-    $options = array('' => t('<Select>'));
-
-    foreach ($entities as $entity) {
-      $options[$entity->nid] = $entity->title;
-    }
-
-    $form['merci']['field_location'] = array(
-      '#type' => 'select',
-      '#title' => t('Location'),
-      '#options' => $options,
-    );
-
   }
 }
 
@@ -376,139 +258,6 @@ function merci_nscad_reservation_node_validate($form, &$form_state) {
     $form_state['input']['merci_reservation_items'] = $choices;
     $form_state['values']['choice_count'] = count($choices) + 3;
   }
-}
-
-/**
- * Builds an array representing the hours of operation for the facility.
- *
- * @return
- *   An associative array with the following key/value pairs:
- *     [php_day_of_week_number_as_in_date_function] => An associative
- *       array with the following key/values pairs:
- *         'open'  => Opening time (military).
- *         'close' => Closing time (military).
- *     'closed_days' => An array of closed dates in mm-dd format.
- */
-function merci_nscad_load_hours_of_operation($location_id) {
-  $location = node_load($location_id);
-  $hours_of_operation = array();
-  foreach ($location->field_office_hours[LANGUAGE_NONE] as $hours) {
-    $hours_of_operation[$hours['day']]['open'] = _office_hours_time_to_24hr($hours['starthours']);
-    $hours_of_operation[$hours['day']]['close'] = _office_hours_time_to_24hr($hours['endhours']);
-  }
-  $days_of_the_week = array(
-    'sunday',
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-  );
-
-  $hours_of_operation = array();
-  foreach ($days_of_the_week as $num => $day) {
-    if (!array_key_exists($num, $hours_of_operation)) {
-      $hours_of_operation[$num] = NULL;
-    }
-  }
-  $hours_of_operation['closed_days'] = array();
-  return $hours_of_operation;
-}
-
-
-function merci_nscad_merci_reservation_date($form, &$form_state) {
-  $node = (object) $form_state['values'];
-
-  $langcode = $form_state['node']->language;
-  // ****
-  // Build date objects we'll need for our different validations.
-  // ****
-  $start              = $node->field_merci_date[LANGUAGE_NONE][0]['value'];
-  $end                = $node->field_merci_date[LANGUAGE_NONE][0]['value2'];
-  $start_object       = merci_create_local_date_object($start);
-  $end_object         = merci_create_local_date_object($end);
-  $hours_of_operation = merci_nscad_load_hours_of_operation($form_state['values']['field_location'][LANGUAGE_NONE][0]['target_id']);
-  $start_day_of_week  = (int) date_format($start_object, 'w');
-  $end_day_of_week    = (int) date_format($end_object, 'w');
-  $start_month_day    = date_format($start_object, 'm-d');
-  $end_month_day      = date_format($end_object, 'm-d');
-  $start_hours        = $hours_of_operation[$start_day_of_week];
-  $end_hours          = $hours_of_operation[$end_day_of_week];
-  $start_date         = date_format($start_object, 'm-d-Y');
-  $max_days           = variable_get("merci_max_days_advance_reservation", '0');
-
-  // Hours of operation restrictions, max days, and closed dates checks
-  // Users in role with Administer MERCI permssion or outside hours of operation skip these checks
-  if (user_access('create reservations outside hours of operation')) {
-
-    merci_verbose_logging('SKIP Hours of Operation Check, Max Days Check, and Closed Dates Check because user has create reservations outside hours of operation permission');
-
-    //check to see if warning should be displayed
-    if (strtotime(date('G:i', strtotime($start . ' UTC'))) < strtotime($start_hours['open']) || strtotime($start_hours['close']) < strtotime(date('G:i', strtotime($end . ' UTC')))) {
-
-      drupal_set_message('<b>' . t('You are making a Reservation outside the normal hours of operation.  This may impact access to the items you are reserving.') . '</b>');
-    }
-  }
-  else {
-    // Reservation start date cannot exceed the max advance
-    merci_verbose_logging('CHECKING Max Days');
-    if ($max_days) {
-      $max_date = new DateTime("+$max_days day");
-      //$max_date = date('m-d-Y', mktime(0, 0, 0, date("m"), date("d")+$max_days, date("Y")));
-      if ($start_object > $max_date) {
-        form_set_error('field_merci_date][0][value][date', t('You cannot make a Reservation more than %days days in advance. Start the Reservation before %date.', array('%days' => $max_days, '%date' => date_format($max_date, 'm-d-Y'))));
-      }
-    }
-
-    // Can't start or end a reservation on days that are
-    // closed dates.
-    merci_verbose_logging('CHECKING Closed Dates');
-    if (in_array($start_month_day, $hours_of_operation['closed_days'])) {
-      $name = date_format($start_object, 'F jS');
-      form_set_error('field_merci_date][0][value][date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
-    }
-    if (in_array($end_month_day, $hours_of_operation['closed_days'])) {
-      $name = date_format($end_object, 'F jS');
-      form_set_error('field_merci_date][0][value2][date', t('Sorry, but we are closed on %day for a holiday or special event.', array('%day' => $name)));
-    }
-
-    // Can't start or end a reservation on a day the facility
-    // has no hours of operation, or outside hours of operation.
-    merci_verbose_logging('CHECKING Hours of Operation');
-    $start_name = date_format($start_object, 'l');
-    if (!$hours_of_operation[$start_day_of_week]) {
-      form_set_error('field_merci_date][0][value][date', t('Reservations cannot start on a %day.', array('%day' => $start_name)));
-    }
-    else {
-      $start_time = date_format($start_object, 'H:i');
-      if ($start_time < $start_hours['open']) {
-        form_set_error('field_merci_date][0][value][time', t('Reservations cannot start at a time before %start.',
-          array('%start' => merci_format_time($start_hours['open']))));
-      }
-      elseif ($start_time > $start_hours['close']) {
-        form_set_error('field_merci_date][0][value][time', t('Reservations cannot start at a time after %end.',
-          array('%end' => merci_format_time($start_hours['close']))));
-      }
-    }
-
-    $end_name = date_format($end_object, 'l');
-    if (!$hours_of_operation[$end_day_of_week]) {
-      form_set_error('field_merci_date][0][value2][date', t('Reservations cannot end on a %day.', array('%day' => $end_name)));
-    }
-    else {
-      $end_time = date_format($end_object, 'H:i');
-      if ($end_time < $end_hours['open']) {
-        form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end at a time before %start.',
-          array('%start' => merci_format_time($end_hours['open']))));
-      }
-      elseif ($end_time > $end_hours['close']) {
-
-        form_set_error('field_merci_date][0][value2][time', t('Reservations cannot end at a time after %end.',
-          array('%end' => merci_format_time($end_hours['close']))));
-      }
-    }
-  } // Hours of operation restrictions, max days, and closed dates checks
 }
 
 /**

@@ -1,0 +1,269 @@
+<?php
+
+
+/**
+ * @file
+ * Merci Location Installer / Uninstaller.
+ */
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function merci_location_enable() {
+
+  foreach (merci_location_field_default_field_bases() as $field) {
+    if (!field_info_field($field['field_name'])) {
+      field_create_field($field);
+    }
+  }
+
+  foreach (merci_location_field_default_field_instances() as $instance) {
+    if (!field_info_instance($instance['entity_type'], $instance['field_name'], $instance['bundle'])) {
+      field_create_instance($instance);
+    }
+  }
+}
+
+/**
+ * Implements hook_field_default_field_bases().
+ */
+function merci_location_field_default_field_bases() {
+  $field_bases = array();
+
+  // Exported field_base: 'merci_field_address'.
+  $field_bases['merci_field_address'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'merci_field_address',
+    'indexes' => array(),
+    'locked' => 0,
+    'module' => 'addressfield',
+    'settings' => array(),
+    'translatable' => 0,
+    'type' => 'addressfield',
+  );
+
+  // Exported field_base: 'merci_field_location'.
+  $field_bases['merci_field_location'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'merci_field_location',
+    'indexes' => array(
+      'target_id' => array(
+        0 => 'target_id',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'entityreference',
+    'settings' => array(
+      'handler' => 'base',
+      'handler_settings' => array(
+        'behaviors' => array(
+          'views-select-list' => array(
+            'status' => 0,
+          ),
+        ),
+        'sort' => array(
+          'type' => 'none',
+        ),
+        'target_bundles' => array(
+          'merci_location' => 'merci_location',
+        ),
+      ),
+      'target_type' => 'node',
+    ),
+    'translatable' => 0,
+    'type' => 'entityreference',
+  );
+
+  // Exported field_base: 'merci_field_office_hours'.
+  $field_bases['merci_field_office_hours'] = array(
+    'active' => 1,
+    'cardinality' => -1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'merci_field_office_hours',
+    'indexes' => array(),
+    'locked' => 0,
+    'module' => 'office_hours',
+    'settings' => array(
+      'cardinality' => 2,
+      'granularity' => 60,
+      'hoursformat' => 0,
+      'limitend' => '',
+      'limitstart' => '',
+      'valhrs' => 0,
+    ),
+    'translatable' => 0,
+    'type' => 'office_hours',
+  );
+
+  return $field_bases;
+}
+
+/**
+ * Implements hook_field_default_field_instances().
+ */
+function merci_location_field_default_field_instances() {
+  $field_instances = array();
+
+  // Exported field_instance: 'node-location-field_address'.
+  $field_instances['node-location-field_address'] = array(
+    'bundle' => 'merci_location',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'addressfield',
+        'settings' => array(
+          'format_handlers' => array(
+            0 => 'address',
+          ),
+          'use_widget_handlers' => 1,
+        ),
+        'type' => 'addressfield_default',
+        'weight' => 2,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'merci_field_address',
+    'label' => 'Address',
+    'required' => 0,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'addressfield',
+      'settings' => array(
+        'available_countries' => array(
+          'CA' => 'CA',
+        ),
+        'default_country' => 'CA',
+        'format_handlers' => array(
+          'address' => 'address',
+          'address-hide-postal-code' => 0,
+          'address-hide-street' => 0,
+          'address-hide-country' => 0,
+          'organisation' => 0,
+          'name-full' => 0,
+          'name-oneline' => 0,
+          'address-optional' => 0,
+        ),
+      ),
+      'type' => 'addressfield_standard',
+      'weight' => 2,
+    ),
+  );
+
+  // Exported field_instance: 'node-location-field_office_hours'.
+  $field_instances['node-location-field_office_hours'] = array(
+    'bundle' => 'merci_location',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'office_hours',
+        'settings' => array(
+          'closedformat' => 'Closed',
+          'compress' => FALSE,
+          'current_status' => array(
+            'closed_text' => 'Currently closed',
+            'open_text' => 'Currently open!',
+            'position' => 'hide',
+          ),
+          'date_first_day' => 0,
+          'daysformat' => 'long',
+          'grouped' => FALSE,
+          'hoursformat' => 0,
+          'separator_day_hours' => ': ',
+          'separator_days' => '<br />',
+          'separator_grouped_days' => ' - ',
+          'separator_hours_hours' => '-',
+          'separator_more_hours' => ', ',
+          'showclosed' => 'all',
+          'timezone_field' => '',
+        ),
+        'type' => 'office_hours',
+        'weight' => 1,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'merci_field_office_hours',
+    'label' => 'Office Hours',
+    'required' => 0,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'office_hours',
+      'settings' => array(),
+      'type' => 'office_hours',
+      'weight' => 3,
+    ),
+  );
+
+
+  // Exported field_instance: 'node-merci_reservation-field_location'.
+  $field_instances['node-merci_reservation-field_location'] = array(
+    'bundle' => 'merci_reservation',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'entityreference',
+        'settings' => array(
+          'link' => FALSE,
+        ),
+        'type' => 'entityreference_label',
+        'weight' => 1,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'merci_field_location',
+    'label' => 'Location',
+    'required' => 0,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'options',
+      'settings' => array(),
+      'type' => 'options_select',
+      'weight' => 1,
+    ),
+  );
+
+  return $field_instances;
+}

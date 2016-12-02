@@ -1,0 +1,11 @@
+name = "MERCI Location"
+package = MERCI
+description = "Provides support for multiple locations within MERCI."
+core = 7.x
+dependencies[] = merci
+dependencies[] = addressfield
+dependencies[] = entityreference
+dependencies[] = office_hours
+project = "merci"
+
+files[] = merci_location.module

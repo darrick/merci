@@ -1,0 +1,198 @@
+<?php
+
+define('MERCI_FIELD_LOCATION', 'merci_field_location');
+define('MERCI_FIELD_OFFICE_HOURS', 'merci_field_office_hours');
+
+/**
+ * Implements hook_node_info().
+ */
+function merci_location_node_info() {
+  $items = array(
+    'merci_location' => array(
+      'name' => t('Location'),
+      'base' => 'node_content',
+      'description' => '',
+      'has_title' => '1',
+      'title_label' => t('Title'),
+      'help' => '',
+    ),
+  );
+  drupal_alter('node_info', $items);
+  return $items;
+}
+
+/**
+ * Implements hook_merci_build_reservable_items_alter().
+ *
+ * Limit the options in the merci_choice widget.
+ */
+function merci_location_merci_build_reservable_items_alter(&$item_options, $node, $form_state) {
+  if (isset($form_state['values'])) {
+    $node = (array) $form_state['values'] + (array) $node;
+  }
+
+  $node = (object) $node;
+
+  $node_wrapper = entity_metadata_wrapper('node', $node);
+
+  $location = $node_wrapper->{MERCI_FIELD_LOCATION};
+
+  if ($location_id = $location->getIdentifier()) {
+
+    // Gather up the enity ids.
+    $item_ids = array();
+    foreach ($item_options['options'] as $group => $option) {
+      if (is_array($option)) {
+        foreach ($option as $item_id => $item) {
+          if (is_numeric($item_id)) {
+            $item_ids[] = $item_id;
+          }
+        }
+      }
+    }
+
+    // Query those enities at selected location.
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'node');
+    // Limit for all the referrable bundles.
+    $query->entityCondition('entity_id', $item_ids, 'IN');
+    // Limit for the matching field values.
+    $query->fieldCondition(MERCI_FIELD_LOCATION, 'target_id', $location_id);
+
+    $result = $query->execute();
+
+    $filtered_ids = $result['node'];
+
+    // Create filtered options list.
+    $filtered_options = array('' => t('<Select>'));
+    foreach ($item_options['options'] as $group => $option) {
+      if (is_array($option)) {
+        foreach ($option as $item_id => $item) {
+          // Resource type.
+          if (array_key_exists($item_id, $filtered_ids)) {
+            if (!array_key_exists($group, $filtered_options)) {
+              $filtered_options[$group] = array();
+            }
+            $filtered_options[$group][$item_id] = $item;
+          }
+          // Bucket type.
+          elseif (is_string($item_id)) {
+            $location = variable_get(MERCI_FIELD_LOCATION . '_' . $item_id);
+            if ($location == $location_id) {
+              if (!array_key_exists($group, $filtered_options)) {
+                $filtered_options[$group] = array();
+              }
+              $filtered_options[$group][$item_id] = $item;
+            }
+          }
+        }
+      }
+    }
+    $item_options['options'] = $filtered_options;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Limit the options in the merci_choice widget.
+ */
+function merci_location_form_merci_reservation_node_form_alter(&$form, &$form_state, $form_id) {
+
+  // Filter merci_choices based on location ....
+  $form[MERCI_FIELD_LOCATION][LANGUAGE_NONE]['#ajax'] = array(
+    'callback' => 'merci_location_location_js',
+  );
+
+
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function merci_location_form_node_type_form_alter(&$form, $form_state, $form_id) {
+
+  // Reservation content type can't used for other MERCI functionality.
+  if (isset($form['#node_type']->type) && $form['#node_type']->type == 'merci_reservation') {
+    return;
+  }
+
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node');
+  // Limit for all the referrable bundles.
+  $query->entityCondition('bundle', 'location');
+
+  $result = $query->execute();
+
+  // Load the resulting entities.
+  if (!empty($result['node'])) {
+    $entities = entity_load('node', array_keys($result['node']));
+  }
+  else {
+    $entities = array();
+  }
+
+  $options = array('' => t('<Select>'));
+
+  foreach ($entities as $entity) {
+    $options[$entity->nid] = $entity->title;
+  }
+
+  $form['merci'][MERCI_FIELD_LOCATION] = array(
+    '#type' => 'select',
+    '#title' => t('Location'),
+    '#options' => $options,
+  );
+
+}
+
+/**
+ * Builds an array representing the hours of operation for the facility.
+ *
+ * @return
+ *   An associative array with the following key/value pairs:
+ *     [php_day_of_week_number_as_in_date_function] => An associative
+ *       array with the following key/values pairs:
+ *         'open'  => Opening time (military).
+ *         'close' => Closing time (military).
+ *     'closed_days' => An array of closed dates in mm-dd format.
+ */
+function merci_location_merci_hours_of_operation_alter(&$hours_of_operation, $node, $form_state) {
+  $node_wrapper = entity_metadata_wrapper('node', $node);
+
+  $location = $node_wrapper->{MERCI_FIELD_LOCATION};
+  $hours_of_operation = array();
+  foreach ($location->{MERCI_FIELD_OFFICE_HOURS}->getIterator() as $delta => $office_hours) {
+    $hours = $office_hours->value();
+    $hours_of_operation[$hours['day']]['open'] = _office_hours_time_to_24hr($hours['starthours']);
+    $hours_of_operation[$hours['day']]['close'] = _office_hours_time_to_24hr($hours['endhours']);
+  }
+  $days_of_the_week = array(
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+  );
+
+  foreach ($days_of_the_week as $num => $day) {
+    if (!array_key_exists($num, $hours_of_operation)) {
+      $hours_of_operation[$num] = NULL;
+    }
+  }
+  $hours_of_operation['closed_days'] = array();
+}
+
+
+/**
+ * Ajax callback for the updated location reference field.
+ */
+function merci_location_location_js($form, $form_state) {
+
+  $commands = array();
+  $commands[] = ajax_command_replace('#merci-choice-wrapper', drupal_render($form['choice_wrapper']));
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+

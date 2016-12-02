@@ -122,7 +122,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
       // Is the item available at this time?
       $count = merci_is_item_reservable($item_nid, $type, $start, $end, $nid);
       if (!$count or (empty($item_nid) and merci_type_setting($type) == 'bucket' and $count - $selected_count[$type] < 0)) {
-        $messages[$did] = merci_theme_conflict_grid($type, $title, $start, $end, $item_nid, $node->nid);
+        $messages[$did] = merci_theme_conflict_grid($type, $title, $start, $end, $item_nid, $node);
         form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
         continue;
       }
@@ -150,7 +150,7 @@ function merci_validate_merci_selected_items($form, &$form_state) {
         // Only done for buckets because resources always only have a count of 1 (if available) or 0 (not available).
         if (merci_type_setting($type) == 'bucket') {
           if ($inventory_count[$type] - $count > $overdue_count) {
-            $overdue_message .= merci_theme_conflict_grid($type, $title, $start, $end, $item_nid, $node->vid);
+            $overdue_message .= merci_theme_conflict_grid($type, $title, $start, $end, $item_nid, $node);
             form_set_error("merci_reservation_items][$did][merci_item_nid", $messages[$did]);
           }
         }
@@ -186,7 +186,7 @@ function merci_validate_merci_reservation_date($form, &$form_state) {
   $end                = $node->field_merci_date[LANGUAGE_NONE][0]['value2'];
   $start_object       = merci_create_local_date_object($start);
   $end_object         = merci_create_local_date_object($end);
-  $hours_of_operation = merci_load_hours_of_operation();
+  $hours_of_operation = merci_load_hours_of_operation($node, $form_state);
   $start_day_of_week  = (int) date_format($start_object, 'w');
   $end_day_of_week    = (int) date_format($end_object, 'w');
   $start_month_day    = date_format($start_object, 'm-d');
@@ -477,10 +477,10 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
   else {
     $is_new = TRUE;
     $start     = NULL;
-    $end       = NULL;  
+    $end       = NULL;
   }
 
-  $options = array();
+  static $options = array();
   $options['options'] = array('' => t('<Select>'));
 
   $merci_types = merci_content_types();
@@ -536,6 +536,8 @@ function merci_build_reservable_items($node, $form_state, $reservation_nid = NUL
       unset ($options['options'][$term->name]);
     }
   }
+
+  drupal_alter('merci_build_reservable_items', $options, $node, $form_state);
 
   return $options;
 }
@@ -601,7 +603,7 @@ function merci_check_content_type_restrictions($content_type, $start, $end, $tit
         }
         // Do we allow extending a reservtion over days we are closed?
         if (user_access('override max hours over closed days')) {
-          $hours_of_operation = merci_load_hours_of_operation($content_type);
+          $hours_of_operation = merci_load_hours_of_operation();
           for ($i = 1; $i <= 6; $i++) {
             if (empty($hours_of_operation[$i])) {
               $closed_days[$i] = TRUE;
@@ -864,8 +866,10 @@ function merci_get_suggested_bucket_item($content_type, $start, $end, $items = a
  *         'close' => Closing time (military).
  *     'closed_days' => An array of closed dates in mm-dd format.
  */
-function merci_load_hours_of_operation($content_type = '') {
-  return variable_get('merci_hours_operation', '');
+function merci_load_hours_of_operation($node = NULL, $form_state = NULL) {
+  $hours = variable_get('merci_hours_operation', '');
+  drupal_alter('merci_hours_of_operation', $hours, $node, $form_state);
+  return $hours;
 }
 
 function merci_hours_str_to_array($str) {
