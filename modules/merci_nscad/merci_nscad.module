@@ -30,71 +30,10 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
   );
 
 
-  $form['field_kit']['#prefix'] = '<div id="merci-field-kit-wrapper">';
-  $form['field_kit']['#suffix'] = '</div>';
-
-  // Support adding items via kits.
-  //
-
-  foreach (element_children($form['field_kit'][LANGUAGE_NONE]) as $delta) {
-    if (!is_numeric($delta)) {
-      continue;
-    }
-    $form['field_kit'][LANGUAGE_NONE][$delta]['target_id']['#ajax'] = array(
-      'callback' => 'merci_nscad_kit_js',
-      'wrapper' => 'merci-choice-wrapper',
-    );
-  }
-
   // Put our validation first.
-  array_unshift($form['#validate'], "merci_nscad_reservation_node_validate");
+  array_unshift($form['#validate'], "merci_nscad_node_validate");
 
   if ($location_id = $location->getIdentifier()) {
-    // Get our kits to refer to.
-    $query = new EntityFieldQuery();
-    $query->entityCondition('entity_type', 'node');
-    // Limit for all the referrable bundles.
-    $query->entityCondition('bundle', 'reservable_kit');
-    // Limit for the matching field values.
-    $query->fieldCondition(MERCI_FIELD_LOCATION, 'target_id', $location_id);
-
-    $result = $query->execute();
-
-    // Load the resulting entities.
-    if (!empty($result['node'])) {
-      $entities = entity_load('node', array_keys($result['node']));
-    }
-    else {
-      $entities = array();
-    }
-
-    // Build an array of options.
-    $options_limited = array();
-    foreach ($entities as $entity) {
-      list($id, $vid, $bundle) = entity_extract_ids('node', $entity);
-      $options_limited[$id] = entity_label('node', $entity);
-    }
-    $options_limited_empty = (count($options_limited) == 0);
-
-    $options = array(
-      '_none' => '- None -',
-    );
-
-    // Add an explanation if there are no options to select at all.
-    if ($options_limited_empty) {
-      $form['field_kit'][LANGUAGE_NONE]['#description'] = ' ' . t('<b>No options are available for the current form values. Try selecting different values for the following fields: @fields.</b>', array(
-        '@fields' => 'Location',
-      ));
-    }
-    else {
-      $options += $options_limited;
-    }
-
-    // Set the new options into the form element.
-    foreach (element_children($form['field_kit'][LANGUAGE_NONE]) as $key) {
-      $form['field_kit'][LANGUAGE_NONE][$key]['target_id']['#options'] = $options;
-    }
-
 
     $quantity_add_options = array('' => t('<Select>'));
     foreach ($filtered_options as $group => $option) {
@@ -181,49 +120,6 @@ function merci_nscad_reservation_node_validate($form, &$form_state) {
   // multiple quantities of buckets.
 
   if ($form_state['triggering_element']['#name'] == 'merci_quantity_button' or $form_state['triggering_element']['#parents'][0] == 'field_kit') {
-    $kit_items = array();
-
-    // Add selected kit items to merci choice array.
-    foreach ($form_state['values']['field_kit'][LANGUAGE_NONE] as $index => $kit) {
-
-      if (!is_array($kit) or empty($kit['target_id'])) {
-        continue;
-      }
-
-      $node = node_load($kit['target_id']);
-      $node_wrapper = entity_metadata_wrapper('node', $node);
-      foreach ($node_wrapper->field_items->getIterator() as $index => $item) {
-        $kit_items[] = $item->getIdentifier();
-      }
-    }
-
-    $selected_items = array();
-
-    // Get currently selected non-kit items.
-    foreach ($form_state['values']['merci_reservation_items'] as $choice) {
-      if (!empty($choice['merci_item_nid'])) {
-        $selected_items[] = $choice['merci_item_nid'];
-      }
-    }
-
-    $non_kit_items = array_diff($selected_items, $kit_items);
-
-    $choices = array();
-    $delta = 1;
-    // Add kit items to choices.
-    foreach ($kit_items as $item_id) {
-      $choices['choice_' . $delta] = array(
-        'merci_item_nid' => $item_id,
-      );
-      $delta++;
-    }
-    // Add non-kit items to choices.
-    foreach ($non_kit_items as $item_id) {
-      $choices['choice_' . $delta] = array(
-        'merci_item_nid' => $item_id,
-      );
-      $delta++;
-    }
 
     // Handle adding multiple bucket items.
     if ($form_state['triggering_element']['#name'] == 'merci_quantity_button') {
@@ -271,22 +167,3 @@ function merci_nscad_add_multiple_buckets_js($form, $form_state) {
   return array('#type' => 'ajax', '#commands' => $commands);
 }
 
-/**
- * Ajax callback for the updated location reference field.
- */
-function merci_nscad_location_js($form, $form_state) {
-
-  $commands = array();
-  $commands[] = ajax_command_replace('#merci-field-kit-wrapper', drupal_render($form['field_kit']));
-  $commands[] = ajax_command_replace('#merci-choice-wrapper', drupal_render($form['choice_wrapper']));
-  $commands[] = ajax_command_replace('#merci-quantity-widget-wrapper', drupal_render($form['merci_quantity_widget']));
-  return array('#type' => 'ajax', '#commands' => $commands);
-}
-
-/**
- * Ajax callback for the updated location reference field.
- */
-function merci_nscad_kit_js($form, $form_state) {
-
-  return $form['choice_wrapper'];
-}

@@ -27,3 +27,9 @@ function merci_import_feeds_plugins() {
   );
   return $info;
 }
+
+function merci_import_ctools_plugin_api($owner, $api) {
+  if ($owner == 'feeds' && $api == 'plugins') {
+    return array('version' => 1);
+  }
+}
