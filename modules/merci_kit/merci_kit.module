@@ -13,10 +13,13 @@ define('MERCI_KIT_MERCI_FIELD_KIT', 'merci_field_kit');
  * Limit the options in the merci_choice widget.
  */
 function merci_kit_field_widget_form_alter(&$element, &$form_state, $context) {
-  // Add a css class to widget form elements for all fields of type mytype.
-  if (array_key_exists('build_info', $form_state)
-    and $form_state['build_info']['form_id'] == 'merci_reservation_node_form'
-    and $context['field']['field_name'] == MERCI_KIT_MERCI_FIELD_KIT) {
+
+  $form_id = drupal_array_get_nested_value($form_state, array(
+    'build_info',
+    'form_id',
+  ));
+
+  if ($form_id == 'merci_reservation_node_form' and $context['field']['field_name'] == MERCI_KIT_MERCI_FIELD_KIT) {
 
     $cache = &drupal_static(__FUNCTION__);
 
@@ -211,5 +214,6 @@ function merci_kit_js($form, $form_state) {
 
   $commands = array();
   $commands[] = ajax_command_replace('#merci-choice-wrapper', drupal_render($form['choice_wrapper']));
+  $commands[] = ajax_command_replace('#merci-field-location-wrapper', drupal_render($form[MERCI_FIELD_LOCATION]));
   return array('#type' => 'ajax', '#commands' => $commands);
 }

@@ -178,5 +178,6 @@ function merci_nscad_add_multiple_buckets_js($form, $form_state) {
   $commands = array();
   $commands[] = ajax_command_replace('#merci-choice-wrapper', drupal_render($form['choice_wrapper']));
   $commands[] = ajax_command_replace('#merci-quantity-widget-wrapper', drupal_render($form['merci_quantity_widget']));
+  $commands[] = ajax_command_replace('#merci-field-location-wrapper', drupal_render($form[MERCI_FIELD_LOCATION]));
   return array('#type' => 'ajax', '#commands' => $commands);
 }
