@@ -192,6 +192,7 @@ function merci_location_merci_hours_of_operation_alter(&$hours_of_operation, $no
 function merci_location_location_js($form, $form_state) {
 
   $commands = array();
+  $commands[] = ajax_command_replace('#merci-field-kit-wrapper', drupal_render($form[MERCI_FIELD_KIT]));
   $commands[] = ajax_command_replace('#merci-choice-wrapper', drupal_render($form['choice_wrapper']));
   return array('#type' => 'ajax', '#commands' => $commands);
 }

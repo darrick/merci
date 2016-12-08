@@ -1,5 +1,98 @@
 <?php
 
+define('MERCI_FIELD_KIT', 'merci_field_kit');
+
+function merci_kit_field_widget_form_alter(&$element, &$form_state, $context) {
+  // Add a css class to widget form elements for all fields of type mytype.
+  if ($form_state['build_info']['form_id'] == 'merci_reservation_node_form' and $context['field']['field_name'] == MERCI_FIELD_KIT) {
+
+    static $selected = array();
+
+
+    static $options;
+
+    if (!is_array($options)) {
+
+      $options = array(
+        '_none' => '- None -',
+      );
+
+      if (isset($form_state['values'])) {
+        $node = (array) $form_state['values'] + (array) $element['#entity'];
+      }
+      else {
+        $node = $element['#entity'];
+      }
+
+      $node = (object) $node;
+
+      $node_wrapper = entity_metadata_wrapper('node', $node);
+
+      $location = $node_wrapper->{MERCI_FIELD_LOCATION};
+      if ($location_id = $location->getIdentifier()) {
+        // Get our kits to refer to.
+        $query = new EntityFieldQuery();
+        $query->entityCondition('entity_type', 'node');
+        // Limit for all the referrable bundles.
+        $query->entityCondition('bundle', 'reservable_kit');
+        // Limit for the matching field values.
+        $query->fieldCondition(MERCI_FIELD_LOCATION, 'target_id', $location_id);
+
+        $result = $query->execute();
+
+        // Load the resulting entities.
+        if (!empty($result['node'])) {
+          $entities = entity_load('node', array_keys($result['node']));
+        }
+        else {
+          $entities = array();
+        }
+
+        // Build an array of options.
+        $options_limited = array();
+        foreach ($entities as $entity) {
+          list($id, $vid, $bundle) = entity_extract_ids('node', $entity);
+          $options_limited[$id] = entity_label('node', $entity);
+        }
+        $options_limited_empty = (count($options_limited) == 0);
+
+
+        // Add an explanation if there are no options to select at all.
+        if ($options_limited_empty) {
+          $form[MERCI_FIELD_KIT][LANGUAGE_NONE]['#description'] = ' ' . t('<b>No options are available for the current form values. Try selecting different values for the following fields: @fields.</b>', array(
+            '@fields' => 'Location',
+          ));
+        }
+        else {
+          $options += $options_limited;
+        }
+
+      }
+    }
+    $settings = drupal_array_get_nested_value($form_state, array('merci_kit', $element['#delta']));
+
+    if ($settings) {
+      $element['#choices_added'] = $settings['choices_added'];
+      $element['#last_target_id'] = $settings['last_target_id'];
+    }
+
+    $element['target_id']['#options'] = array_diff_key($options, $selected);
+
+    if (array_key_exists('values', $form_state)) {
+      $current = $form_state['values'][MERCI_FIELD_KIT][LANGUAGE_NONE][$context['delta']]['target_id'];
+      if ($current) {
+        $selected[$current] = TRUE;
+      }
+    }
+
+    $element['target_id']['#ajax'] = array(
+      'callback' => 'merci_kit_js',
+      'wrapper' => 'merci-choice-wrapper',
+    );
+    $element['target_id']['#element_validate'][] = 'merci_kit_element_validate';
+  }
+}
+
 /**
  * Implements hook_form_FORM_ID_alter().
  *
@@ -7,147 +100,87 @@
  */
 function merci_kit_form_merci_reservation_node_form_alter(&$form, &$form_state, $form_id) {
 
-  if (isset($form_state['values'])) {
-    $node = (array) $form_state['values'] + (array) $form['#node'];
-  }
-  else {
-    $node = $form['#node'];
-  }
+  $form[MERCI_FIELD_KIT]['#prefix'] = '<div id="merci-field-kit-wrapper">';
+  $form[MERCI_FIELD_KIT]['#suffix'] = '</div>';
+  $form[MERCI_FIELD_KIT][LANGUAGE_NONE]['add_more']['#limit_validation_errors'][] = array(MERCI_FIELD_LOCATION, LANGUAGE_NONE);
 
-  $node = (object) $node;
-
-  $node_wrapper = entity_metadata_wrapper('node', $node);
-
-  $location = $node_wrapper->{MERCI_FIELD_LOCATION};
-
-  $form['field_kit']['#prefix'] = '<div id="merci-field-kit-wrapper">';
-  $form['field_kit']['#suffix'] = '</div>';
-
-  // Support adding items via kits.
-  //
-
-  foreach (element_children($form['field_kit'][LANGUAGE_NONE]) as $delta) {
-    if (!is_numeric($delta)) {
-      continue;
-    }
-    $form['field_kit'][LANGUAGE_NONE][$delta]['target_id']['#ajax'] = array(
-      'callback' => 'merci_kit_js',
-      'wrapper' => 'merci-choice-wrapper',
-    );
-  }
-
-  // Put our validation first.
-  array_unshift($form['#validate'], "merci_kit_node_validate");
-
-  if ($location_id = $location->getIdentifier()) {
-    // Get our kits to refer to.
-    $query = new EntityFieldQuery();
-    $query->entityCondition('entity_type', 'node');
-    // Limit for all the referrable bundles.
-    $query->entityCondition('bundle', 'reservable_kit');
-    // Limit for the matching field values.
-    $query->fieldCondition(MERCI_FIELD_LOCATION, 'target_id', $location_id);
-
-    $result = $query->execute();
-
-    // Load the resulting entities.
-    if (!empty($result['node'])) {
-      $entities = entity_load('node', array_keys($result['node']));
-    }
-    else {
-      $entities = array();
-    }
-
-    // Build an array of options.
-    $options_limited = array();
-    foreach ($entities as $entity) {
-      list($id, $vid, $bundle) = entity_extract_ids('node', $entity);
-      $options_limited[$id] = entity_label('node', $entity);
-    }
-    $options_limited_empty = (count($options_limited) == 0);
-
-    $options = array(
-      '_none' => '- None -',
-    );
-
-    // Add an explanation if there are no options to select at all.
-    if ($options_limited_empty) {
-      $form['field_kit'][LANGUAGE_NONE]['#description'] = ' ' . t('<b>No options are available for the current form values. Try selecting different values for the following fields: @fields.</b>', array(
-        '@fields' => 'Location',
-      ));
-    }
-    else {
-      $options += $options_limited;
-    }
-
-    // Set the new options into the form element.
-    foreach (element_children($form['field_kit'][LANGUAGE_NONE]) as $key) {
-      $form['field_kit'][LANGUAGE_NONE][$key]['target_id']['#options'] = $options;
-    }
-  }
 }
 
 /**
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
-function merci_kit_node_validate($form, &$form_state) {
+function merci_kit_element_validate($element, &$form_state, $form) {
 
-  // Only run this code if submitted via ajax when adding kits or addint
-  // multiple quantities of buckets.
+  if (array_key_exists('#field_name', $form_state['triggering_element']) and $form_state['triggering_element']['#field_name'] == MERCI_FIELD_KIT) {
+    $last_target_id = drupal_array_get_nested_value($form, array(MERCI_FIELD_KIT, LANGUAGE_NONE, $element['#delta'], '#last_target_id'));
+    $choices_added = drupal_array_get_nested_value($form, array(MERCI_FIELD_KIT, LANGUAGE_NONE, $element['#delta'], '#choices_added'));
 
-  if ($form_state['triggering_element']['#name'] == 'merci_quantity_button' or $form_state['triggering_element']['#parents'][0] == 'field_kit') {
-    $kit_items = array();
+    // Remove choices when kit is changed/removed.
+    if (is_numeric($last_target_id) and $last_target_id != $element['#value']) {
+      // Get index.
+      $id = 1;
+      $items_to_remove = array();
 
-    // Add selected kit items to merci choice array.
-    foreach ($form_state['values']['field_kit'][LANGUAGE_NONE] as $index => $kit) {
-
-      if (!is_array($kit) or empty($kit['target_id'])) {
-        continue;
-      }
-
-      $node = node_load($kit['target_id']);
+      $node = node_load($last_target_id);
       $node_wrapper = entity_metadata_wrapper('node', $node);
       foreach ($node_wrapper->field_items->getIterator() as $index => $item) {
-        $kit_items[] = $item->getIdentifier();
+        $items_to_remove[] = $item->getIdentifier();
       }
-    }
 
-    $selected_items = array();
+      $choices = array();
+      foreach ($form_state['values']['merci_reservation_items'] as $index => $choice) {
+        if (is_array($choice)) {
+          if (in_array($choice['merci_item_nid'], $items_to_remove)) {
+            unset($form_state['values']['merci_reservation_items'][$index]);
+          }
+          else {
+            $choices['choice_' . $id] = $choice;
+            $id++;
+          }
+        }
+        else {
+          $choices[$index] = $choice;
 
-    // Get currently selected non-kit items.
-    foreach ($form_state['values']['merci_reservation_items'] as $choice) {
-      if (!empty($choice['merci_item_nid'])) {
-        $selected_items[] = $choice['merci_item_nid'];
+        }
       }
-    }
 
-    $non_kit_items = array_diff($selected_items, $kit_items);
-
-    $choices = array();
-    $delta = 1;
-    // Add kit items to choices.
-    foreach ($kit_items as $item_id) {
-      $choices['choice_' . $delta] = array(
-        'merci_item_nid' => $item_id,
+      $form_state['input']['merci_reservation_items'] = $choices;
+      $form_state['values']['merci_reservation_items'] = $choices;
+      $form_state['values']['choice_count'] = $id + 3;
+      $form_state['merci_kit'][$element['#delta']] = array(
+        'choices_added' => FALSE,
+        'last_target_id' => $element['#value'],
       );
-      $delta++;
-    }
-    // Add non-kit items to choices.
-    foreach ($non_kit_items as $item_id) {
-      $choices['choice_' . $delta] = array(
-        'merci_item_nid' => $item_id,
-      );
-      $delta++;
     }
 
-    // Update form_state values.
-    $element = array(
-      '#parents' => array('merci_reservation_items'),
-    );
-    form_set_value($element, $choices, $form_state);
-    $form_state['input']['merci_reservation_items'] = $choices;
-    $form_state['values']['choice_count'] = count($choices) + 3;
+    // Add kit items to choice array.
+    if (is_numeric($element['#value']) and !$choices_added) {
+      // Get index.
+      $id = 1;
+      foreach ($form_state['values']['merci_reservation_items'] as $index => $choice) {
+        if (is_array($choice) and empty($choice['merci_item_nid'])) {
+          list($junk, $id) = explode('_', $index);
+          break;
+        }
+      }
+
+      $node = node_load($element['#value']);
+      $node_wrapper = entity_metadata_wrapper('node', $node);
+      foreach ($node_wrapper->field_items->getIterator() as $index => $item) {
+        $form_state['values']['merci_reservation_items']['choice_' . $id] = array(
+          'merci_item_nid' => $item->getIdentifier(),
+        );
+        $id++;
+      }
+
+      $form_state['input']['merci_reservation_items'] = $form_state['values']['merci_reservation_items'];
+      $form_state['values']['choice_count'] = $id + 3;
+      $form_state['merci_kit'][$element['#delta']] = array(
+        'choices_added' => TRUE,
+        'last_target_id' => $element['#value'],
+      );
+    }
   }
 }
 
@@ -156,5 +189,8 @@ function merci_kit_node_validate($form, &$form_state) {
  */
 function merci_kit_js($form, $form_state) {
 
-  return $form['choice_wrapper'];
+  $commands = array();
+//  $commands[] = ajax_command_replace('#merci-field-kit-wrapper', drupal_render($form[MERCI_FIELD_KIT]));
+  $commands[] = ajax_command_replace('#merci-choice-wrapper', drupal_render($form['choice_wrapper']));
+  return array('#type' => 'ajax', '#commands' => $commands);
 }
