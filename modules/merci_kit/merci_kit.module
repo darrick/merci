@@ -1,17 +1,26 @@
 <?php
 
-define('MERCI_FIELD_KIT', 'merci_field_kit');
+/**
+ * @file
+ * MERCI KIT - Managed Equipment Reservation Checkout and Inventory.
+ */
 
+define('MERCI_KIT_MERCI_FIELD_KIT', 'merci_field_kit');
+
+/**
+ * Implements hook_field_widget_form_alter().
+ *
+ * Limit the options in the merci_choice widget.
+ */
 function merci_kit_field_widget_form_alter(&$element, &$form_state, $context) {
   // Add a css class to widget form elements for all fields of type mytype.
-  if ($form_state['build_info']['form_id'] == 'merci_reservation_node_form' and $context['field']['field_name'] == MERCI_FIELD_KIT) {
+  if (array_key_exists('build_info', $form_state)
+    and $form_state['build_info']['form_id'] == 'merci_reservation_node_form'
+    and $context['field']['field_name'] == MERCI_KIT_MERCI_FIELD_KIT) {
 
-    static $selected = array();
+    $cache = &drupal_static(__FUNCTION__);
 
-
-    static $options;
-
-    if (!is_array($options)) {
+    if (!isset($cache)) {
 
       $options = array(
         '_none' => '- None -',
@@ -59,7 +68,7 @@ function merci_kit_field_widget_form_alter(&$element, &$form_state, $context) {
 
         // Add an explanation if there are no options to select at all.
         if ($options_limited_empty) {
-          $form[MERCI_FIELD_KIT][LANGUAGE_NONE]['#description'] = ' ' . t('<b>No options are available for the current form values. Try selecting different values for the following fields: @fields.</b>', array(
+          $form[MERCI_KIT_MERCI_FIELD_KIT][LANGUAGE_NONE]['#description'] = ' ' . t('<b>No options are available for the current form values. Try selecting different values for the following fields: @fields.</b>', array(
             '@fields' => 'Location',
           ));
         }
@@ -68,6 +77,10 @@ function merci_kit_field_widget_form_alter(&$element, &$form_state, $context) {
         }
 
       }
+      $cache = array(
+        'options' => $options,
+        'selected' => array(),
+      );
     }
     $settings = drupal_array_get_nested_value($form_state, array('merci_kit', $element['#delta']));
 
@@ -76,13 +89,18 @@ function merci_kit_field_widget_form_alter(&$element, &$form_state, $context) {
       $element['#last_target_id'] = $settings['last_target_id'];
     }
 
-    $element['target_id']['#options'] = array_diff_key($options, $selected);
+    $element['target_id']['#options'] = array_diff_key($cache['options'], $cache['selected']);
 
-    if (array_key_exists('values', $form_state)) {
-      $current = $form_state['values'][MERCI_FIELD_KIT][LANGUAGE_NONE][$context['delta']]['target_id'];
-      if ($current) {
-        $selected[$current] = TRUE;
-      }
+    $current = drupal_array_get_nested_value($form_state, array(
+      'values',
+      MERCI_KIT_MERCI_FIELD_KIT,
+      LANGUAGE_NONE,
+      $context['delta'],
+      'target_id',
+    ));
+
+    if ($current) {
+      $cache['selected'][$current] = TRUE;
     }
 
     $element['target_id']['#ajax'] = array(
@@ -100,9 +118,10 @@ function merci_kit_field_widget_form_alter(&$element, &$form_state, $context) {
  */
 function merci_kit_form_merci_reservation_node_form_alter(&$form, &$form_state, $form_id) {
 
-  $form[MERCI_FIELD_KIT]['#prefix'] = '<div id="merci-field-kit-wrapper">';
-  $form[MERCI_FIELD_KIT]['#suffix'] = '</div>';
-  $form[MERCI_FIELD_KIT][LANGUAGE_NONE]['add_more']['#limit_validation_errors'][] = array(MERCI_FIELD_LOCATION, LANGUAGE_NONE);
+  $element = &$form[MERCI_KIT_MERCI_FIELD_KIT];
+  $element['#prefix'] = '<div id="merci-field-kit-wrapper">';
+  $element['#suffix'] = '</div>';
+  $element[LANGUAGE_NONE]['add_more']['#limit_validation_errors'][] = array(MERCI_FIELD_LOCATION, LANGUAGE_NONE);
 
 }
 
@@ -112,9 +131,10 @@ function merci_kit_form_merci_reservation_node_form_alter(&$form, &$form_state, 
  */
 function merci_kit_element_validate($element, &$form_state, $form) {
 
-  if (array_key_exists('#field_name', $form_state['triggering_element']) and $form_state['triggering_element']['#field_name'] == MERCI_FIELD_KIT) {
-    $last_target_id = drupal_array_get_nested_value($form, array(MERCI_FIELD_KIT, LANGUAGE_NONE, $element['#delta'], '#last_target_id'));
-    $choices_added = drupal_array_get_nested_value($form, array(MERCI_FIELD_KIT, LANGUAGE_NONE, $element['#delta'], '#choices_added'));
+  $field_name = drupal_array_get_nested_value($form_state, array('triggering_element', '#field_name'));
+  if ($field_name == MERCI_KIT_MERCI_FIELD_KIT) {
+    $last_target_id = drupal_array_get_nested_value($form, array(MERCI_KIT_MERCI_FIELD_KIT, LANGUAGE_NONE, $element['#delta'], '#last_target_id'));
+    $choices_added = drupal_array_get_nested_value($form, array(MERCI_KIT_MERCI_FIELD_KIT, LANGUAGE_NONE, $element['#delta'], '#choices_added'));
 
     // Remove choices when kit is changed/removed.
     if (is_numeric($last_target_id) and $last_target_id != $element['#value']) {
@@ -156,7 +176,7 @@ function merci_kit_element_validate($element, &$form_state, $form) {
 
     // Add kit items to choice array.
     if (is_numeric($element['#value']) and !$choices_added) {
-      // Get index.
+      // Get next index.
       $id = 1;
       foreach ($form_state['values']['merci_reservation_items'] as $index => $choice) {
         if (is_array($choice) and empty($choice['merci_item_nid'])) {
@@ -190,7 +210,6 @@ function merci_kit_element_validate($element, &$form_state, $form) {
 function merci_kit_js($form, $form_state) {
 
   $commands = array();
-//  $commands[] = ajax_command_replace('#merci-field-kit-wrapper', drupal_render($form[MERCI_FIELD_KIT]));
   $commands[] = ajax_command_replace('#merci-choice-wrapper', drupal_render($form['choice_wrapper']));
   return array('#type' => 'ajax', '#commands' => $commands);
 }

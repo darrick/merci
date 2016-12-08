@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * MERCI NSCAD - Managed Equipment Reservation Checkout and Inventory.
+ */
+
+/**
  * Implements hook_form_FORM_ID_alter().
  *
  * Limit the options in the merci_choice widget.
@@ -29,11 +34,19 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
     '#suffix' => '</div>',
   );
 
-
   // Put our validation first.
   array_unshift($form['#validate'], "merci_nscad_node_validate");
 
+
   if ($location_id = $location->getIdentifier()) {
+
+    $filtered_options = drupal_array_get_nested_value($form, array(
+      'choice_wrapper',
+      'merci_reservation_items',
+      'choice_1',
+      'merci_item_nid',
+      '#options',
+    ));
 
     $quantity_add_options = array('' => t('<Select>'));
     foreach ($filtered_options as $group => $option) {
@@ -48,7 +61,6 @@ function merci_nscad_form_merci_reservation_node_form_alter(&$form, &$form_state
         }
       }
     }
-
 
     $form['merci_quantity_widget']['merci_quantity_item'] = array(
       '#type' => 'select',
@@ -116,43 +128,45 @@ function merci_nscad_add_multiple_buckets($form, &$form_state) {
  */
 function merci_nscad_node_validate($form, &$form_state) {
 
-  // Only run this code if submitted via ajax when adding kits or addint
-  // multiple quantities of buckets.
+  // Adding multiple quantities of buckets.
 
-  if ($form_state['triggering_element']['#name'] == 'merci_quantity_button' ) {
-
-    // Handle adding multiple bucket items.
-    if ($form_state['triggering_element']['#name'] == 'merci_quantity_button') {
-      $bucket_type = $form_state['values']['merci_quantity_item'];
-      if (empty($bucket_type)) {
-        form_set_error('merci_quantity_item', t('You need to select a bucket item to add.'));
-      }
-
-      $quantity = $form_state['values']['merci_quantity'];
-      if (intval($quantity) <= 0) {
-        form_set_error('merci_quantity', t('You need to select a quantity greater than zero.'));
-      }
-
-      if (!form_get_errors()) {
-        while ($quantity > 0) {
-          $choices['choice_' . $delta] = array(
-            'merci_item_nid' => $bucket_type,
-          );
-          $delta++;
-          $quantity--;
-        }
-        unset($form_state['input']['merci_quantity_item']);
-        unset($form_state['input']['merci_quantity']);
-      }
+  // Handle adding multiple bucket items.
+  $trigger_name = drupal_array_get_nested_value($form_state, array('triggering_element', '#name'));
+  if ($trigger_name == 'merci_quantity_button') {
+    $bucket_type = $form_state['values']['merci_quantity_item'];
+    if (empty($bucket_type)) {
+      form_set_error('merci_quantity_item', t('You need to select a bucket item to add.'));
     }
 
-    // Update form_state values.
-    $element = array(
-      '#parents' => array('merci_reservation_items'),
-    );
-    form_set_value($element, $choices, $form_state);
-    $form_state['input']['merci_reservation_items'] = $choices;
-    $form_state['values']['choice_count'] = count($choices) + 3;
+    $quantity = $form_state['values']['merci_quantity'];
+    if (intval($quantity) <= 0) {
+      form_set_error('merci_quantity', t('You need to select a quantity greater than zero.'));
+    }
+
+    if (!form_get_errors()) {
+      // Get next index.
+      $id = 1;
+      foreach ($form_state['values']['merci_reservation_items'] as $index => $choice) {
+        if (is_array($choice) and empty($choice['merci_item_nid'])) {
+          list($junk, $id) = explode('_', $index);
+          break;
+        }
+      }
+
+      while ($quantity > 0) {
+        $form_state['values']['merci_reservation_items']['choice_' . $id] = array(
+          'merci_item_nid' => $bucket_type,
+        );
+        $id++;
+        $quantity--;
+      }
+
+      $form_state['input']['merci_reservation_items'] = $form_state['values']['merci_reservation_items'];
+      $form_state['values']['choice_count'] = $id + 3;
+
+      unset($form_state['input']['merci_quantity_item']);
+      unset($form_state['input']['merci_quantity']);
+    }
   }
 }
 
@@ -166,4 +180,3 @@ function merci_nscad_add_multiple_buckets_js($form, $form_state) {
   $commands[] = ajax_command_replace('#merci-quantity-widget-wrapper', drupal_render($form['merci_quantity_widget']));
   return array('#type' => 'ajax', '#commands' => $commands);
 }
-

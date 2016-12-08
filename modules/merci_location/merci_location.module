@@ -104,7 +104,6 @@ function merci_location_form_merci_reservation_node_form_alter(&$form, &$form_st
     'callback' => 'merci_location_location_js',
   );
 
-
 }
 
 /**
@@ -120,7 +119,7 @@ function merci_location_form_node_type_form_alter(&$form, $form_state, $form_id)
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node');
   // Limit for all the referrable bundles.
-  $query->entityCondition('bundle', 'location');
+  $query->entityCondition('bundle', 'merci_location');
 
   $result = $query->execute();
 

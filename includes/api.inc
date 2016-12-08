@@ -459,85 +459,91 @@ function merci_verbose_logging($string) {
  *     'options'      => An array of available items, in the format used
  *                       for the item selector.
  */
-function merci_build_reservable_items($node, $form_state, $reservation_nid = NULL) {
+function merci_build_reservable_items($node, $form_state, $reservation_nid = NULL, $reset = FALSE) {
 
-  $langcode = $node->language;
-  // Newly set dates take precedence.
-  if (isset($form_state['values']['field_merci_date'])) {
-    $start = $form_state['values']['field_merci_date'][LANGUAGE_NONE][0]['value'];
-    $end = $form_state['values']['field_merci_date'][LANGUAGE_NONE][0]['value2'];
-  }
-  // Dates loaded from the reservation are next.
-  elseif (isset($node->nid)) {
-    $date_info = $node->field_merci_date[LANGUAGE_NONE][0];
-    $start     = $date_info['value'];
-    $end       = $date_info['value2'];
-  }
-  // New reservation, so no date filtering.
-  else {
-    $is_new = TRUE;
-    $start     = NULL;
-    $end       = NULL;
-  }
+  $options = drupal_static(__FUNCTION__);
 
-  static $options = array();
-  $options['options'] = array('' => t('<Select>'));
+  if (!isset($options) or $reset) {
 
-  $merci_types = merci_content_types();
-  $bucket_options = array();
+    $options = array();
 
-  // Group the buckets.
-  $vid = variable_get('merci_equipment_grouping_vid', 0);
-  // With the correct weight.
-  $terms = taxonomy_get_tree($vid);
-  foreach ($terms as $term) {
-    $options['options'][$term->name] = array();
-  }
-  // This array holds all reservable items the user may reserve.
-  // Loop through each bucket type.
-
-  foreach ($merci_types as $type => $value) {
-    if ($value['merci_active_status'] != MERCI_STATUS_ACTIVE) {
-      continue;
+    $langcode = $node->language;
+    // Newly set dates take precedence.
+    if (isset($form_state['values']['field_merci_date'])) {
+      $start = $form_state['values']['field_merci_date'][LANGUAGE_NONE][0]['value'];
+      $end = $form_state['values']['field_merci_date'][LANGUAGE_NONE][0]['value2'];
     }
-    if (!merci_check_content_type_user_permissions($type)) {
-      continue;
+    // Dates loaded from the reservation are next.
+    elseif (isset($node->nid)) {
+      $date_info = $node->field_merci_date[LANGUAGE_NONE][0];
+      $start     = $date_info['value'];
+      $end       = $date_info['value2'];
     }
-    if (empty($is_new)) {
-      $restrictions = merci_check_content_type_restrictions($type, $start, $end);
-      if (!empty($restrictions)) {
+    // New reservation, so no date filtering.
+    else {
+      $is_new = TRUE;
+      $start     = NULL;
+      $end       = NULL;
+    }
+
+    $options['options'] = array('' => t('<Select>'));
+
+    $merci_types = merci_content_types();
+    $bucket_options = array();
+
+    // Group the buckets.
+    $vid = variable_get('merci_equipment_grouping_vid', 0);
+    // With the correct weight.
+    $terms = taxonomy_get_tree($vid);
+    foreach ($terms as $term) {
+      $options['options'][$term->name] = array();
+    }
+    // This array holds all reservable items the user may reserve.
+    // Loop through each bucket type.
+
+    foreach ($merci_types as $type => $value) {
+      if ($value['merci_active_status'] != MERCI_STATUS_ACTIVE) {
         continue;
       }
-    }
-    if ($value['merci_type_setting'] == 'bucket') {
-      // Check for available items in the bucket.
-      $available_bucket_items = merci_get_available_bucket_count($type, $start, $end, $reservation_nid)
-        - $value['merci_spare_items'];
-
-      if ($available_bucket_items) {
-        $options['options'][$value['merci_item_grouping']][$type] = $value['type_name'];
+      if (!merci_check_content_type_user_permissions($type)) {
+        continue;
       }
-    }
-    else if ($value['merci_type_setting'] == 'resource') {
-      // No date filtering for new reservations.
-      $item_options = merci_get_reservable_items($type, $start, $end, $reservation_nid);
+      if (empty($is_new)) {
+        $restrictions = merci_check_content_type_restrictions($type, $start, $end);
+        if (!empty($restrictions)) {
+          continue;
+        }
+      }
+      if ($value['merci_type_setting'] == 'bucket') {
+        // Check for available items in the bucket.
+        $available_bucket_items = merci_get_available_bucket_count($type, $start, $end, $reservation_nid)
+          - $value['merci_spare_items'];
 
-      if (!empty($item_options)) {
-        foreach ($item_options as $key => $item) {
-          $options['options'][$value['merci_item_grouping']][$key] = $item;
+        if ($available_bucket_items) {
+          $options['options'][$value['merci_item_grouping']][$type] = $value['type_name'];
+        }
+      }
+      else if ($value['merci_type_setting'] == 'resource') {
+        // No date filtering for new reservations.
+        $item_options = merci_get_reservable_items($type, $start, $end, $reservation_nid);
+
+        if (!empty($item_options)) {
+          foreach ($item_options as $key => $item) {
+            $options['options'][$value['merci_item_grouping']][$key] = $item;
+          }
         }
       }
     }
-  }
 
-  // Remove grouping keys with no items.
-  foreach ($terms as $term) {
-    if (empty($options['options'][$term->name])) {
-      unset ($options['options'][$term->name]);
+    // Remove grouping keys with no items.
+    foreach ($terms as $term) {
+      if (empty($options['options'][$term->name])) {
+        unset ($options['options'][$term->name]);
+      }
     }
-  }
 
-  drupal_alter('merci_build_reservable_items', $options, $node, $form_state);
+    drupal_alter('merci_build_reservable_items', $options, $node, $form_state);
+  }
 
   return $options;
 }

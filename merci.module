@@ -996,10 +996,9 @@ function merci_simpletest() {
   $tests = file_scan_directory($dir, '/\.test$/');
   return array_keys($tests);
 }
-    
-    
+
 function _merci_content_type_info($reset = FALSE) {
-  static $info;
+  $info = drupal_static(__FUNCTION__);;
   if ($reset || !isset($info)) {
     if (!$reset && $cached = cache_get('merci_content_type_info')) {
       $info = $cached->data;
@@ -1008,7 +1007,7 @@ function _merci_content_type_info($reset = FALSE) {
       $info = array();
       // Load MERCI node type settings.
       $merci_settings = db_query("SELECT * FROM {merci_node_type} mt INNER JOIN {node_type} nt ON mt.type = nt.type WHERE merci_type_setting <> :merci_type_setting", array(':merci_type_setting' => 'disabled'));
-      // with the correct stuff..
+      // With the correct stuff..
       foreach ($merci_settings as $merci_setting) {
         $merci_setting = (array) $merci_setting;
         $merci_setting['type_name'] = $merci_setting['name'];
@@ -1030,7 +1029,6 @@ function _merci_content_type_info($reset = FALSE) {
   return $info;
 }
 
-  
 /**
  * Validates if an item node can be deleted.
  *
@@ -1489,23 +1487,14 @@ function merci_add_settings_form(&$form, $form_state) {
  */
 function _merci_choice_form($node, $form_state, $delta, $default = '', $reset = NULL) {
 
-  static $options = array();
-
-  // We'll manually set the #parents property of these fields so that
-  // their values appear in the $form_state['values']['choice'] array.
-  //$buckets = t('Buckets');
-  if (empty($options) or $reset) {
-    // NOTE: we don't filter by node here because we only want items not
-    //reserved by any node including the node calling the function.
-    $options = merci_build_reservable_items($node, $form_state, NULL);
-
-  }
+  // NOTE: we don't filter by node here because we only want items not
+  // reserved by any node including the node calling the function.
+  $options = merci_build_reservable_items($node, $form_state, NULL, $reset);
 
   $form = array(
     '#type' => 'select',
     '#options' => $options['options'],
     '#default_value' => $default,
-    //'#parents' => array('choice', $delta, 'item'),
   );
 
   return $form;
