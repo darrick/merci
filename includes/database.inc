@@ -164,6 +164,7 @@ function merci_reservation_items($node) {
     $item = (array) $item;
     $reservation_items[$item['did']] = $item;
   }
+  drupal_alter('merci_reservation_items', $reservation_items, $node);
   return $reservation_items;
 }
 
