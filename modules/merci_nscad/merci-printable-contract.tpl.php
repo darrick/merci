@@ -59,7 +59,16 @@ $logourl = theme_get_setting('logo_path', '');
             <tr class="<?php print $even_odd; ?>">
               <td>
                   <ul class="accessories">
-                    <li><?php print $item; ?></li>
+                    <li><?php print $item['item_title']; ?></li>
+                  </ul>
+                  <ul>
+<?php
+        foreach ($item['accessories'] as $accessory) {
+?>
+                  <li><?php print $accessory; ?></li>
+<?php
+        }
+?>
                   </ul>
               </td>
               <td>

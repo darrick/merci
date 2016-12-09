@@ -11,13 +11,28 @@ function nscad_preprocess_merci_printable_contract(&$variables) {
   // Create kit variable.
   $kits = array();
   $kit_items = array();
-  foreach ($wrapper->field_kit->getIterator() as $delta => $kit_wrapper) {
+  foreach ($wrapper->merci_field_kit->getIterator() as $delta => $kit_wrapper) {
     $kit = array(
       '#title' => $kit_wrapper->label(),
       'items' => array(),
     );
     foreach ($kit_wrapper->field_items as $delta => $item_wrapper) {
-      $kit['items'][] = $item_wrapper->label();
+      // Get accessories.
+      $accessories = array();
+      foreach ($variables['items'] as $delta => $item) {
+        if ($item['merci_item_nid'] == $item_wrapper->getIdentifier()) {
+          $item_node = node_load($variables['items'][$delta]['merci_placeholder_nid']);
+          $placeholder_wrapper = entity_metadata_wrapper('node', $item_node);
+          foreach ($placeholder_wrapper->field_merci_accessories->getIterator() as $delta => $entity_wrapper) {
+            $accessories[] = $entity_wrapper->label();
+          }
+        }
+      }
+
+      $kit['items'][] = array(
+        'item_title' => $item_wrapper->label(),
+        'accessories' => $accessories,
+      );
       $kit_items[] = $item_wrapper->getIdentifier();
     }
     $kits[] = $kit;
@@ -46,5 +61,4 @@ function nscad_preprocess_merci_printable_contract(&$variables) {
 
   }
   $variables['items'] = $items;
-}
-// merci_printable_contract
+} // merci_printable_contract
