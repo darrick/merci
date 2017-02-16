@@ -16,7 +16,7 @@ function nscad_preprocess_merci_printable_contract(&$variables) {
       '#title' => $kit_wrapper->label(),
       'items' => array(),
     );
-    foreach ($kit_wrapper->field_items as $delta => $item_wrapper) {
+    foreach ($kit_wrapper->merci_field_kit_items as $delta => $item_wrapper) {
       // Get accessories.
       $accessories = array();
       foreach ($variables['items'] as $delta => $item) {
