@@ -59,8 +59,13 @@ function nscad_preprocess_merci_printable_contract(&$variables) {
       'item_title' => $variables['items'][$delta]['item_title'],
       'accessories' => array(),
     );
-    foreach ($item_wrapper->field_merci_accessories->getIterator() as $delta => $entity_wrapper) {
-      $item['accessories'][] = $entity_wrapper->label();
+    try {
+      foreach ($item_wrapper->field_merci_accessories->getIterator() as $delta => $entity_wrapper) {
+        $item['accessories'][] = $entity_wrapper->label();
+      }
+    }
+    catch (EntityMetadataWrapperException $exc) {
+      // Do nothing.
     }
     $items[] = $item;
 
