@@ -23,8 +23,13 @@ function nscad_preprocess_merci_printable_contract(&$variables) {
         if ($item['merci_item_nid'] == $item_wrapper->getIdentifier()) {
           $item_node = node_load($variables['items'][$delta]['merci_placeholder_nid']);
           $placeholder_wrapper = entity_metadata_wrapper('node', $item_node);
-          foreach ($placeholder_wrapper->field_merci_accessories->getIterator() as $delta => $entity_wrapper) {
-            $accessories[] = $entity_wrapper->label();
+          try {
+            foreach ($placeholder_wrapper->field_merci_accessories->getIterator() as $delta => $entity_wrapper) {
+              $accessories[] = $entity_wrapper->label();
+            }
+          }
+          catch (EntityMetadataWrapperException $exc) {
+            // Do nothing.
           }
         }
       }
