@@ -6,7 +6,7 @@
  */
 
 define('MERCI_KIT_MERCI_FIELD_KIT', 'merci_field_kit');
-define('MERCI_KIT_MERCI_FIELD_ITEMS', 'merci_field_kit_items');
+define('MERCI_KIT_MERCI_FIELD_KIT_ITEMS', 'merci_field_kit_items');
 define('MERCI_KIT_MERCI_KIT', 'reservable_kit');
 
 
@@ -157,7 +157,7 @@ function merci_kit_merci_reservation_items_alter(&$items, $node) {
     // Limit for all the referrable bundles.
     $query->entityCondition('bundle', MERCI_KIT_MERCI_KIT);
     // Limit for the matching field values.
-    $query->fieldCondition(MERCI_KIT_MERCI_FIELD_ITEMS, 'target_id', $item['merci_item_nid']);
+    $query->fieldCondition(MERCI_KIT_MERCI_FIELD_KIT_ITEMS, 'target_id', $item['merci_item_nid']);
 
     $result = $query->execute();
 
