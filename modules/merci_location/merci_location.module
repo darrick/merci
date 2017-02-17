@@ -61,7 +61,7 @@ function merci_location_merci_build_reservable_items_alter(&$item_options, $node
 
     $result = $query->execute();
 
-    $filtered_ids = $result['node'];
+    $filtered_ids = array_key_exists('node', $result) ? $result['node'] : array();
 
     // Create filtered options list.
     $filtered_options = array('' => t('<Select>'));
